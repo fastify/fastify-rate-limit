@@ -1,0 +1,35 @@
+{
+  "name": "fastify-rate-limit",
+  "version": "0.1.0",
+  "description": "A low overhead rate limiter for your routes",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard && tap test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fastify/fastify-rate-limit.git"
+  },
+  "keywords": [
+    "fastify",
+    "rate",
+    "limit"
+  ],
+  "author": "Tomas Della Vedova - @delvedor (http://delved.org)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fastify/fastify-rate-limit/issues"
+  },
+  "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
+  "devDependencies": {
+    "fastify": "^1.0.0-rc.2",
+    "standard": "^10.0.3",
+    "tap": "^11.1.0"
+  },
+  "dependencies": {
+    "fast-json-stringify": "^1.1.0",
+    "fastify-plugin": "^0.2.2",
+    "ms": "^2.1.1",
+    "tiny-lru": "^1.5.0"
+  }
+}
