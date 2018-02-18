@@ -36,7 +36,7 @@ test('Basic', t => {
         t.deepEqual({
           statusCode: 429,
           error: 'Too Many Requests',
-          message: 'Rate limit exceeded, retry in 1s'
+          message: 'Rate limit exceeded, retry in 1 second'
         }, JSON.parse(res.payload))
 
         setTimeout(retry, 1100)
@@ -85,7 +85,7 @@ test('With text timeWindow', t => {
         t.deepEqual({
           statusCode: 429,
           error: 'Too Many Requests',
-          message: 'Rate limit exceeded, retry in 1s'
+          message: 'Rate limit exceeded, retry in 1 second'
         }, JSON.parse(res.payload))
 
         setTimeout(retry, 1100)

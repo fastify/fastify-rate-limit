@@ -22,7 +22,7 @@ function rateLimitPlugin (fastify, opts, next) {
     : typeof opts.timeWindow === 'number'
     ? opts.timeWindow
     : 1000 * 60
-  const after = ms(timeWindow)
+  const after = ms(timeWindow, { long: true })
 
   const interval = setInterval(cache.reset.bind(cache), timeWindow)
   if (interval.unref) interval.unref()
