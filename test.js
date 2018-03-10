@@ -104,7 +104,7 @@ test('With text timeWindow', t => {
 })
 
 test('With ips whitelist', t => {
-  t.plan(12)
+  t.plan(6)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: '2s', whitelist: ['127.0.0.1'] })
 
@@ -115,20 +115,14 @@ test('With ips whitelist', t => {
   fastify.inject('/', (err, res) => {
     t.error(err)
     t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 2)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
       t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 2)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
         t.strictEqual(res.statusCode, 200)
-        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-        t.strictEqual(res.headers['x-ratelimit-remaining'], 2)
       })
     })
   })

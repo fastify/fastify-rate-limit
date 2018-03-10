@@ -39,10 +39,9 @@ function rateLimitPlugin (fastify, opts, next) {
     if (whitelist.indexOf(ip) === -1) {
       if (limitReached === false) current++
       cache.set(ip, current)
+      res.setHeader('X-RateLimit-Limit', max)
+      res.setHeader('X-RateLimit-Remaining', max - current)
     }
-
-    res.setHeader('X-RateLimit-Limit', max)
-    res.setHeader('X-RateLimit-Remaining', max - current)
 
     if (limitReached === false) {
       next()
