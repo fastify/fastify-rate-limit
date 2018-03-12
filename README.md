@@ -43,15 +43,17 @@ In case a client reaches the maximum number of allowed requests, a standard Fast
 ### Options
 You can pass the following options during the plugin registration, the values will be used in all the routes.
 ```js
-fastify.register(require('fastify-circuit-breaker'), {
+fastify.register(require('fastify-rate-limit'), {
   max: 3, // default 1000
   timeWindow: 5000, // default 1000 * 60
-  cache: 10000 // default 5000
+  cache: 10000, // default 5000
+  whitelist: ['127.0.0.1'] // default []
 })
 ```
 - `max`: is the maximum numbers of request a single client can perform inside a timeWindow.
 - `timeWindow:` the duration of the time window, can be expressed in milliseconds (as a number) or as a string, see [`ms`](https://github.com/zeit/ms) too see the supported formats.
 - `cache`: this plugin internally uses a lru cache to handle the clients, you can change the size of the cache with this option.
+- `whitelist`: array of string of ips to exlude from rate limiting
 
 <a name="license"></a>
 ## License

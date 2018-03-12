@@ -17,6 +17,7 @@ const serializeError = FJS({
 function rateLimitPlugin (fastify, opts, next) {
   const cache = lru(opts.cache || 5000)
   const max = opts.max || 1000
+  const whitelist = opts.whitelist || []
   const timeWindow = typeof opts.timeWindow === 'string'
     ? ms(opts.timeWindow)
     : typeof opts.timeWindow === 'number'
@@ -34,11 +35,13 @@ function rateLimitPlugin (fastify, opts, next) {
     var current = cache.get(ip) || 0
 
     var limitReached = current >= max
-    if (limitReached === false) current++
-    cache.set(ip, current)
 
-    res.setHeader('X-RateLimit-Limit', max)
-    res.setHeader('X-RateLimit-Remaining', max - current)
+    if (whitelist.indexOf(ip) === -1) {
+      if (limitReached === false) current++
+      cache.set(ip, current)
+      res.setHeader('X-RateLimit-Limit', max)
+      res.setHeader('X-RateLimit-Remaining', max - current)
+    }
 
     if (limitReached === false) {
       next()
