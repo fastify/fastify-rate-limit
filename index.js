@@ -27,6 +27,7 @@ function rateLimitPlugin (fastify, opts, next) {
     ? new RedisStore(opts.redis, timeWindow)
     : new LocalStore(timeWindow, opts.cache)
 
+  const skipOnError = opts.skipOnError === true
   const max = opts.max || 1000
   const whitelist = opts.whitelist || []
   const after = ms(timeWindow, { long: true })
@@ -42,7 +43,7 @@ function rateLimitPlugin (fastify, opts, next) {
     }
 
     function onIncr (err, current) {
-      if (err) return next(err)
+      if (err && skipOnError === false) return next(err)
 
       if (current <= max) {
         res.setHeader('X-RateLimit-Limit', max)
