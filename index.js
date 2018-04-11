@@ -1,7 +1,6 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const lru = require('tiny-lru')
 const FJS = require('fast-json-stringify')
 const ms = require('ms')
 
@@ -24,9 +23,9 @@ function rateLimitPlugin (fastify, opts, next) {
       ? opts.timeWindow
       : 1000 * 60
 
-  const store = opts.store
-    ? new RedisStore(opts.store, timeWindow)
-    : new LocalStore(lru(opts.cache || 5000), timeWindow)
+  const store = opts.redis
+    ? new RedisStore(opts.redis, timeWindow)
+    : new LocalStore(timeWindow, opts.cache)
 
   const max = opts.max || 1000
   const whitelist = opts.whitelist || []

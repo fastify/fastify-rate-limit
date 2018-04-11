@@ -1,13 +1,15 @@
 'use strict'
 
-function LocalStore (store, timeWindow) {
-  this.store = store
-  setInterval(this.store.reset.bind(this.store), timeWindow).unref()
+const lru = require('tiny-lru')
+
+function LocalStore (timeWindow, cache) {
+  this.lru = lru(cache || 5000)
+  setInterval(this.lru.reset.bind(this.lru), timeWindow).unref()
 }
 
 LocalStore.prototype.incr = function (ip, cb) {
-  var current = this.store.get(ip) || 0
-  this.store.set(ip, ++current)
+  var current = this.lru.get(ip) || 0
+  this.lru.set(ip, ++current)
   cb(null, current)
 }
 
