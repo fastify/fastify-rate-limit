@@ -4,6 +4,7 @@
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "scripts": {
+    "redis": "docker run -p 6379:6379 --rm redis:3.0.7",
     "test": "standard && tap test.js"
   },
   "repository": {
@@ -23,6 +24,7 @@
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
   "devDependencies": {
     "fastify": "^1.1.1",
+    "ioredis": "^3.2.2",
     "standard": "^10.0.3",
     "tap": "^11.1.0"
   },
