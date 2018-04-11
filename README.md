@@ -47,13 +47,16 @@ fastify.register(require('fastify-rate-limit'), {
   max: 3, // default 1000
   timeWindow: 5000, // default 1000 * 60
   cache: 10000, // default 5000
-  whitelist: ['127.0.0.1'] // default []
+  whitelist: ['127.0.0.1'], // default []
+  store: new Redis({ host: '127.0.0.1' }) // default null
 })
 ```
 - `max`: is the maximum numbers of request a single client can perform inside a timeWindow.
 - `timeWindow:` the duration of the time window, can be expressed in milliseconds (as a number) or as a string, see [`ms`](https://github.com/zeit/ms) too see the supported formats.
 - `cache`: this plugin internally uses a lru cache to handle the clients, you can change the size of the cache with this option.
 - `whitelist`: array of string of ips to exlude from rate limiting
+- `store`: by default this plugins uses an in-memory store, which is fast but if you application works on more than one server it is useless, since the data is store locally.<br>
+You can pass a Redis client here and magically the issue is solved. To achieve the maximum speed, this plugins requires the use of [`ioredis`](https://github.com/luin/ioredis).
 
 <a name="license"></a>
 ## License
