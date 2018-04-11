@@ -5,6 +5,7 @@ const test = t.test
 const Redis = require('ioredis')
 const Fastify = require('fastify')
 const rateLimit = require('./index')
+const noop = () => {}
 
 test('Basic', t => {
   t.plan(19)
@@ -136,7 +137,7 @@ test('With redis store', t => {
   fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000,
-    store: redis
+    redis: redis
   })
 
   fastify.get('/', (req, reply) => {
@@ -175,11 +176,54 @@ test('With redis store', t => {
 
   function retry () {
     fastify.inject('/', (err, res) => {
-      redis.quit(() => {})
+      redis.flushall(noop)
+      redis.quit(noop)
       t.error(err)
       t.strictEqual(res.statusCode, 200)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
     })
   }
+})
+
+test('Skip on redis error', t => {
+  t.plan(13)
+  const fastify = Fastify()
+  const redis = new Redis({ host: '127.0.0.1' })
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 1000,
+    redis: redis,
+    skipOnError: true
+  })
+
+  fastify.get('/', (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+
+    redis.flushall(noop)
+    redis.quit(err => {
+      t.error(err)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 200)
+        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+        t.strictEqual(res.headers['x-ratelimit-remaining'], 2)
+
+        fastify.inject('/', (err, res) => {
+          t.error(err)
+          t.strictEqual(res.statusCode, 200)
+          t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+          t.strictEqual(res.headers['x-ratelimit-remaining'], 2)
+        })
+      })
+    })
+  })
 })
