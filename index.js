@@ -4,7 +4,9 @@ const fp = require('fastify-plugin')
 const lru = require('tiny-lru')
 const FJS = require('fast-json-stringify')
 const ms = require('ms')
-const noop = () => {}
+
+const LocalStore = require('./store/LocalStore')
+const RedisStore = require('./store/RedisStore')
 
 const serializeError = FJS({
   type: 'object',
@@ -64,38 +66,6 @@ function rateLimitPlugin (fastify, opts, next) {
   }
 
   next()
-}
-
-function LocalStore (store, timeWindow) {
-  this.store = store
-  const interval = setInterval(this.store.reset.bind(this.store), timeWindow)
-  if (interval.unref) interval.unref()
-}
-
-LocalStore.prototype.incr = function (ip, cb) {
-  var current = this.store.get(ip) || 0
-  this.store.set(ip, ++current)
-  cb(null, current)
-}
-
-function RedisStore (store, timeWindow) {
-  this.store = store
-  this.timeWindow = timeWindow
-  this.key = 'fastify-rate-limit-'
-}
-
-RedisStore.prototype.incr = function (ip, cb) {
-  var key = this.key + ip
-  this.store.pipeline()
-    .incr(key)
-    .pttl(key)
-    .exec((err, result) => {
-      if (err) return cb(err)
-      if (result[1][1] === -1) {
-        this.store.pexpire(key, this.timeWindow, noop)
-      }
-      cb(null, result[0][1])
-    })
 }
 
 module.exports = fp(rateLimitPlugin, {
