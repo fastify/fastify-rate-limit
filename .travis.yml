@@ -4,7 +4,9 @@ node_js:
   - "9"
   - "8"
   - "6"
-  - "4"
+
+services:
+  - redis-server
 
 notifications:
   email:
