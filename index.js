@@ -27,6 +27,10 @@ function rateLimitPlugin (fastify, opts, next) {
     ? new RedisStore(opts.redis, timeWindow)
     : new LocalStore(timeWindow, opts.cache)
 
+  const keyGenerator = typeof opts.keyGenerator === 'function'
+    ? opts.keyGenerator
+    : (req) => req.ip
+
   const skipOnError = opts.skipOnError === true
   const max = opts.max || 1000
   const whitelist = opts.whitelist || []
@@ -35,11 +39,11 @@ function rateLimitPlugin (fastify, opts, next) {
   fastify.addHook('onRequest', onRateLimit)
 
   function onRateLimit (req, res, next) {
-    var ip = req.headers['X-Forwarded-For'] || req.connection.remoteAddress
-    if (whitelist.indexOf(ip) > -1) {
+    var key = keyGenerator(req)
+    if (whitelist.indexOf(key) > -1) {
       next()
     } else {
-      store.incr(ip, onIncr)
+      store.incr(key, onIncr)
     }
 
     function onIncr (err, current) {

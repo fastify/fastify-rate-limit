@@ -227,3 +227,67 @@ test('Skip on redis error', t => {
     })
   })
 })
+
+test('With keyGenerator', t => {
+  t.plan(23)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 1000,
+    keyGenerator (req) {
+      t.strictEqual(req.headers['my-custom-header'], 'random-value')
+      return req.headers['my-custom-header']
+    }
+  })
+
+  fastify.get('/', (req, reply) => {
+    reply.send('hello!')
+  })
+
+  const payload = {
+    method: 'GET',
+    url: '/',
+    headers: {
+      'my-custom-header': 'random-value'
+    }
+  }
+
+  fastify.inject(payload, (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+
+    fastify.inject(payload, (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+
+      fastify.inject(payload, (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 429)
+        t.strictEqual(res.headers['content-type'], 'application/json')
+        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+        t.strictEqual(res.headers['retry-after'], 1000)
+        t.deepEqual({
+          statusCode: 429,
+          error: 'Too Many Requests',
+          message: 'Rate limit exceeded, retry in 1 second'
+        }, JSON.parse(res.payload))
+
+        setTimeout(retry, 1100)
+      })
+    })
+  })
+
+  function retry () {
+    fastify.inject(payload, (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    })
+  }
+})
