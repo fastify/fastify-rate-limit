@@ -24,7 +24,7 @@
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
   "devDependencies": {
     "fastify": "^1.2.1",
-    "ioredis": "^3.2.2",
+    "ioredis": "^4.0.1",
     "standard": "^12.0.1",
     "tap": "^12.0.1"
   },
