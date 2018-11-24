@@ -32,6 +32,6 @@
     "fast-json-stringify": "^1.2.0",
     "fastify-plugin": "^1.2.0",
     "ms": "^2.1.1",
-    "tiny-lru": "^2.0.0"
+    "tiny-lru": "^3.0.0"
   }
 }
