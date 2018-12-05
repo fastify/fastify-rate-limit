@@ -4,7 +4,7 @@ const lru = require('tiny-lru')
 
 function LocalStore (timeWindow, cache) {
   this.lru = lru(cache || 5000)
-  setInterval(this.lru.reset.bind(this.lru), timeWindow).unref()
+  setInterval(this.lru.clear.bind(this.lru), timeWindow).unref()
 }
 
 LocalStore.prototype.incr = function (ip, cb) {
