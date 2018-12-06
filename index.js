@@ -50,21 +50,20 @@ function rateLimitPlugin (fastify, opts, next) {
       if (err && skipOnError === false) return next(err)
 
       if (current <= max) {
-        res.setHeader('X-RateLimit-Limit', max)
-        res.setHeader('X-RateLimit-Remaining', max - current)
+        res.header('X-RateLimit-Limit', max)
+        res.header('X-RateLimit-Remaining', max - current)
         next()
       } else {
-        res.writeHead(429, {
-          'X-RateLimit-Limit': max,
-          'X-RateLimit-Remaining': 0,
-          'Content-Type': 'application/json',
-          'Retry-After': timeWindow
-        })
-        res.end(serializeError({
-          statusCode: 429,
-          error: 'Too Many Requests',
-          message: `Rate limit exceeded, retry in ${after}`
-        }))
+        res.type('application/json').serializer(serializeError)
+        res.code(429)
+          .header('X-RateLimit-Limit', max)
+          .header('X-RateLimit-Remaining', 0)
+          .header('Retry-After', timeWindow)
+          .send({
+            statusCode: 429,
+            error: 'Too Many Requests',
+            message: `Rate limit exceeded, retry in ${after}`
+          })
       }
     }
   }
@@ -73,6 +72,6 @@ function rateLimitPlugin (fastify, opts, next) {
 }
 
 module.exports = fp(rateLimitPlugin, {
-  fastify: '^1.x',
+  fastify: '>=2.x',
   name: 'fastify-rate-limit'
 })
