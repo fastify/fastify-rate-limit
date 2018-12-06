@@ -41,7 +41,7 @@ function rateLimitPlugin (fastify, opts, next) {
   function onRateLimit (req, res, next) {
     var key = keyGenerator(req)
     if (whitelist.indexOf(key) > -1) {
-      return next()
+      next()
     } else {
       store.incr(key, onIncr)
     }
