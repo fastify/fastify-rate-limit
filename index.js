@@ -29,7 +29,7 @@ function rateLimitPlugin (fastify, opts, next) {
 
   const keyGenerator = typeof opts.keyGenerator === 'function'
     ? opts.keyGenerator
-    : (req) => req.ip
+    : (req) => req.raw.ip
 
   const skipOnError = opts.skipOnError === true
   const max = opts.max || 1000
@@ -41,7 +41,7 @@ function rateLimitPlugin (fastify, opts, next) {
   function onRateLimit (req, res, next) {
     var key = keyGenerator(req)
     if (whitelist.indexOf(key) > -1) {
-      next()
+      return next()
     } else {
       store.incr(key, onIncr)
     }
