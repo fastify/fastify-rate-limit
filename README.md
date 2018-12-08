@@ -4,8 +4,9 @@
 
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)  [![Build Status](https://travis-ci.org/fastify/fastify-rate-limit.svg?branch=master)](https://travis-ci.org/fastify/fastify-rate-limit)
 
-A low overhead rate limiter for your routes. Supports Fastify `1.x` versions.
+A low overhead rate limiter for your routes. Supports Fastify `2.x` versions.
 
+Please refer to [this branch](https://github.com/fastify/fastify-rate-limit/tree/1.x) and related versions for Fastify 1.x compatibility.
 
 ## Install
 ```
