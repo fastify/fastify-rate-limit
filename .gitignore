@@ -65,3 +65,5 @@ typings/
 
 # lockfile
 package-lock.json
+
+dump.rdb

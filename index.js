@@ -17,34 +17,57 @@ const serializeError = FJS({
 })
 
 function rateLimitPlugin (fastify, opts, next) {
-  const timeWindow = typeof opts.timeWindow === 'string'
+  const globalTimeWindow = typeof opts.timeWindow === 'string'
     ? ms(opts.timeWindow)
     : typeof opts.timeWindow === 'number'
       ? opts.timeWindow
       : 1000 * 60
 
   const store = opts.redis
-    ? new RedisStore(opts.redis, timeWindow)
-    : new LocalStore(timeWindow, opts.cache)
+    ? new RedisStore(opts.redis)
+    : new LocalStore(opts.cache)
 
   const keyGenerator = typeof opts.keyGenerator === 'function'
     ? opts.keyGenerator
     : (req) => req.raw.ip
 
   const skipOnError = opts.skipOnError === true
-  const max = opts.max || 1000
   const whitelist = opts.whitelist || []
-  const after = ms(timeWindow, { long: true })
+  const rules = {}
+
+  if (opts.max) {
+    rules.global = {
+      max: opts.max,
+      timeWindow: globalTimeWindow,
+      after: ms(globalTimeWindow, { long: true })
+    }
+  }
+
+  opts.special && opts.special.length && opts.special.forEach(({ url, max, timeWindow }) => {
+    const ruleMax = max || opts.max
+    const ruleTimeWindow = timeWindow || globalTimeWindow
+
+    rules[url] = {
+      max: ruleMax,
+      timeWindow: ruleTimeWindow,
+      after: ms(ruleTimeWindow, { long: true })
+    }
+  })
 
   fastify.addHook('onRequest', onRateLimit)
 
   function onRateLimit (req, res, next) {
-    var key = keyGenerator(req)
-    if (whitelist.indexOf(key) > -1) {
-      next()
-    } else {
-      store.incr(key, onIncr)
+    const key = keyGenerator(req)
+    const rule = rules[req.raw.url] || rules.global
+
+    if (whitelist.includes(key) || !rule) {
+      return next()
     }
+
+    const { max, timeWindow, after } = rule
+    const storeKey = `${key}-${req.raw.url}`
+
+    store.incr(storeKey, timeWindow, onIncr)
 
     function onIncr (err, current) {
       if (err && skipOnError === false) return next(err)
