@@ -53,7 +53,7 @@ fastify.register(require('fastify-rate-limit'), {
   whitelist: ['127.0.0.1'], // default []
   redis: new Redis({ host: '127.0.0.1' }), // default null
   skipOnError: true, // default false
-  keyGenerator: function(req) { /* ... */ }, // default (req) => req.ip
+  keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
 })
 ```
 - `max`: is the maximum number of requests a single client can perform inside a timeWindow.
@@ -72,7 +72,7 @@ fastify.register(require('fastify-rate-limit'), {
     || req.headers['x-client-ip'] // apache
     || req.headers['x-forwarded-for'] // use this only if you trust the header
     || req.session.username // you can limit based on any session value
-    || req.ip // fallback to default
+    || req.raw.ip // fallback to default
 })
 ```
 
