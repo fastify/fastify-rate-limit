@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "redis": "docker run -p 6379:6379 --rm redis:3.0.7",
-    "test": "standard && tap test.js"
+    "test": "standard && tap test.js && npm run typescript",
+    "typescript": "tsc --project ./tsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -23,10 +24,12 @@
   },
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
   "devDependencies": {
+    "@types/redis": "^2.8.10",
     "fastify": "^2.0.0",
     "ioredis": "^4.2.0",
     "standard": "^12.0.1",
-    "tap": "^12.1.0"
+    "tap": "^12.1.0",
+    "typescript": "^3.3.3333"
   },
   "dependencies": {
     "fast-json-stringify": "^1.9.2",
