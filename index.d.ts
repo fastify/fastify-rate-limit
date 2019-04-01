@@ -1,6 +1,6 @@
 import * as http from 'http';
 import * as fastify from 'fastify';
-import { RedisClient } from 'redis';
+import * as ioredis from 'ioredis';
 
 declare namespace fastifyRateLimit {
   interface FastifyRateLimitOptions {
@@ -8,7 +8,7 @@ declare namespace fastifyRateLimit {
     timeWindow?: number;
     cache?: number;
     whitelist?: string[];
-    redis?: RedisClient;
+    redis?: ioredis.Redis;
     skipOnError?: boolean;
     keyGenerator?: (req: fastify.FastifyRequest<any>) => string | number;
   }
