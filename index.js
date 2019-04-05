@@ -1,8 +1,8 @@
 'use strict'
 
-const fp = require('fastify-plugin')
-const FJS = require('fast-json-stringify')
-const ms = require('ms')
+const fp = require('fastify-plugin');
+const FJS = require('fast-json-stringify');
+const ms = require('ms');
 
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
@@ -16,7 +16,7 @@ const serializeError = FJS({
   }
 })
 
-function rateLimitPlugin (fastify, opts, next) {
+function rateLimitPlugin (opts) {
   const timeWindow = typeof opts.timeWindow === 'string'
     ? ms(opts.timeWindow)
     : typeof opts.timeWindow === 'number'
@@ -29,16 +29,15 @@ function rateLimitPlugin (fastify, opts, next) {
 
   const keyGenerator = typeof opts.keyGenerator === 'function'
     ? opts.keyGenerator
-    : (req) => req.raw.ip
+    : (req) => req.ip;
 
-  const skipOnError = opts.skipOnError === true
+  const skipOnError = opts.skipOnError === true;
   const max = opts.max || 1000
-  const whitelist = opts.whitelist || []
-  const after = ms(timeWindow, { long: true })
+  const whitelist = opts.whitelist || [];
 
-  fastify.addHook('onRequest', onRateLimit)
+  const after = ms(timeWindow, { long: true });
 
-  function onRateLimit (req, res, next) {
+  function rateLimit (req, res, next) {
     var key = keyGenerator(req)
     if (whitelist.indexOf(key) > -1) {
       next()
@@ -50,28 +49,27 @@ function rateLimitPlugin (fastify, opts, next) {
       if (err && skipOnError === false) return next(err)
 
       if (current <= max) {
-        res.header('X-RateLimit-Limit', max)
-        res.header('X-RateLimit-Remaining', max - current)
+        res.setHeader('X-RateLimit-Limit', max);
+        res.setHeader('X-RateLimit-Remaining', max - current)
         next()
       } else {
-        res.type('application/json').serializer(serializeError)
-        res.code(429)
-          .header('X-RateLimit-Limit', max)
-          .header('X-RateLimit-Remaining', 0)
-          .header('Retry-After', timeWindow)
-          .send({
-            statusCode: 429,
-            error: 'Too Many Requests',
-            message: `Rate limit exceeded, retry in ${after}`
-          })
+        const body = serializeError({
+          statusCode: 429,
+          error: 'Too Many Requests',
+          message: `Rate limit exceeded, retry in ${after}`
+        });
+        res.writeHead(429, {
+          'Content-Type' : 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          'X-RateLimit-Limit' : max,
+          'X-RateLimit-Remaining' : 0,
+          'Retry-After' : timeWindow
+        }).end(body);
       }
     }
   }
 
-  next()
+  return fp(rateLimit)
 }
 
-module.exports = fp(rateLimitPlugin, {
-  fastify: '>=2.x',
-  name: 'fastify-rate-limit'
-})
+module.exports = rateLimitPlugin;
