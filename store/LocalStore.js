@@ -2,14 +2,22 @@
 
 const lru = require('tiny-lru')
 
-function LocalStore (timeWindow, cache) {
-  this.lru = lru(cache || 5000)
-  setInterval(this.lru.clear.bind(this.lru), timeWindow).unref()
+function LocalStore (opts) {
+  this.lru = lru(opts || 5000)
+  this.timers = {}
 }
 
-LocalStore.prototype.incr = function (ip, cb) {
-  var current = this.lru.get(ip) || 0
-  this.lru.set(ip, ++current)
+LocalStore.prototype.incr = function (key, timeWindow, cb) {
+  let current = this.lru.get(key) || 0
+  this.lru.set(key, ++current)
+
+  if (!this.timers[key]) {
+    this.timers[key] = setTimeout(() => {
+      this.lru.delete(key)
+      this.timers[key] = null
+    }, timeWindow)
+  }
+
   cb(null, current)
 }
 
