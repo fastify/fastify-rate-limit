@@ -1,6 +1,5 @@
 'use strict'
 
-const fp = require('fastify-plugin');
 const FJS = require('fast-json-stringify');
 const ms = require('ms');
 
@@ -69,7 +68,7 @@ function rateLimitPlugin (opts) {
     }
   }
 
-  return fp(rateLimit)
+  return rateLimit
 }
 
 module.exports = rateLimitPlugin;
