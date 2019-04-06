@@ -3,18 +3,19 @@
 const lru = require('tiny-lru')
 
 function LocalStore (opts) {
-  this.lru = lru(opts || 5000)
+  this.lru = lru(opts)
   this.timers = {}
 }
 
-LocalStore.prototype.incr = function (key, timeWindow, cb) {
-  let current = this.lru.get(key) || 0
-  this.lru.set(key, ++current)
+LocalStore.prototype.incr = function (prefix, key, timeWindow, cb) {
+  let keyName = `${prefix}-${key}`
+  let current = this.lru.get(keyName) || 0
+  this.lru.set(keyName, ++current)
 
-  if (!this.timers[key]) {
-    this.timers[key] = setTimeout(() => {
-      this.lru.delete(key)
-      this.timers[key] = null
+  if (!this.timers[keyName]) {
+    this.timers[keyName] = setTimeout(() => {
+      this.lru.delete(keyName)
+      this.timers[keyName] = null
     }, timeWindow)
   }
 
