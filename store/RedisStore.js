@@ -4,19 +4,20 @@ const noop = () => {}
 
 function RedisStore (redis) {
   this.redis = redis
-  this.prefix = 'fastify-rate-limit-'
 }
 
-RedisStore.prototype.incr = function (key, timeWindow, cb) {
-  const target = this.prefix + key
+RedisStore.prototype.incr = function (prefix, key, timeWindow, cb) {
+  let keyName = `${prefix}-${key}`
+
   this.redis.pipeline()
-    .incr(target)
-    .pttl(target)
+    .incr(keyName)
+    .pttl(keyName)
+    .wait()
     .exec((err, result) => {
       if (err) return cb(err, 0)
       if (result[0][0]) return cb(result[0][0], 0)
       if (result[1][1] === -1) {
-        this.redis.pexpire(target, timeWindow, noop)
+        this.redis.pexpire(keyName, timeWindow, noop)
       }
       cb(null, result[0][1])
     })
