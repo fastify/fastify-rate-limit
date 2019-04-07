@@ -12,7 +12,13 @@ test('Basic', t => {
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
-  fastify.get('/', (req, reply) => {
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2
+      }
+    }
+  }, (req, reply) => {
     reply.send('hello!')
   })
 
@@ -61,7 +67,14 @@ test('With text timeWindow', t => {
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: '1s' })
 
-  fastify.get('/', (req, reply) => {
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: '1s'
+      }
+    }
+  }, (req, reply) => {
     reply.send('hello!')
   })
 
@@ -108,9 +121,16 @@ test('With text timeWindow', t => {
 test('With ips whitelist', t => {
   t.plan(6)
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 2, timeWindow: '2s', whitelist: ['127.0.0.1'] })
+  fastify.register(rateLimit, { whitelist: ['127.0.0.1'] })
 
-  fastify.get('/', (req, reply) => {
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: '2s'
+      }
+    }
+  }, (req, reply) => {
     reply.send('hello!')
   })
 
@@ -134,13 +154,13 @@ test('With redis store', t => {
   t.plan(19)
   const fastify = Fastify()
   const redis = new Redis({ host: '127.0.0.1' })
-  fastify.register(rateLimit, {
-    max: 2,
-    timeWindow: 1000,
-    redis: redis
-  })
+  fastify.register(rateLimit, { max: 2, timeWindow: 1000, redis: redis })
 
-  fastify.get('/', (req, reply) => {
+  fastify.get('/', {
+    config: {
+      rateLimit: {}
+    }
+  }, (req, reply) => {
     reply.send('hello!')
   })
 
@@ -191,13 +211,18 @@ test('Skip on redis error', t => {
   const fastify = Fastify()
   const redis = new Redis({ host: '127.0.0.1' })
   fastify.register(rateLimit, {
-    max: 2,
-    timeWindow: 1000,
     redis: redis,
     skipOnError: true
   })
 
-  fastify.get('/', (req, reply) => {
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000
+      }
+    }
+  }, (req, reply) => {
     reply.send('hello!')
   })
 
@@ -240,7 +265,11 @@ test('With keyGenerator', t => {
     }
   })
 
-  fastify.get('/', (req, reply) => {
+  fastify.get('/', {
+    config: {
+      rateLimit: {}
+    }
+  }, (req, reply) => {
     reply.send('hello!')
   })
 
@@ -291,7 +320,7 @@ test('With keyGenerator', t => {
     })
   }
 })
-
+//
 test('With special list and global max', t => {
   t.plan(19)
 
@@ -308,10 +337,23 @@ test('With special list and global max', t => {
     }]
   })
 
-  fastify.get('/', (req, reply) => {
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2
+      }
+    }
+  }, (req, reply) => {
     reply.send('hello!')
   })
-  fastify.get(SPECIAL_URL, (req, reply) => {
+  fastify.get(SPECIAL_URL, {
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 1000
+      }
+    }
+  }, (req, reply) => {
     reply.send('hello!')
   })
 
@@ -332,13 +374,13 @@ test('With special list and global max', t => {
       t.error(err)
       t.strictEqual(res.statusCode, 429)
       t.strictEqual(res.headers['content-type'], 'application/json')
-      t.strictEqual(res.headers['x-ratelimit-limit'], 1)
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-      t.strictEqual(res.headers['retry-after'], 2000)
+      t.strictEqual(res.headers['retry-after'], 1000)
       t.deepEqual({
         statusCode: 429,
         error: 'Too Many Requests',
-        message: 'Rate limit exceeded, retry in 2 seconds'
+        message: 'Rate limit exceeded, retry in 1 second'
       }, JSON.parse(res.payload))
 
       setTimeout(() => {
@@ -368,7 +410,13 @@ test('With special list and no global max', t => {
   fastify.get('/', (req, reply) => {
     reply.send('hello!')
   })
-  fastify.get('/special-rate', (req, reply) => {
+  fastify.get('/special-rate', {
+    config: {
+      rateLimit: {
+        max: 1
+      }
+    }
+  }, (req, reply) => {
     reply.send('hello!')
   })
 
