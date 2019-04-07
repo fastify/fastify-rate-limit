@@ -15,12 +15,9 @@ const serializeError = FJS({
 })
 
 function rateLimitPlugin (fastify, rule, next) {
-
-
   const max = (typeof rule.max === 'number' || typeof rule.max === 'function')
     ? rule.max
     : 1000
-
   const globalTimeWindow = typeof rule.timeWindow === 'string'
     ? ms(rule.timeWindow)
     : typeof rule.timeWindow === 'number'
@@ -33,10 +30,11 @@ function rateLimitPlugin (fastify, rule, next) {
 
   const skipOnError = rule.skipOnError === true
   const whitelist = {
-    redis : !!rule.redis,         //for futur usage after first review.
-    global : rule.whitelist || [],
-    endpoint : []
+    redis: !!rule.redis, // for futur usage after first review.
+    global: rule.whitelist || [],
+    endpoint: []
   }
+
   const after = ms(globalTimeWindow, { long: true })
 
   const keyGenerator = typeof rule.keyGenerator === 'function'
@@ -45,26 +43,20 @@ function rateLimitPlugin (fastify, rule, next) {
 
   fastify.addHook('onRoute', (routeOptions) => {
     if (routeOptions.config && routeOptions.config.rateLimit && typeof routeOptions.config.rateLimit === 'object') {
-
       const params = routeOptions.config.rateLimit
 
-      if(!params.max) {
-        params.max = max;
+      if (!params.max) {
+        params.max = max
       }
 
       routeOptions.preHandler = (req, res, next) => {
-
         const prefix = params.prefixCache || `${req.raw.url.replace(/\//g, '-').slice(1)}`
-
 
         var key = keyGenerator(req)
 
-        if (whitelist.global.indexOf(key) > -1) {
+        if (whitelist.global.indexOf(key) > -1 || whitelist.endpoint.indexOf(key) > -1) {
           next()
         } else {
-          if(whitelist.endpoint.indexOf(key) > -1) {
-            next()
-          }
           store.incr(prefix, key, globalTimeWindow, onIncr)
         }
 
@@ -81,7 +73,6 @@ function rateLimitPlugin (fastify, rule, next) {
 
             next()
           } else {
-
             if (typeof params.onExceeded === 'function') {
               params.onExceeded(req)
             }
@@ -96,7 +87,6 @@ function rateLimitPlugin (fastify, rule, next) {
                 error: 'Too Many Requests',
                 message: `Rate limit exceeded, retry in ${after}`
               })
-
           }
         }
       }
