@@ -320,7 +320,7 @@ test('With keyGenerator', t => {
     })
   }
 })
-//
+
 test('With special list and global max', t => {
   t.plan(19)
 
