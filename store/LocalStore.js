@@ -8,7 +8,7 @@ function LocalStore (opts) {
 }
 
 LocalStore.prototype.incr = function (prefix, key, timeWindow, cb) {
-  let keyName = `${prefix}-${key}`
+  let keyName = `${prefix}:${key}`
   let current = this.lru.get(keyName) || 0
   this.lru.set(keyName, ++current)
 
@@ -16,7 +16,7 @@ LocalStore.prototype.incr = function (prefix, key, timeWindow, cb) {
     this.timers[keyName] = setTimeout(() => {
       this.lru.delete(keyName)
       this.timers[keyName] = null
-    }, timeWindow)
+    }, timeWindow).unref()
   }
 
   cb(null, current)

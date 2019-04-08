@@ -15,6 +15,10 @@ const serializeError = FJS({
 })
 
 function rateLimitPlugin (fastify, rule, next) {
+  if (rule.whiteListInRedis && !rule.redis) {
+    next('you must set redis parameter to use it')
+  }
+
   const max = (typeof rule.max === 'number' || typeof rule.max === 'function')
     ? rule.max
     : 1000
@@ -24,15 +28,38 @@ function rateLimitPlugin (fastify, rule, next) {
       ? rule.timeWindow
       : 1000 * 60
 
-  const store = rule.redis
-    ? new RedisStore(rule.redis)
-    : new LocalStore(rule.cache)
+  const plugin = {
+    app: rule.appName || 'default'
+  }
 
   const skipOnError = rule.skipOnError === true
-  const whitelist = {
-    redis: !!rule.redis, // for futur usage after first review.
-    global: rule.whitelist || [],
-    endpoint: []
+
+  function cbR (err) {
+    if (err && skipOnError === false) return next(err)
+  }
+
+  if (rule.redis) {
+    plugin.store = new RedisStore(rule.redis)
+    if (rule.whiteListInRedis) {
+      plugin.store.addWhiteList(`${plugin.app}:wlg`, rule.whitelist || [], cbR)
+      plugin.isRedis = true
+      plugin.whiteListInRedis = true
+    } else {
+      plugin.whitelist = {
+        global: rule.whitelist || [],
+        endpoint: []
+      }
+      plugin.isRedis = true
+      plugin.whiteListInRedis = false
+    }
+  } else {
+    plugin.store = new LocalStore(rule.cache)
+    plugin.isRedis = false
+    plugin.whiteListInRedis = false
+    plugin.whitelist = {
+      global: rule.whitelist || [],
+      endpoint: {}
+    }
   }
 
   const after = ms(globalTimeWindow, { long: true })
@@ -49,16 +76,45 @@ function rateLimitPlugin (fastify, rule, next) {
         params.max = max
       }
 
-      routeOptions.preHandler = (req, res, next) => {
-        const prefix = params.prefixCache || `${req.raw.url.replace(/\//g, '-').slice(1)}`
+      const urlT = (routeOptions.url === '/') ? 'root' : routeOptions.url.replace(/\//g, ':').slice(1)
 
+      const prefix = {
+        cache: params.prefixCache ? params.prefixCache.replace(/[-,.;#*]/g, ':') : urlT
+      }
+      if (plugin.isRedis && plugin.whiteListInRedis) {
+        prefix.wl = urlT
+        plugin.store.addWhiteList(`${plugin.app}:wle:${prefix.wl}`, params.whitelist, cbR)
+      } else {
+        plugin.whitelist.endpoint[prefix.cache] = params.whitelist || []
+      }
+
+      routeOptions.preHandler = (req, res, next) => {
         var key = keyGenerator(req)
 
-        if (whitelist.global.indexOf(key) > -1 || whitelist.endpoint.indexOf(key) > -1) {
-          next()
+        console.log(plugin)
+
+        if (plugin.isRedis) {
+          if (plugin.whiteListInRedis) {
+            plugin.store.isWhiteList(`${plugin.app}:wlg`, key, function ([err, result]) {
+              if (err && skipOnError === false) return next(err)
+              if (result === 1) {
+                next()
+              }
+            })
+            plugin.store.isWhiteList(`${plugin.app}:wle:${prefix.wl}`, key, function ([err, result]) {
+              if (err && skipOnError === false) return next(err)
+              if (result === 1) {
+                next()
+              }
+            })
+          }
         } else {
-          store.incr(prefix, key, globalTimeWindow, onIncr)
+          if (plugin.whitelist.global.indexOf(key) > -1 || plugin.whitelist.endpoint[prefix.cache].indexOf(key) > -1) {
+            next()
+          }
         }
+
+        plugin.store.incr(prefix.cache, key, globalTimeWindow, onIncr)
 
         function onIncr (err, current) {
           if (err && skipOnError === false) return next(err)

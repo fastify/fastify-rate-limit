@@ -1,15 +1,16 @@
-// var Redis = require('ioredis')
-// var redis = new Redis()
+var Redis = require('ioredis')
+var redis = new Redis()
 
 const fastify = require('fastify')()
 
 fastify.register(require('../../fastify-rate-limit'),
   {
-    max: 3000, // default 1000
-    // timeWindow: 1000*60, // default 1000 * 60
-    // cache: 10000, // default 5000
-    // whitelist: ['127.0.0.1'],
-    // redis: redis, // default null
+    max: 3000, // default max rate limit
+    // timeWindow: 1000*60,
+    // cache: 10000,
+    whitelist: ['127.0.0.2'], // global whitelist access ( ACL based on the key from the keyGenerator)
+    redis: redis, // connection to redis
+    whiteListInRedis: true, // will store the whitelist and check in redis instead of array.
     skipOnError: false // default false
     // keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
   })
@@ -18,7 +19,6 @@ fastify.get('/', {
   config: {
     rateLimit: {
       max: 3,
-      // whitelist : ['127.0.1.1'],
       timeWindow: '1 minute'
     }
   }
@@ -30,7 +30,7 @@ fastify.get('/private', {
   config: {
     rateLimit: {
       max: 3,
-      whitelist: ['127.0.2.1'],
+      whitelist: ['127.0.2.1', '127.0.3.1'],
       timeWindow: '1 minute'
     }
   }
