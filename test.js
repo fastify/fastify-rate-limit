@@ -321,109 +321,109 @@ test('With keyGenerator', t => {
   }
 })
 
-test('With special list and global max', t => {
-  t.plan(19)
-
-  const fastify = Fastify()
-  const SPECIAL_URL = '/special-rate'
-
-  fastify.register(rateLimit, {
-    max: 2,
-    timeWindow: 1000,
-    special: [{
-      url: SPECIAL_URL,
-      max: 1,
-      timeWindow: 2000
-    }]
-  })
-
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2
-      }
-    }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
-  fastify.get(SPECIAL_URL, {
-    config: {
-      rateLimit: {
-        max: 1,
-        timeWindow: 1000
-      }
-    }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
-
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
-  })
-
-  fastify.inject(SPECIAL_URL, (err, res) => {
-    t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 1)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-
-    fastify.inject(SPECIAL_URL, (err, res) => {
-      t.error(err)
-      t.strictEqual(res.statusCode, 429)
-      t.strictEqual(res.headers['content-type'], 'application/json')
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-      t.strictEqual(res.headers['retry-after'], 1000)
-      t.deepEqual({
-        statusCode: 429,
-        error: 'Too Many Requests',
-        message: 'Rate limit exceeded, retry in 1 second'
-      }, JSON.parse(res.payload))
-
-      setTimeout(() => {
-        fastify.inject(SPECIAL_URL, (err, res) => {
-          t.error(err)
-          t.strictEqual(res.statusCode, 200)
-          t.strictEqual(res.headers['x-ratelimit-limit'], 1)
-          t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-        })
-      }, 2100)
-    })
-  })
-})
-
-test('With special list and no global max', t => {
-  t.plan(4)
-
-  const fastify = Fastify()
-
-  fastify.register(rateLimit, {
-    special: [{
-      url: '/special-rate',
-      max: 1
-    }]
-  })
-
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
-  fastify.get('/special-rate', {
-    config: {
-      rateLimit: {
-        max: 1
-      }
-    }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
-
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], undefined)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], undefined)
-  })
-})
+// test('With special list and global max', t => {
+//   t.plan(19)
+//
+//   const fastify = Fastify()
+//   const SPECIAL_URL = '/special-rate'
+//
+//   fastify.register(rateLimit, {
+//     max: 2,
+//     timeWindow: 1000,
+//     special: [{
+//       url: SPECIAL_URL,
+//       max: 1,
+//       timeWindow: 2000
+//     }]
+//   })
+//
+//   fastify.get('/', {
+//     config: {
+//       rateLimit: {
+//         max: 2
+//       }
+//     }
+//   }, (req, reply) => {
+//     reply.send('hello!')
+//   })
+//   fastify.get(SPECIAL_URL, {
+//     config: {
+//       rateLimit: {
+//         max: 1,
+//         timeWindow: 1000
+//       }
+//     }
+//   }, (req, reply) => {
+//     reply.send('hello!')
+//   })
+//
+//   fastify.inject('/', (err, res) => {
+//     t.error(err)
+//     t.strictEqual(res.statusCode, 200)
+//     t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+//     t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+//   })
+//
+//   fastify.inject(SPECIAL_URL, (err, res) => {
+//     t.error(err)
+//     t.strictEqual(res.statusCode, 200)
+//     t.strictEqual(res.headers['x-ratelimit-limit'], 1)
+//     t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+//
+//     fastify.inject(SPECIAL_URL, (err, res) => {
+//       t.error(err)
+//       t.strictEqual(res.statusCode, 429)
+//       t.strictEqual(res.headers['content-type'], 'application/json')
+//       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+//       t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+//       t.strictEqual(res.headers['retry-after'], 1000)
+//       t.deepEqual({
+//         statusCode: 429,
+//         error: 'Too Many Requests',
+//         message: 'Rate limit exceeded, retry in 1 second'
+//       }, JSON.parse(res.payload))
+//
+//       setTimeout(() => {
+//         fastify.inject(SPECIAL_URL, (err, res) => {
+//           t.error(err)
+//           t.strictEqual(res.statusCode, 200)
+//           t.strictEqual(res.headers['x-ratelimit-limit'], 1)
+//           t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+//         })
+//       }, 2100)
+//     })
+//   })
+// })
+//
+// test('With special list and no global max', t => {
+//   t.plan(4)
+//
+//   const fastify = Fastify()
+//
+//   fastify.register(rateLimit, {
+//     special: [{
+//       url: '/special-rate',
+//       max: 1
+//     }]
+//   })
+//
+//   fastify.get('/', (req, reply) => {
+//     reply.send('hello!')
+//   })
+//   fastify.get('/special-rate', {
+//     config: {
+//       rateLimit: {
+//         max: 1
+//       }
+//     }
+//   }, (req, reply) => {
+//     reply.send('hello!')
+//   })
+//
+//   fastify.inject('/', (err, res) => {
+//     t.error(err)
+//     t.strictEqual(res.statusCode, 200)
+//     t.strictEqual(res.headers['x-ratelimit-limit'], undefined)
+//     t.strictEqual(res.headers['x-ratelimit-remaining'], undefined)
+//   })
+// })

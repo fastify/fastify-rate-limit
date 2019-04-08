@@ -14,8 +14,7 @@ const serializeError = FJS({
   }
 })
 
-function buildRouteRate(pluginComponent, params, routeOptions) {
-
+function buildRouteRate (pluginComponent, params, routeOptions, next) {
   const urlT = (routeOptions.url === '/') ? 'root' : routeOptions.url.replace(/\//g, ':').slice(1)
 
   const prefix = {
@@ -23,7 +22,7 @@ function buildRouteRate(pluginComponent, params, routeOptions) {
   }
   if (pluginComponent.isRedis && pluginComponent.whiteListInRedis) {
     prefix.wl = urlT
-    pluginComponent.store.addWhiteList(`${pluginComponent.app}:wle:${prefix.wl}`, params.whitelist, (err) =>{
+    pluginComponent.store.addWhiteList(`${pluginComponent.app}:wle:${prefix.wl}`, params.whitelist, (err) => {
       if (err && params.skipOnError === false) return next(err)
     })
   } else {
@@ -94,7 +93,7 @@ function rateLimitPlugin (fastify, settings, next) {
   }
 
   const globalParams = {
-    global : settings.global || true
+    global: settings.global || true
   }
 
   globalParams.max = (typeof settings.max === 'number' || typeof settings.max === 'function')
@@ -145,19 +144,18 @@ function rateLimitPlugin (fastify, settings, next) {
     ? settings.keyGenerator
     : (req) => req.raw.ip
 
-  const makeParams = (p) => { return {...globalParams, ...p}};
+  const makeParams = (p) => { return { ...globalParams, ...p } }
 
   fastify.addHook('onRoute', (routeOptions) => {
-
-    if(globalParams.global) {
+    if (globalParams.global) {
       if (routeOptions.config && routeOptions.config.rateLimit && typeof routeOptions.config.rateLimit === 'object') {
-        buildRouteRate(pluginComponent, makeParams(routeOptions.config.rateLimit), routeOptions)
+        buildRouteRate(pluginComponent, makeParams(routeOptions.config.rateLimit), routeOptions, next)
       } else {
-        buildRouteRate(pluginComponent, globalParams, routeOptions)
+        buildRouteRate(pluginComponent, globalParams, routeOptions, next)
       }
     } else {
       if (routeOptions.config && routeOptions.config.rateLimit && typeof routeOptions.config.rateLimit === 'object') {
-        buildRouteRate(pluginComponent, makeParams(routeOptions.config.rateLimit), routeOptions)
+        buildRouteRate(pluginComponent, makeParams(routeOptions.config.rateLimit), routeOptions, next)
       }
     }
   })
