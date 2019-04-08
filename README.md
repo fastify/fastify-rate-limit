@@ -145,9 +145,7 @@ fastify.get('/public/sub-rated-1', {
     rateLimit: {
       timeWindow: '1 minute',
       whitelist: ['127.0.0.1'],
-      onExceeding: function (req) {
-        console.log('callback on exceededing ... executed before response to client. req is give as argument')
-      },
+      onExceeding: function (req) {},
       onExceeded: function (req) {
         console.log('callback on exceeded ... to black ip in security group for example, req is give as argument')
       }

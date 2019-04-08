@@ -5,6 +5,7 @@ const fastify = require('fastify')()
 
 fastify.register(require('../../fastify-rate-limit'),
   {
+    global: false,
     max: 3000, // default max rate limit
     // timeWindow: 1000*60,
     // cache: 10000,
