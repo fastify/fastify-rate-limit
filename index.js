@@ -17,6 +17,8 @@ const serializeError = FJS({
 function buildRouteRate (pluginComponent, params, routeOptions, next) {
   const urlT = (routeOptions.url === '/') ? 'root' : routeOptions.url.replace(/\//g, ':').slice(1)
 
+  console.log(params)
+
   const prefix = {
     cache: params.prefixCache ? params.prefixCache.replace(/[-,.;#*]/g, ':') : urlT
   }
@@ -144,7 +146,10 @@ function rateLimitPlugin (fastify, settings, next) {
     ? settings.keyGenerator
     : (req) => req.raw.ip
 
-  const makeParams = (p) => { return { ...globalParams, ...p } }
+  //const makeParams = (p) => { return { ...globalParams, ...p } }
+
+  const makeParams = (p) => { return Object.assign( {}, globalParams, p ) }
+
 
   fastify.addHook('onRoute', (routeOptions) => {
     if (globalParams.global) {
