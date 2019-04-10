@@ -1,45 +1,38 @@
 'use strict'
 
+const ms = require('ms')
 const noop = () => {}
 
-function RedisStore (redis) {
+function RedisStore (redis, key, timeWindow) {
   this.redis = redis
+  this.timeWindow = timeWindow
+  this.key = key
 }
 
-RedisStore.prototype.incr = function (prefix, key, timeWindow, cb) {
-  let keyName = `${prefix}:${key}`
-
+RedisStore.prototype.incr = function (ip, cb) {
+  var key = this.key + ip
   this.redis.pipeline()
-    .incr(keyName)
-    .pttl(keyName)
-    .wait()
+    .incr(key)
+    .pttl(key)
     .exec((err, result) => {
       if (err) return cb(err, 0)
       if (result[0][0]) return cb(result[0][0], 0)
       if (result[1][1] === -1) {
-        this.redis.pexpire(keyName, timeWindow, noop)
+        this.redis.pexpire(key, this.timeWindow, noop)
       }
       cb(null, result[0][1])
     })
 }
 
-RedisStore.prototype.addWhiteList = function (route, arr, cb) {
-  this.redis.pipeline()
-    .del(route)
-    .sadd(route, arr)
-    .wait()
-    .exec((err) => {
-      if (err) return cb(err)
-    })
-}
-
-RedisStore.prototype.isWhiteList = function (route, key, cb) {
-  this.redis.pipeline()
-    .sismember(route, key)
-    .exec((err, result) => {
-      if (err) return cb(err)
-      if (result[0]) return cb(result[0], 0)
-    })
+RedisStore.prototype.child = function (routeOptions) {
+  let timeWindow = routeOptions.config.rateLimit.timeWindow
+  if (typeof timeWindow === 'string') {
+    timeWindow = ms(timeWindow)
+  }
+  const child = Object.create(this)
+  child.key = this.key + routeOptions.method + routeOptions.url + '-'
+  child.timeWindow = timeWindow
+  return child
 }
 
 module.exports = RedisStore
