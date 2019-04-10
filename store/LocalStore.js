@@ -1,25 +1,31 @@
 'use strict'
 
 const lru = require('tiny-lru')
+const ms = require('ms')
 
-function LocalStore (opts) {
-  this.lru = lru(opts)
-  this.timers = {}
+function LocalStore (timeWindow, cache, app) {
+  this.lru = lru(cache || 5000)
+  this.interval = setInterval(this.lru.clear.bind(this.lru), timeWindow).unref()
+  this.app = app
+
+  app.addHook('onClose', (done) => {
+    clearInterval(this.interval)
+  })
 }
 
-LocalStore.prototype.incr = function (prefix, key, timeWindow, cb) {
-  let keyName = `${prefix}:${key}`
-  let current = this.lru.get(keyName) || 0
-  this.lru.set(keyName, ++current)
+LocalStore.prototype.incr = function (ip, cb) {
+  var current = this.lru.get(ip) || 0
+  this.lru.set(ip, ++current)
+  cb(null, current)
+}
 
-  if (!this.timers[keyName]) {
-    this.timers[keyName] = setTimeout(() => {
-      this.lru.delete(keyName)
-      this.timers[keyName] = null
-    }, timeWindow).unref()
+LocalStore.prototype.child = function (routeOptions) {
+  let timeWindow = routeOptions.config.rateLimit.timeWindow
+  if (typeof timeWindow === 'string') {
+    timeWindow = ms(timeWindow)
   }
 
-  cb(null, current)
+  return new LocalStore(timeWindow, routeOptions.config.rateLimit.cache, this.app)
 }
 
 module.exports = LocalStore

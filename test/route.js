@@ -4,18 +4,19 @@ const t = require('tap')
 const test = t.test
 const Redis = require('ioredis')
 const Fastify = require('fastify')
-const rateLimit = require('./index')
+const rateLimit = require('../index')
 const noop = () => {}
 
 test('Basic', t => {
   t.plan(19)
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+  fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
     config: {
       rateLimit: {
-        max: 2
+        max: 2,
+        timeWindow: 1000
       }
     }
   }, (req, reply) => {
@@ -65,7 +66,7 @@ test('Basic', t => {
 test('With text timeWindow', t => {
   t.plan(19)
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 2, timeWindow: '1s' })
+  fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
     config: {
@@ -121,7 +122,10 @@ test('With text timeWindow', t => {
 test('With ips whitelist', t => {
   t.plan(6)
   const fastify = Fastify()
-  fastify.register(rateLimit, { whitelist: ['127.0.0.1'] })
+  fastify.register(rateLimit, {
+    global: false,
+    whitelist: ['127.0.0.1']
+  })
 
   fastify.get('/', {
     config: {
@@ -154,11 +158,17 @@ test('With redis store', t => {
   t.plan(19)
   const fastify = Fastify()
   const redis = new Redis({ host: '127.0.0.1' })
-  fastify.register(rateLimit, { max: 2, timeWindow: 1000, redis: redis })
+  fastify.register(rateLimit, {
+    global: false,
+    redis: redis
+  })
 
   fastify.get('/', {
     config: {
-      rateLimit: {}
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000
+      }
     }
   }, (req, reply) => {
     reply.send('hello!')
@@ -212,7 +222,8 @@ test('Skip on redis error', t => {
   const redis = new Redis({ host: '127.0.0.1' })
   fastify.register(rateLimit, {
     redis: redis,
-    skipOnError: true
+    global: false,
+    skipError: false
   })
 
   fastify.get('/', {
@@ -257,8 +268,7 @@ test('With keyGenerator', t => {
   t.plan(23)
   const fastify = Fastify()
   fastify.register(rateLimit, {
-    max: 2,
-    timeWindow: 1000,
+    global: false,
     keyGenerator (req) {
       t.strictEqual(req.headers['my-custom-header'], 'random-value')
       return req.headers['my-custom-header']
@@ -267,7 +277,10 @@ test('With keyGenerator', t => {
 
   fastify.get('/', {
     config: {
-      rateLimit: {}
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000
+      }
     }
   }, (req, reply) => {
     reply.send('hello!')
@@ -321,109 +334,19 @@ test('With keyGenerator', t => {
   }
 })
 
-// test('With special list and global max', t => {
-//   t.plan(19)
-//
-//   const fastify = Fastify()
-//   const SPECIAL_URL = '/special-rate'
-//
-//   fastify.register(rateLimit, {
-//     max: 2,
-//     timeWindow: 1000,
-//     special: [{
-//       url: SPECIAL_URL,
-//       max: 1,
-//       timeWindow: 2000
-//     }]
-//   })
-//
-//   fastify.get('/', {
-//     config: {
-//       rateLimit: {
-//         max: 2
-//       }
-//     }
-//   }, (req, reply) => {
-//     reply.send('hello!')
-//   })
-//   fastify.get(SPECIAL_URL, {
-//     config: {
-//       rateLimit: {
-//         max: 1,
-//         timeWindow: 1000
-//       }
-//     }
-//   }, (req, reply) => {
-//     reply.send('hello!')
-//   })
-//
-//   fastify.inject('/', (err, res) => {
-//     t.error(err)
-//     t.strictEqual(res.statusCode, 200)
-//     t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-//     t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
-//   })
-//
-//   fastify.inject(SPECIAL_URL, (err, res) => {
-//     t.error(err)
-//     t.strictEqual(res.statusCode, 200)
-//     t.strictEqual(res.headers['x-ratelimit-limit'], 1)
-//     t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-//
-//     fastify.inject(SPECIAL_URL, (err, res) => {
-//       t.error(err)
-//       t.strictEqual(res.statusCode, 429)
-//       t.strictEqual(res.headers['content-type'], 'application/json')
-//       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-//       t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-//       t.strictEqual(res.headers['retry-after'], 1000)
-//       t.deepEqual({
-//         statusCode: 429,
-//         error: 'Too Many Requests',
-//         message: 'Rate limit exceeded, retry in 1 second'
-//       }, JSON.parse(res.payload))
-//
-//       setTimeout(() => {
-//         fastify.inject(SPECIAL_URL, (err, res) => {
-//           t.error(err)
-//           t.strictEqual(res.statusCode, 200)
-//           t.strictEqual(res.headers['x-ratelimit-limit'], 1)
-//           t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-//         })
-//       }, 2100)
-//     })
-//   })
-// })
-//
-// test('With special list and no global max', t => {
-//   t.plan(4)
-//
-//   const fastify = Fastify()
-//
-//   fastify.register(rateLimit, {
-//     special: [{
-//       url: '/special-rate',
-//       max: 1
-//     }]
-//   })
-//
-//   fastify.get('/', (req, reply) => {
-//     reply.send('hello!')
-//   })
-//   fastify.get('/special-rate', {
-//     config: {
-//       rateLimit: {
-//         max: 1
-//       }
-//     }
-//   }, (req, reply) => {
-//     reply.send('hello!')
-//   })
-//
-//   fastify.inject('/', (err, res) => {
-//     t.error(err)
-//     t.strictEqual(res.statusCode, 200)
-//     t.strictEqual(res.headers['x-ratelimit-limit'], undefined)
-//     t.strictEqual(res.headers['x-ratelimit-remaining'], undefined)
-//   })
-// })
+test('no rate limit without settings', t => {
+  t.plan(4)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { global: false })
+
+  fastify.get('/', (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], undefined)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], undefined)
+  })
+})
