@@ -84,11 +84,17 @@ function rateLimitPlugin (fastify, settings, next) {
 
   // When a route is declare ...
   fastify.addHook('onRoute', (routeOptions) => {
-    if (routeOptions.config && routeOptions.config.rateLimit && typeof routeOptions.config.rateLimit === 'object') {
-      const current = Object.create(pluginComponent)
-      current.store = pluginComponent.store.child(routeOptions)
-      // if the current endpoint have a custom rateLimit configuration ...
-      buildRouteRate(current, makeParams(routeOptions.config.rateLimit), routeOptions)
+    if (routeOptions.config) {
+      if (routeOptions.config.rateLimit && typeof routeOptions.config.rateLimit === 'object') {
+        const current = Object.create(pluginComponent)
+        current.store = pluginComponent.store.child(routeOptions)
+        // if the current endpoint have a custom rateLimit configuration ...
+        buildRouteRate(current, makeParams(routeOptions.config.rateLimit), routeOptions)
+      } else if (routeOptions.config.rateLimit === false) {
+        // nothing to do
+      } else {
+        throw new Error('Unknownv value for rateLimit configuration')
+      }
     } else if (globalParams.global) {
       // if the plugin is set globally ( meaning that all the route will be 'rate limited' )
       // As the endpoint, does not have a custom rateLimit configuration, use the global one.
