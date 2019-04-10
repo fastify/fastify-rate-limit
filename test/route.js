@@ -350,3 +350,24 @@ test('no rate limit without settings', t => {
     t.strictEqual(res.headers['x-ratelimit-remaining'], undefined)
   })
 })
+
+test('route can disable the global limit', t => {
+  t.plan(4)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: false
+    }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], undefined)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], undefined)
+  })
+})
