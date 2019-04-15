@@ -85,7 +85,7 @@ Rate limiting can be configured on a per route basis by supplying rate limit con
 
 Regarding the `whitelist`. There are 2 types :
  - global : will affect all endpoints within the encapsulation scope
- - endpoint : will affect only the targeted endpoint.
+ - endpoint : will affect only the targeted endpoint
 
 `The Global whitelist` is set in the plugin when registering it with fastify.register(...).
 
