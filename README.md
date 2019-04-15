@@ -81,7 +81,7 @@ fastify.register(require('fastify-rate-limit'), {
 
 ### Options on the endpoint itself
 
-You can overide the default value set during the registration of the plugin from the route declaration, the values will be used `only` for this route.
+Rate limiting can be configured on a per route basis by supplying rate limit configuration on the route declaration.
 
 Regarding the `whitelist`. There are 2 types :
  - global : will affect all the endpoint.
