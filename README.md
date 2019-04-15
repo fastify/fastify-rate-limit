@@ -151,7 +151,7 @@ fastify.get('/public/sub-rated-1', {
   reply.send({ hello: 'from sub-rated-1 ... using default max value ... ' })
 })
 ```
-- `max`: is the maximum number of requests a single client can perform inside a timeWindow.
+- `max`: the maximum number of requests a single client can perform inside a `timeWindow`.
 - `timeWindow:` the duration of the time window, can be expressed in milliseconds (as a number) or as a string (see [`ms`](https://github.com/zeit/ms) for supported formats).
 - `onExceeding` : callback that will be executed each time a request is made to a route that is rate limited.
 - `onExceeded` : callback that will be executed when a user reached the maximum number of tries. Can be useful to blacklist clients.
