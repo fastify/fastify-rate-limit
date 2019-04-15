@@ -94,7 +94,7 @@ The endpoint whitelist is set on the endpoint directly with the `{ config : { ra
 you need to set the option `whiteListInRedis` to `true` when registering the plugin. This is only available when using redis. 
 
 
-The ACL is checking based on the value of the key from the keyGenerator. In this example we are checking the Ip but it could be a whitelist of specific user id.
+ACL checking is performed based on the value of the key from the `keyGenerator`. In this example we are checking the IP address, but it could be a whitelist of specific user identifiers.
 ```js
 const fastify = require('fastify')()
 
