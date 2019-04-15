@@ -155,7 +155,7 @@ fastify.get('/public/sub-rated-1', {
 - `timeWindow:` the duration of the time window, can be expressed in milliseconds (as a number) or as a string (see [`ms`](https://github.com/zeit/ms) for supported formats).
 - `onExceeding` : callback that will be executed each time a request is made to a route that is rate limited.
 - `onExceeded` : callback that will be executed when a user reached the maximum number of tries. Can be useful to blacklist clients.
-- `keyGenerator`: a function to generate a unique identifier for each incoming request. Defaults to `(req) => req.ip`, the IP is resolved by fastify using `req.connection.remoteAddress` or `req.headers['x-forwarded-for']` if [trustProxy](https://www.fastify.io/docs/master/Server/#trustproxy) option is enabled. Use it if you want to override this behavior.
+- `keyGenerator`: a function to generate a unique identifier for each incoming request. Defaults to `(req) => req.ip`, the IP is resolved by Fastify using `req.connection.remoteAddress` or `req.headers['x-forwarded-for']` if the [`trustProxy`](https://www.fastify.io/docs/master/Server/#trustproxy) option is enabled. Specify this option to override this behavior.
 ```js
 
 
