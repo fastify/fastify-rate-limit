@@ -57,7 +57,7 @@ fastify.register(require('fastify-rate-limit'), {
   keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
 })
 ```
-- `global` : will tell to the plugin if all route will be set will a `rate limit`
+- `global` : indicates if the plugin should apply a rate limit to all routes within the encapsulation scope
 - `max`: is the maximum number of requests a single client can perform inside a timeWindow.
 - `timeWindow:` the duration of the time window, can be expressed in milliseconds (as a number) or as a string, see [`ms`](https://github.com/zeit/ms) too see the supported formats.
 - `cache`: this plugin internally uses a lru cache to handle the clients, you can change the size of the cache with this option.
