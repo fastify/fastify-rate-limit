@@ -89,7 +89,7 @@ Regarding the `whitelist`. There are 2 types :
 
 The global whitelist is configured when registering it with `fastify.register(...)`.
 
-`The Endpoint whitelist` is set on the endpoint directly with the { config : rateLimit : whitelist : [] }object.
+The endpoint whitelist is set on the endpoint directly with the `{ config : { rateLimit : { whitelist : [] } } }` object.
 
 you need to set the option `whiteListInRedis` to `true` when registering the plugin. This is only available when using redis. 
 
