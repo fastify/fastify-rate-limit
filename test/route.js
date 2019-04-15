@@ -371,3 +371,31 @@ test('route can disable the global limit', t => {
     t.strictEqual(res.headers['x-ratelimit-remaining'], undefined)
   })
 })
+
+test('does not override the preHandler', t => {
+  t.plan(5)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { global: false })
+
+  fastify.get('/', {
+    preHandler: function (req, reply, next) {
+      t.pass('preHandler called')
+      next()
+    },
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000
+      }
+    }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+  })
+})

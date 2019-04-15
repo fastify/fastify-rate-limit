@@ -291,3 +291,53 @@ test('With keyGenerator', t => {
     })
   }
 })
+
+test('does not override the preHandler', t => {
+  t.plan(5)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 1000
+  })
+
+  fastify.get('/', {
+    preHandler: function (req, reply, next) {
+      t.pass('preHandler called')
+      next()
+    }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+  })
+})
+
+test('does not override the preHandler as an array', t => {
+  t.plan(5)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 1000
+  })
+
+  fastify.get('/', {
+    preHandler: [function (req, reply, next) {
+      t.pass('preHandler called')
+      next()
+    }]
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+  })
+})

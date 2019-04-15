@@ -126,7 +126,7 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
    * @param res
    * @param next
    */
-  routeOptions.preHandler = (req, res, next) => {
+  const preHandler = (req, res, next) => {
     // We retrieve the key from the generator. ( can be the global one, or the one define in the endpoint ).
     var key = params.keyGenerator(req)
 
@@ -173,6 +173,14 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
           })
       }
     }
+  }
+
+  if (Array.isArray(routeOptions.preHandler)) {
+    routeOptions.preHandler.push(preHandler)
+  } else if (typeof routeOptions.preHandler === 'function') {
+    routeOptions.preHandler = [routeOptions.preHandler, preHandler]
+  } else {
+    routeOptions.preHandler = [preHandler]
   }
 }
 
