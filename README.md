@@ -87,7 +87,7 @@ Regarding the `whitelist`. There are 2 types :
  - global : will affect all endpoints within the encapsulation scope
  - endpoint : will affect only the targeted endpoint
 
-`The Global whitelist` is set in the plugin when registering it with fastify.register(...).
+The global whitelist is configured when registering it with `fastify.register(...)`.
 
 `The Endpoint whitelist` is set on the endpoint directly with the { config : rateLimit : whitelist : [] }object.
 
