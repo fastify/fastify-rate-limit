@@ -1,3 +1,4 @@
+import * as http from 'http'
 import * as fastify from 'fastify';
 import * as fastifyRateLimit from '../fastify-rate-limit';
 import * as ioredis from 'ioredis';
@@ -11,5 +12,5 @@ app.register(fastifyRateLimit, {
   whitelist: ['127.0.0.1'],
   redis: new ioredis({ host: '127.0.0.1' }),
   skipOnError: true,
-  keyGenerator: (req: fastify.FastifyRequest<any>) => req.raw.ip
+  keyGenerator: (req: fastify.FastifyRequest<http.IncomingMessage>) => req.ip
 });
