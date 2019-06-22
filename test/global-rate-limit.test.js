@@ -5,7 +5,10 @@ const test = t.test
 const Redis = require('ioredis')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
-const noop = () => {}
+const noop = () => { }
+
+const REDIS_HOST = '127.0.0.1'
+// const REDIS_HOST = '192.168.99.100' // docker-machine
 
 test('Basic', t => {
   t.plan(19)
@@ -137,8 +140,12 @@ test('With ips whitelist', t => {
 test('With redis store', t => {
   t.plan(19)
   const fastify = Fastify()
-  const redis = new Redis({ host: '127.0.0.1' })
-  fastify.register(rateLimit, { max: 2, timeWindow: 1000, redis: redis })
+  const redis = new Redis({ host: REDIS_HOST })
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 1000,
+    redis: redis
+  })
 
   fastify.get('/', (req, reply) => {
     reply.send('hello!')
@@ -189,12 +196,12 @@ test('With redis store', t => {
 test('Skip on redis error', t => {
   t.plan(13)
   const fastify = Fastify()
-  const redis = new Redis({ host: '127.0.0.1' })
+  const redis = new Redis({ host: REDIS_HOST })
   fastify.register(rateLimit, {
-    redis: redis,
-    skipOnError: true,
     max: 2,
-    timeWindow: 1000
+    timeWindow: 1000,
+    redis: redis,
+    skipOnError: true
   })
 
   fastify.get('/', (req, reply) => {
