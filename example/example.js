@@ -1,5 +1,7 @@
-var Redis = require('ioredis')
-var redis = new Redis()
+'use strict'
+
+const Redis = require('ioredis')
+const redis = new Redis()
 
 const fastify = require('fastify')()
 
