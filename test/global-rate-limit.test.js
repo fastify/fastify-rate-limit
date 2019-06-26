@@ -8,7 +8,6 @@ const rateLimit = require('../index')
 const noop = () => { }
 
 const REDIS_HOST = '127.0.0.1'
-// const REDIS_HOST = '192.168.99.100' // docker-machine
 
 test('Basic', t => {
   t.plan(19)

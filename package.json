@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "redis": "docker run -p 6379:6379 --rm redis:3.0.7",
-    "test": "standard && tap test/*.test.js && npm run typescript",
+    "test": "standard && tap --cov test/*.test.js && npm run typescript",
     "typescript": "tsc --project ./test/types/tsconfig.json"
   },
   "repository": {
