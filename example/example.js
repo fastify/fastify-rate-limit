@@ -13,7 +13,6 @@ fastify.register(require('../../fastify-rate-limit'),
     // cache: 10000,
     whitelist: ['127.0.0.2'], // global whitelist access ( ACL based on the key from the keyGenerator)
     redis: redis, // connection to redis
-    whiteListInRedis: true, // will store the whitelist and check in redis instead of array.
     skipOnError: false // default false
     // keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
   })
