@@ -1,11 +1,12 @@
 import * as http from 'http'
 import * as fastify from 'fastify';
-import * as fastifyRateLimit from '../fastify-rate-limit';
+import * as fastifyRateLimit from '../../../fastify-rate-limit';
 import * as ioredis from 'ioredis';
 
 const app = fastify();
 
 app.register(fastifyRateLimit, {
+  global: true,
   max: 3,
   timeWindow: 5000,
   cache: 10000,

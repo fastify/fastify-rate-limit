@@ -1,11 +1,12 @@
 'use strict'
 
+const ms = require('ms')
 const noop = () => {}
 
-function RedisStore (redis, timeWindow) {
+function RedisStore (redis, key, timeWindow) {
   this.redis = redis
   this.timeWindow = timeWindow
-  this.key = 'fastify-rate-limit-'
+  this.key = key
 }
 
 RedisStore.prototype.incr = function (ip, cb) {
@@ -21,6 +22,17 @@ RedisStore.prototype.incr = function (ip, cb) {
       }
       cb(null, result[0][1])
     })
+}
+
+RedisStore.prototype.child = function (routeOptions) {
+  let timeWindow = routeOptions.config.rateLimit.timeWindow
+  if (typeof timeWindow === 'string') {
+    timeWindow = ms(timeWindow)
+  }
+  const child = Object.create(this)
+  child.key = this.key + routeOptions.method + routeOptions.url + '-'
+  child.timeWindow = timeWindow
+  return child
 }
 
 module.exports = RedisStore

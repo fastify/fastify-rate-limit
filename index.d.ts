@@ -3,6 +3,7 @@ import * as fastify from 'fastify';
 
 declare namespace fastifyRateLimit {
   interface FastifyRateLimitOptions {
+    global?: boolean;
     max?: number;
     timeWindow?: number;
     cache?: number;
