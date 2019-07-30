@@ -20,20 +20,25 @@ function rateLimitPlugin (fastify, settings, next) {
   // create the object that will hold the "main" settings that can be shared during the build
   // 'global' will define, if the rate limit should be apply by default on all route. default : true
   const globalParams = {
-    global: (typeof settings.global === 'boolean') ? settings.global : true
+    global: typeof settings.global === 'boolean' ? settings.global : true
   }
 
+  if (typeof settings.errorMessage === 'string') {
+    globalParams.errorMessage = settings.errorMessage
+  }
   // define the global maximum of request allowed
-  globalParams.max = (typeof settings.max === 'number' || typeof settings.max === 'function')
-    ? settings.max
-    : 1000
+  globalParams.max =
+    typeof settings.max === 'number' || typeof settings.max === 'function'
+      ? settings.max
+      : 1000
 
   // define the global Time Window
-  globalParams.timeWindow = typeof settings.timeWindow === 'string'
-    ? ms(settings.timeWindow)
-    : typeof settings.timeWindow === 'number'
-      ? settings.timeWindow
-      : 1000 * 60
+  globalParams.timeWindow =
+    typeof settings.timeWindow === 'string'
+      ? ms(settings.timeWindow)
+      : typeof settings.timeWindow === 'number'
+        ? settings.timeWindow
+        : 1000 * 60
 
   globalParams.whitelist = settings.whitelist || []
 
@@ -43,23 +48,39 @@ function rateLimitPlugin (fastify, settings, next) {
   }
 
   if (settings.redis) {
-    pluginComponent.store = new RedisStore(settings.redis, 'fastify-rate-limit-', globalParams.timeWindow)
+    pluginComponent.store = new RedisStore(
+      settings.redis,
+      'fastify-rate-limit-',
+      globalParams.timeWindow
+    )
   } else {
-    pluginComponent.store = new LocalStore(globalParams.timeWindow, settings.cache, fastify)
+    pluginComponent.store = new LocalStore(
+      globalParams.timeWindow,
+      settings.cache,
+      fastify
+    )
   }
 
-  globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
-    ? settings.keyGenerator
-    : (req) => req.raw.ip
+  globalParams.keyGenerator =
+    typeof settings.keyGenerator === 'function'
+      ? settings.keyGenerator
+      : req => req.raw.ip
 
   // onRoute add the preHandler rate-limit function if needed
-  fastify.addHook('onRoute', (routeOptions) => {
+  fastify.addHook('onRoute', routeOptions => {
     if (routeOptions.config) {
-      if (routeOptions.config.rateLimit && typeof routeOptions.config.rateLimit === 'object') {
+      if (
+        routeOptions.config.rateLimit &&
+        typeof routeOptions.config.rateLimit === 'object'
+      ) {
         const current = Object.create(pluginComponent)
         current.store = pluginComponent.store.child(routeOptions)
         // if the current endpoint have a custom rateLimit configuration ...
-        buildRouteRate(current, makeParams(routeOptions.config.rateLimit), routeOptions)
+        buildRouteRate(
+          current,
+          makeParams(routeOptions.config.rateLimit),
+          routeOptions
+        )
       } else if (routeOptions.config.rateLimit === false) {
         // don't apply any rate-limit
       } else {
@@ -127,16 +148,23 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
         if (typeof params.onExceeded === 'function') {
           params.onExceeded(req)
         }
+        let message = `Rate limit exceeded, retry in ${after}`
+        if (typeof params.errorMessage === 'string') {
+          message = params.errorMessage
+        } else if (typeof params.errorMessage === 'function') {
+          message = params.errorMessage()
+        }
 
         res.type('application/json').serializer(serializeError)
-        res.code(429)
+        res
+          .code(429)
           .header('X-RateLimit-Limit', params.max)
           .header('X-RateLimit-Remaining', 0)
           .header('Retry-After', params.timeWindow)
           .send({
             statusCode: 429,
             error: 'Too Many Requests',
-            message: `Rate limit exceeded, retry in ${after}`
+            message
           })
       }
     }

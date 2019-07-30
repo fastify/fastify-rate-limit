@@ -1,5 +1,5 @@
-import * as http from 'http';
-import * as fastify from 'fastify';
+import * as http from "http";
+import * as fastify from "fastify";
 
 declare namespace fastifyRateLimit {
   interface FastifyRateLimitOptions {
@@ -10,7 +10,10 @@ declare namespace fastifyRateLimit {
     whitelist?: string[];
     redis?: any;
     skipOnError?: boolean;
-    keyGenerator?: (req: fastify.FastifyRequest<http.IncomingMessage>) => string | number;
+    keyGenerator?: (
+      req: fastify.FastifyRequest<http.IncomingMessage>
+    ) => string | number;
+    errorMessage?: string | (() => string);
   }
 }
 
