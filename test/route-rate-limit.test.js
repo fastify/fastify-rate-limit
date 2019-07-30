@@ -472,3 +472,60 @@ test('onExceeding and onExceeded events', t => {
     })
   })
 })
+
+test('Custom Error Message', t => {
+  t.plan(19)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { global: false })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000,
+        errorMessage: 'This is custom message'
+      }
+    }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 429)
+        t.strictEqual(res.headers['content-type'], 'application/json')
+        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+        t.strictEqual(res.headers['retry-after'], 1000)
+        t.deepEqual({
+          statusCode: 429,
+          error: 'Too Many Requests',
+          message: 'This is custom message'
+        }, JSON.parse(res.payload))
+
+        setTimeout(retry, 1100)
+      })
+    })
+  })
+
+  function retry () {
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    })
+  }
+})
