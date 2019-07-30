@@ -89,6 +89,18 @@ fastify.get('/home', {
   reply.send({ hello: 'toto' })
 })
 
+fastify.get('/custom', {
+  config: {
+    rateLimit: {
+      max: 2,
+      timeWindow: '1 minute',
+      errorMessage: 'This is custom message'
+    }
+  }
+}, (req, reply) => {
+  reply.send({ hello: 'toto' })
+})
+
 fastify.listen(3000, err => {
   if (err) throw err
   console.log('Server listening at http://localhost:3000')
