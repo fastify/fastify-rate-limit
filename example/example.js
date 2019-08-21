@@ -94,7 +94,7 @@ fastify.get('/customerrormessage', {
     rateLimit: {
       max: 2,
       timeWindow: '1 minute',
-      errorMessage: (after, max) => ({ code: 429, timeWindow: after, limit: max })
+      errorResponseBuilder: (req, context) => ({ code: 429, timeWindow: context.after, limit: context.max })
     }
   }
 }, (req, reply) => {

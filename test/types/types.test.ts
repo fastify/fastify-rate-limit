@@ -14,5 +14,5 @@ app.register(fastifyRateLimit, {
   redis: new ioredis({ host: '127.0.0.1' }),
   skipOnError: true,
   keyGenerator: (req: fastify.FastifyRequest<http.IncomingMessage>) => req.ip,
-  errorMessage: (after: string, max: number) => ({ code: 429, timeWindow: after, limit: max })
+  errorResponseBuilder: (req: fastify.FastifyRequest<http.IncomingMessage>, context) => ({ code: 429, timeWindow: context.after, limit: context.max })
 });

@@ -478,8 +478,8 @@ test('custom error response', t => {
   const fastify = Fastify()
   fastify.register(rateLimit, {
     global: false,
-    errorMessage: function (after, max) {
-      return { code: 429, timeWindow: after, limit: max }
+    errorResponseBuilder: function (req, context) {
+      return { code: 429, timeWindow: context.after, limit: context.max }
     }
   })
 

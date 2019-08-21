@@ -11,7 +11,12 @@ declare namespace fastifyRateLimit {
     redis?: any;
     skipOnError?: boolean;
     keyGenerator?: (req: fastify.FastifyRequest<http.IncomingMessage>) => string | number;
-    errorMessage?: (after: string, max: number) => object;
+    errorResponseBuilder?: (req: fastify.FastifyRequest<http.IncomingMessage>, context: errorResponseBuilderContext) => object;
+  }
+
+  interface errorResponseBuilderContext {
+    after: string;
+    max: number;
   }
 }
 
