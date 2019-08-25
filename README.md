@@ -57,7 +57,7 @@ fastify.register(require('fastify-rate-limit'), {
   redis: new Redis({ host: '127.0.0.1' }), // default null
   skipOnError: true, // default false
   keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
-  errorMessage: function(after, max) { /* ... */}, // default (after) => ({ /* ... */ }) 
+  errorResponseBuilder: function(req, context) { /* ... */}, 
 })
 ```
 
