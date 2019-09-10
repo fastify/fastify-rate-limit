@@ -353,7 +353,7 @@ test('no rate limit without settings', t => {
   })
 })
 
-test('no rate limit with bad route parameters', t => {
+test('no rate limit with bad rate-limit parameters', t => {
   t.plan(1)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
@@ -368,6 +368,26 @@ test('no rate limit with bad route parameters', t => {
 
   fastify.ready((err) => {
     t.strictEqual(err.message, 'Unknown value for route rate-limit configuration')
+  })
+})
+
+test('works with existing route config', t => {
+  t.plan(1)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+
+  fastify.get('/', {
+    config: {
+      someRouteConfig: {
+        someValue: 1
+      }
+    }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.ready((err) => {
+    t.strictEqual(err, null)
   })
 })
 
