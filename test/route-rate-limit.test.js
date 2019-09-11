@@ -9,18 +9,23 @@ const noop = () => {}
 
 const REDIS_HOST = '127.0.0.1'
 
+const defaultRouteConfig = {
+  rateLimit: {
+    max: 2,
+    timeWindow: 1000
+  },
+  someOtherPlugin: {
+    someValue: 1
+  }
+}
+
 test('Basic', t => {
   t.plan(19)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -71,12 +76,7 @@ test('With text timeWindow', t => {
   fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: '1s'
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -130,12 +130,7 @@ test('With ips whitelist', t => {
   })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: '2s'
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -166,12 +161,7 @@ test('With redis store', t => {
   })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -229,12 +219,7 @@ test('Skip on redis error', t => {
   })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -278,12 +263,7 @@ test('With keyGenerator', t => {
   })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -360,7 +340,10 @@ test('no rate limit with bad rate-limit parameters', t => {
 
   fastify.get('/', {
     config: {
-      rateLimit: () => {}
+      ...defaultRouteConfig,
+      ...{
+        rateLimit: () => {}
+      }
     }
   }, (req, reply) => {
     reply.send('hello!')
@@ -372,22 +355,23 @@ test('no rate limit with bad rate-limit parameters', t => {
 })
 
 test('works with existing route config', t => {
-  t.plan(1)
+  t.plan(3)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
-    config: {
-      someRouteConfig: {
-        someValue: 1
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
 
   fastify.ready((err) => {
     t.strictEqual(err, null)
+    fastify.inject('/', (err, res) => {
+      if (err) {}
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    })
   })
 })
 
@@ -398,7 +382,10 @@ test('route can disable the global limit', t => {
 
   fastify.get('/', {
     config: {
-      rateLimit: false
+      ...defaultRouteConfig,
+      ...{
+        rateLimit: false
+      }
     }
   }, (req, reply) => {
     reply.send('hello!')
@@ -422,12 +409,7 @@ test('does not override the preHandler', t => {
       t.pass('preHandler called')
       next()
     },
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -450,18 +432,21 @@ test('onExceeding and onExceeded events', t => {
 
   fastify.get('/', {
     config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000,
-        onExceeding: function (req) {
-          // it will be executed 2 times
-          t.ok(req, 'req should be not null')
-          onExceedingCounter += 1
-        },
-        onExceeded: function (req) {
-          // it will be executed 2 times
-          t.ok(req, 'req should be not null')
-          onExceededCounter += 1
+      ...defaultRouteConfig,
+      ...{
+        rateLimit: {
+          max: 2,
+          timeWindow: 1000,
+          onExceeding: function (req) {
+            // it will be executed 2 times
+            t.ok(req, 'req should be not null')
+            onExceedingCounter += 1
+          },
+          onExceeded: function (req) {
+            // it will be executed 2 times
+            t.ok(req, 'req should be not null')
+            onExceededCounter += 1
+          }
         }
       }
     }
