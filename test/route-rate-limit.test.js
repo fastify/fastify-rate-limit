@@ -9,18 +9,23 @@ const noop = () => {}
 
 const REDIS_HOST = '127.0.0.1'
 
+const defaultRouteConfig = {
+  rateLimit: {
+    max: 2,
+    timeWindow: 1000
+  },
+  someOtherPlugin: {
+    someValue: 1
+  }
+}
+
 test('Basic', t => {
   t.plan(19)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -71,12 +76,7 @@ test('With text timeWindow', t => {
   fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: '1s'
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -130,12 +130,7 @@ test('With ips whitelist', t => {
   })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: '2s'
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -166,12 +161,7 @@ test('With redis store', t => {
   })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -229,12 +219,7 @@ test('Skip on redis error', t => {
   })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -278,12 +263,7 @@ test('With keyGenerator', t => {
   })
 
   fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -353,15 +333,13 @@ test('no rate limit without settings', t => {
   })
 })
 
-test('no rate limit with bad route parameters', t => {
+test('no rate limit with bad rate-limit parameters', t => {
   t.plan(1)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
-    config: {
-      rateLimit: () => {}
-    }
+    config: Object.assign({}, defaultRouteConfig, { rateLimit: () => {} })
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -371,15 +349,34 @@ test('no rate limit with bad route parameters', t => {
   })
 })
 
+test('works with existing route config', t => {
+  t.plan(3)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+
+  fastify.get('/', {
+    config: defaultRouteConfig
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.ready((err) => {
+    t.strictEqual(err, null)
+    fastify.inject('/', (err, res) => {
+      if (err) {}
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    })
+  })
+})
+
 test('route can disable the global limit', t => {
   t.plan(4)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
-    config: {
-      rateLimit: false
-    }
+    config: Object.assign({}, defaultRouteConfig, { rateLimit: false })
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -402,12 +399,7 @@ test('does not override the preHandler', t => {
       t.pass('preHandler called')
       next()
     },
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+    config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -429,7 +421,7 @@ test('onExceeding and onExceeded events', t => {
   fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
-    config: {
+    config: Object.assign({}, defaultRouteConfig, {
       rateLimit: {
         max: 2,
         timeWindow: 1000,
@@ -444,7 +436,7 @@ test('onExceeding and onExceeded events', t => {
           onExceededCounter += 1
         }
       }
-    }
+    })
   }, (req, reply) => {
     reply.send('hello!')
   })

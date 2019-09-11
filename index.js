@@ -54,8 +54,8 @@ function rateLimitPlugin (fastify, settings, next) {
 
   // onRoute add the preHandler rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
-    if (routeOptions.config) {
-      if (routeOptions.config.rateLimit && typeof routeOptions.config.rateLimit === 'object') {
+    if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
+      if (typeof routeOptions.config.rateLimit === 'object') {
         const current = Object.create(pluginComponent)
         current.store = pluginComponent.store.child(routeOptions)
         // if the current endpoint have a custom rateLimit configuration ...
