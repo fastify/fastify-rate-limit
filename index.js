@@ -52,6 +52,15 @@ function rateLimitPlugin (fastify, settings, next) {
     ? settings.keyGenerator
     : (req) => req.raw.ip
 
+  globalParams.errorResponseBuilder = (req, context) => ({ statusCode: 429, error: 'Too Many Requests', message: `Rate limit exceeded, retry in ${context.after}` })
+  globalParams.isCustomErrorMessage = false
+
+  // define if error message was overwritten with a custom error response callback
+  if (typeof settings.errorResponseBuilder === 'function') {
+    globalParams.errorResponseBuilder = settings.errorResponseBuilder
+    globalParams.isCustomErrorMessage = true
+  }
+
   // onRoute add the preHandler rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
@@ -128,16 +137,15 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
           params.onExceeded(req)
         }
 
-        res.type('application/json').serializer(serializeError)
+        if (!params.isCustomErrorMessage) {
+          res.type('application/json').serializer(serializeError)
+        }
+
         res.code(429)
           .header('X-RateLimit-Limit', params.max)
           .header('X-RateLimit-Remaining', 0)
           .header('Retry-After', params.timeWindow)
-          .send({
-            statusCode: 429,
-            error: 'Too Many Requests',
-            message: `Rate limit exceeded, retry in ${after}`
-          })
+          .send(params.errorResponseBuilder(req, { after, max: params.max }))
       }
     }
   }

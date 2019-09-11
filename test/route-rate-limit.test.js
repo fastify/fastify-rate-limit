@@ -100,11 +100,11 @@ test('With text timeWindow', t => {
         t.strictEqual(res.headers['x-ratelimit-limit'], 2)
         t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
         t.strictEqual(res.headers['retry-after'], 1000)
-        t.deepEqual({
+        t.deepEqual(JSON.parse(res.payload), {
           statusCode: 429,
           error: 'Too Many Requests',
           message: 'Rate limit exceeded, retry in 1 second'
-        }, JSON.parse(res.payload))
+        })
 
         setTimeout(retry, 1100)
       })
@@ -460,6 +460,56 @@ test('onExceeding and onExceeded events', t => {
 
         t.strictEqual(onExceedingCounter, 2)
         t.strictEqual(onExceededCounter, 1)
+      })
+    })
+  })
+})
+
+test('custom error response', t => {
+  t.plan(15)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    global: false,
+    errorResponseBuilder: function (req, context) {
+      return { code: 429, timeWindow: context.after, limit: context.max }
+    }
+  })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000
+      }
+    }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 429)
+        t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
+        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+        t.strictEqual(res.headers['retry-after'], 1000)
+        t.deepEqual(JSON.parse(res.payload), {
+          code: 429,
+          timeWindow: '1 second',
+          limit: 2
+        })
       })
     })
   })
