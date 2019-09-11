@@ -339,12 +339,7 @@ test('no rate limit with bad rate-limit parameters', t => {
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
-    config: {
-      ...defaultRouteConfig,
-      ...{
-        rateLimit: () => {}
-      }
-    }
+    config: Object.assign({}, defaultRouteConfig, { rateLimit: () => {} })
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -381,12 +376,7 @@ test('route can disable the global limit', t => {
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
-    config: {
-      ...defaultRouteConfig,
-      ...{
-        rateLimit: false
-      }
-    }
+    config: Object.assign({}, defaultRouteConfig, { rateLimit: false })
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -431,25 +421,22 @@ test('onExceeding and onExceeded events', t => {
   fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
-    config: {
-      ...defaultRouteConfig,
-      ...{
-        rateLimit: {
-          max: 2,
-          timeWindow: 1000,
-          onExceeding: function (req) {
-            // it will be executed 2 times
-            t.ok(req, 'req should be not null')
-            onExceedingCounter += 1
-          },
-          onExceeded: function (req) {
-            // it will be executed 2 times
-            t.ok(req, 'req should be not null')
-            onExceededCounter += 1
-          }
+    config: Object.assign({}, defaultRouteConfig, {
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000,
+        onExceeding: function (req) {
+          // it will be executed 2 times
+          t.ok(req, 'req should be not null')
+          onExceedingCounter += 1
+        },
+        onExceeded: function (req) {
+          // it will be executed 2 times
+          t.ok(req, 'req should be not null')
+          onExceededCounter += 1
         }
       }
-    }
+    })
   }, (req, reply) => {
     reply.send('hello!')
   })
