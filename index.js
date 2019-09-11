@@ -65,7 +65,6 @@ function rateLimitPlugin (fastify, settings, next) {
       } else {
         throw new Error('Unknown value for route rate-limit configuration')
       }
-      // }
     } else if (globalParams.global) {
       // if the plugin is set globally ( meaning that all the route will be 'rate limited' )
       // As the endpoint, does not have a custom rateLimit configuration, use the global one.
