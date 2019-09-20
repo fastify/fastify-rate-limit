@@ -515,8 +515,8 @@ test('custom error response', t => {
   })
 })
 
-test('variable max contenders', async t => {
-  t.plan(9)
+test('variable max contenders', t => {
+  t.plan(18)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     global: false,
@@ -533,27 +533,42 @@ test('variable max contenders', async t => {
     }
   }, async () => 'hello')
 
-  fastify.get('/limit', { config: { rateLimit: {} } }, async () => 'limited')
+  fastify.get('/limit', { config: { rateLimit: {} } }, (req, res) => { res.send('limited') })
 
-  let res
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 429)
-
-  res = await fastify.inject({ url: '/limit', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/limit', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 429, 'for route /limit the api-key must be ignored')
-
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } })
-  t.strictEqual(res.statusCode, 429)
+  fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 200)
+        fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
+          t.error(err)
+          t.strictEqual(res.statusCode, 429)
+          fastify.inject({ url: '/limit', headers: { 'api-key': 'pro' } }, (err, res) => {
+            t.error(err)
+            t.strictEqual(res.statusCode, 200)
+            fastify.inject({ url: '/limit', headers: { 'api-key': 'pro' } }, (err, res) => {
+              t.error(err)
+              t.strictEqual(res.statusCode, 429, 'for route /limit the api-key must be ignored')
+              fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } }, (err, res) => {
+                t.error(err)
+                t.strictEqual(res.statusCode, 200)
+                fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } }, (err, res) => {
+                  t.error(err)
+                  t.strictEqual(res.statusCode, 200)
+                  fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } }, (err, res) => {
+                    t.error(err)
+                    t.strictEqual(res.statusCode, 429)
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+  })
 })

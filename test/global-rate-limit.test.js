@@ -369,8 +369,8 @@ test('variable max', t => {
   })
 })
 
-test('variable max contenders', async t => {
-  t.plan(7)
+test('variable max contenders', t => {
+  t.plan(14)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     keyGenerator (req) { return req.headers['api-key'] },
@@ -378,22 +378,34 @@ test('variable max contenders', async t => {
     timeWindow: 10000
   })
 
-  fastify.get('/', async () => 'hello')
+  fastify.get('/', (req, res) => { res.send('hello') })
 
-  let res
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'pro' } })
-  t.strictEqual(res.statusCode, 429)
-
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } })
-  t.strictEqual(res.statusCode, 200)
-  res = await fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } })
-  t.strictEqual(res.statusCode, 429)
+  fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 200)
+        fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
+          t.error(err)
+          t.strictEqual(res.statusCode, 429)
+          fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } }, (err, res) => {
+            t.error(err)
+            t.strictEqual(res.statusCode, 200)
+            fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } }, (err, res) => {
+              t.error(err)
+              t.strictEqual(res.statusCode, 200)
+              fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } }, (err, res) => {
+                t.error(err)
+                t.strictEqual(res.statusCode, 429)
+              })
+            })
+          })
+        })
+      })
+    })
+  })
 })
