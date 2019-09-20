@@ -531,7 +531,7 @@ test('variable max contenders', t => {
         max: (req, key) => { return key === 'pro' ? 3 : 2 }
       }
     }
-  }, async () => 'hello')
+  }, (req, res) => { res.send('hello') })
 
   fastify.get('/limit', { config: { rateLimit: {} } }, (req, res) => { res.send('limited') })
 

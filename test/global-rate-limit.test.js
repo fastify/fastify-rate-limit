@@ -359,7 +359,7 @@ test('variable max', t => {
     timeWindow: 1000
   })
 
-  fastify.get('/', async () => 'hello')
+  fastify.get('/', (req, res) => { res.send('hello') })
 
   fastify.inject({ url: '/', headers: { 'secret-max': 50 } }, (err, res) => {
     t.error(err)
