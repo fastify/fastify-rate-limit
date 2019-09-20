@@ -4,7 +4,7 @@ import * as fastify from 'fastify';
 declare namespace fastifyRateLimit {
   interface FastifyRateLimitOptions {
     global?: boolean;
-    max?: number;
+    max?: number | ((req: fastify.FastifyRequest<http.IncomingMessage>, key: string) => number);
     timeWindow?: number;
     cache?: number;
     whitelist?: string[];

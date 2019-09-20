@@ -62,7 +62,7 @@ fastify.register(require('fastify-rate-limit'), {
 ```
 
 - `global` : indicates if the plugin should apply the rate limit setting to all routes within the encapsulation scope
-- `max`: is the maximum number of requests a single client can perform inside a timeWindow.
+- `max`: is the maximum number of requests a single client can perform inside a timeWindow. It can be a sync function with the signature `(req, key) => {}` also, and it **must** return a number
 - `timeWindow:` the duration of the time window. It can be expressed in milliseconds or as a string (in the [`ms`](https://github.com/zeit/ms) format)
 - `cache`: this plugin internally uses a lru cache to handle the clients, you can change the size of the cache with this option
 - `whitelist`: array of string of ips to exclude from rate limiting
@@ -82,6 +82,17 @@ fastify.register(require('fastify-rate-limit'), {
     || req.headers['x-forwarded-for'] // use this only if you trust the header
     || req.session.username // you can limit based on any session value
     || req.raw.ip // fallback to default
+})
+```
+
+Variable `max` example usage:
+```js
+// In the same timeWindow, the max value can change based on request and/or key like this
+fastify.register(rateLimit, {
+  /* ... */
+  keyGenerator (req) { return req.headers['service-key'] },
+  max: (req, key) => { return key === 'pro' ? 3 : 2 },
+  timeWindow: 1000
 })
 ```
 

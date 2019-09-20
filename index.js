@@ -123,9 +123,10 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
         return next(err)
       }
 
-      if (current <= params.max) {
-        res.header('X-RateLimit-Limit', params.max)
-        res.header('X-RateLimit-Remaining', params.max - current)
+      const maximum = getMax()
+      if (current <= maximum) {
+        res.header('X-RateLimit-Limit', maximum)
+        res.header('X-RateLimit-Remaining', maximum - current)
 
         if (typeof params.onExceeding === 'function') {
           params.onExceeding(req)
@@ -142,10 +143,18 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
         }
 
         res.code(429)
-          .header('X-RateLimit-Limit', params.max)
+          .header('X-RateLimit-Limit', maximum)
           .header('X-RateLimit-Remaining', 0)
           .header('Retry-After', params.timeWindow)
-          .send(params.errorResponseBuilder(req, { after, max: params.max }))
+          .send(params.errorResponseBuilder(req, { after, max: maximum }))
+      }
+
+      function getMax () {
+        if (typeof params.max === 'number') {
+          return params.max
+        } else {
+          return params.max(req, key)
+        }
       }
     }
   }
