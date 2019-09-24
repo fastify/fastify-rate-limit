@@ -16,3 +16,9 @@ app.register(fastifyRateLimit, {
   keyGenerator: (req: fastify.FastifyRequest<http.IncomingMessage>) => req.ip,
   errorResponseBuilder: (req: fastify.FastifyRequest<http.IncomingMessage>, context) => ({ code: 429, timeWindow: context.after, limit: context.max })
 });
+
+app.register(fastifyRateLimit, {
+  global: true,
+  whitelist: (req: fastify.FastifyRequest<http.IncomingMessage>, key: string) => (false),
+  timeWindow: 5000
+});
