@@ -35,7 +35,7 @@ function rateLimitPlugin (fastify, settings, next) {
       ? settings.timeWindow
       : 1000 * 60
 
-  globalParams.whitelist = settings.whitelist || []
+  globalParams.whitelist = settings.whitelist || null
 
   // define the name of the app component. Related to redis, it will be use as a part of the keyname define in redis.
   const pluginComponent = {
@@ -110,9 +110,16 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
     const key = params.keyGenerator(req)
 
     // whitelist doesn't apply any rate limit
-    if (pluginComponent.whitelist.indexOf(key) > -1) {
-      next()
-      return
+    if (pluginComponent.whitelist) {
+      if (typeof pluginComponent.whitelist === 'function') {
+        if (pluginComponent.whitelist(req, key)) {
+          next()
+          return
+        }
+      } else if (pluginComponent.whitelist.indexOf(key) > -1) {
+        next()
+        return
+      }
     }
 
     // As the key is not whitelist in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
