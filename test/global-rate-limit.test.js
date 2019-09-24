@@ -380,32 +380,27 @@ test('variable max contenders', t => {
 
   fastify.get('/', (req, res) => { res.send('hello') })
 
-  fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
-    t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
+  const requestSequence = [
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 429, url: '/' },
+    { headers: { 'api-key': 'NOT' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'NOT' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'NOT' }, status: 429, url: '/' }
+  ]
+
+  next()
+
+  function next () {
+    const item = requestSequence.shift()
+    if (!item) {
+      return
+    }
+    fastify.inject({ url: item.url, headers: item.headers }, (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
-        t.error(err)
-        t.strictEqual(res.statusCode, 200)
-        fastify.inject({ url: '/', headers: { 'api-key': 'pro' } }, (err, res) => {
-          t.error(err)
-          t.strictEqual(res.statusCode, 429)
-          fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } }, (err, res) => {
-            t.error(err)
-            t.strictEqual(res.statusCode, 200)
-            fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } }, (err, res) => {
-              t.error(err)
-              t.strictEqual(res.statusCode, 200)
-              fastify.inject({ url: '/', headers: { 'api-key': 'not-pro' } }, (err, res) => {
-                t.error(err)
-                t.strictEqual(res.statusCode, 429)
-              })
-            })
-          })
-        })
-      })
+      t.strictEqual(res.statusCode, item.status)
+      next()
     })
-  })
+  }
 })
