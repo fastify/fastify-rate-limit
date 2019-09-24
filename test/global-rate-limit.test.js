@@ -136,6 +136,63 @@ test('With ips whitelist', t => {
   })
 })
 
+test('With function whitelist', t => {
+  t.plan(24)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: '2s',
+    keyGenerator () { return 42 },
+    whitelist: function (req, key) {
+      t.ok(req.headers)
+      t.equals(key, 42)
+      return req.headers['x-my-header'] !== undefined
+    }
+  })
+
+  fastify.get('/', (req, reply) => {
+    reply.send('hello!')
+  })
+
+  const whitelistHeader = {
+    method: 'GET',
+    url: '/',
+    headers: {
+      'x-my-header': 'FOO BAR'
+    }
+  }
+
+  fastify.inject(whitelistHeader, (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+
+    fastify.inject(whitelistHeader, (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+
+      fastify.inject(whitelistHeader, (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 200)
+      })
+    })
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 429)
+      })
+    })
+  })
+})
+
 test('With redis store', t => {
   t.plan(19)
   const fastify = Fastify()

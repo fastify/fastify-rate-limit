@@ -7,7 +7,7 @@ declare namespace fastifyRateLimit {
     max?: number | ((req: fastify.FastifyRequest<http.IncomingMessage>, key: string) => number);
     timeWindow?: number;
     cache?: number;
-    whitelist?: string[];
+    whitelist?: string[] | ((req: fastify.FastifyRequest<http.IncomingMessage>, key: string) => boolean);
     redis?: any;
     skipOnError?: boolean;
     keyGenerator?: (req: fastify.FastifyRequest<http.IncomingMessage>) => string | number;

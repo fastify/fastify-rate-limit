@@ -20,5 +20,6 @@ app.register(fastifyRateLimit, {
 app.register(fastifyRateLimit, {
   global: true,
   max: (req: fastify.FastifyRequest<http.IncomingMessage>, key: string) => (42),
+  whitelist: (req: fastify.FastifyRequest<http.IncomingMessage>, key: string) => (false),
   timeWindow: 5000
 });
