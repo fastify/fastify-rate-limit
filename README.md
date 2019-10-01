@@ -105,7 +105,7 @@ Dynamic `whitelist` example usage:
 fastify.register(require('fastify-rate-limit'), {
   /* ... */
   whitelist: function(req, key) {
-    return req.header['x-app-client-id'] === 'internal-usage'
+    return req.headers['x-app-client-id'] === 'internal-usage'
   }
 })
 ```
