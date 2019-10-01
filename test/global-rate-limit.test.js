@@ -404,3 +404,60 @@ test('does not override the preHandler as an array', t => {
     t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
   })
 })
+
+test('variable max', t => {
+  t.plan(5)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: (req, key) => {
+      t.pass()
+      return +req.headers['secret-max']
+    },
+    timeWindow: 1000
+  })
+
+  fastify.get('/', (req, res) => { res.send('hello') })
+
+  fastify.inject({ url: '/', headers: { 'secret-max': 50 } }, (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 50)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 49)
+  })
+})
+
+test('variable max contenders', t => {
+  t.plan(14)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    keyGenerator (req) { return req.headers['api-key'] },
+    max: (req, key) => { return key === 'pro' ? 3 : 2 },
+    timeWindow: 10000
+  })
+
+  fastify.get('/', (req, res) => { res.send('hello') })
+
+  const requestSequence = [
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 429, url: '/' },
+    { headers: { 'api-key': 'NOT' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'NOT' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'NOT' }, status: 429, url: '/' }
+  ]
+
+  next()
+
+  function next () {
+    const item = requestSequence.shift()
+    if (!item) {
+      return
+    }
+    fastify.inject({ url: item.url, headers: item.headers }, (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, item.status)
+      next()
+    })
+  }
+})

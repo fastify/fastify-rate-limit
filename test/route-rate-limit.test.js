@@ -572,3 +572,50 @@ test('custom error response', t => {
     })
   })
 })
+
+test('variable max contenders', t => {
+  t.plan(18)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    global: false,
+    max: 1,
+    timeWindow: 10000
+  })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        keyGenerator (req) { return req.headers['api-key'] },
+        max: (req, key) => { return key === 'pro' ? 3 : 2 }
+      }
+    }
+  }, (req, res) => { res.send('hello') })
+
+  fastify.get('/limit', { config: { rateLimit: {} } }, (req, res) => { res.send('limited') })
+
+  const requestSequence = [
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 429, url: '/' },
+    { headers: { 'api-key': 'pro' }, status: 200, url: '/limit' },
+    { headers: { 'api-key': 'pro' }, status: 429, url: '/limit' },
+    { headers: { 'api-key': 'NOT' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'NOT' }, status: 200, url: '/' },
+    { headers: { 'api-key': 'NOT' }, status: 429, url: '/' }
+  ]
+
+  next()
+
+  function next () {
+    const item = requestSequence.shift()
+    if (!item) {
+      return
+    }
+    fastify.inject({ url: item.url, headers: item.headers }, (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, item.status)
+      next()
+    })
+  }
+})
