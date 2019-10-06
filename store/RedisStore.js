@@ -15,12 +15,17 @@ RedisStore.prototype.incr = function (ip, cb) {
     .incr(key)
     .pttl(key)
     .exec((err, result) => {
-      if (err) return cb(err, 0)
-      if (result[0][0]) return cb(result[0][0], 0)
+      /**
+       * result[0] => incr response: [0]: error, [1]: new incr value
+       * result[1] => pttl response: [0]: error, [1]: ttl remaining
+       */
+      if (err) return cb(err, { current: 0 })
+      if (result[0][0]) return cb(result[0][0], { current: 0 })
       if (result[1][1] === -1) {
         this.redis.pexpire(key, this.timeWindow, noop)
+        result[1][1] = this.timeWindow
       }
-      cb(null, result[0][1])
+      cb(null, { current: result[0][1], ttl: result[1][1] })
     })
 }
 

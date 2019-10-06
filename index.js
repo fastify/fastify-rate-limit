@@ -125,7 +125,7 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
     // As the key is not whitelist in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
     pluginComponent.store.incr(key, onIncr)
 
-    function onIncr (err, current) {
+    function onIncr (err, { current, ttl }) {
       if (err && params.skipOnError === false) {
         return next(err)
       }
@@ -134,6 +134,10 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
       if (current <= maximum) {
         res.header('x-ratelimit-limit', maximum)
         res.header('x-ratelimit-remaining', maximum - current)
+
+        if (ttl) {
+          res.header('x-ratelimit-reset', Math.floor(ttl / 1000))
+        }
 
         if (typeof params.onExceeding === 'function') {
           params.onExceeding(req)
@@ -153,7 +157,11 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
           .header('x-ratelimit-limit', maximum)
           .header('x-ratelimit-remaining', 0)
           .header('retry-after', params.timeWindow)
-          .send(params.errorResponseBuilder(req, { after, max: maximum }))
+
+        if (ttl) {
+          res.header('x-ratelimit-reset', Math.floor(ttl / 1000))
+        }
+        res.send(params.errorResponseBuilder(req, { after, max: maximum }))
       }
 
       function getMax () {

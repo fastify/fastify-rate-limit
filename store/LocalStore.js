@@ -16,7 +16,7 @@ function LocalStore (timeWindow, cache, app) {
 LocalStore.prototype.incr = function (ip, cb) {
   var current = this.lru.get(ip) || 0
   this.lru.set(ip, ++current)
-  cb(null, current)
+  cb(null, { current })
 }
 
 LocalStore.prototype.child = function (routeOptions) {
