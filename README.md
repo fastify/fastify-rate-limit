@@ -51,7 +51,7 @@ The response will have some additional headers:
 |`x-ratelimit-limit`     | how many request the client can do
 |`x-ratelimit-remaining` | how many request remain to the client in the timewindow
 |`retry-after`           | if the max has been reached, the millisecond the client must wait before perform new requests
-|`x-ratelimit-reset`     | how many seconds must pass before the rate limit resets (**only** with the redis setup)
+|`x-ratelimit-reset`     | how many seconds must pass before the rate limit resets
 
 ### Options
 

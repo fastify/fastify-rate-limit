@@ -20,7 +20,7 @@ const defaultRouteConfig = {
 }
 
 test('Basic', t => {
-  t.plan(22)
+  t.plan(23)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
@@ -35,14 +35,14 @@ test('Basic', t => {
     t.strictEqual(res.statusCode, 200)
     t.strictEqual(res.headers['x-ratelimit-limit'], 2)
     t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
-    t.notOk(res.headers['x-ratelimit-reset']) // local store doesn't have ttl information
+    t.strictEqual(res.headers['x-ratelimit-reset'], 0)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
       t.strictEqual(res.statusCode, 200)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-      t.notOk(res.headers['x-ratelimit-reset'])
+      t.strictEqual(res.headers['x-ratelimit-reset'], 0)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
@@ -51,7 +51,7 @@ test('Basic', t => {
         t.strictEqual(res.headers['x-ratelimit-limit'], 2)
         t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
         t.strictEqual(res.headers['retry-after'], 1000)
-        t.notOk(res.headers['x-ratelimit-reset'])
+        t.strictEqual(res.headers['x-ratelimit-reset'], 0)
         t.deepEqual({
           statusCode: 429,
           error: 'Too Many Requests',
@@ -69,6 +69,7 @@ test('Basic', t => {
       t.strictEqual(res.statusCode, 200)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 0)
     })
   }
 })
@@ -623,6 +624,35 @@ test('variable max contenders', t => {
       t.error(err)
       t.strictEqual(res.statusCode, item.status)
       next()
+    })
+  }
+})
+
+test('limit reset per Local storage', t => {
+  t.plan(8)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { global: false })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 4000
+      }
+    }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  setTimeout(doRequest.bind(null, 3), 950)
+  setTimeout(doRequest.bind(null, 2), 2000)
+  setTimeout(doRequest.bind(null, 1), 3000)
+  setTimeout(doRequest.bind(null, 4), 5000)
+
+  function doRequest (resetValue) {
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.headers['x-ratelimit-reset'], resetValue)
     })
   }
 })
