@@ -629,7 +629,7 @@ test('variable max contenders', t => {
 })
 
 test('limit reset per Local storage', t => {
-  t.plan(8)
+  t.plan(12)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
@@ -644,10 +644,12 @@ test('limit reset per Local storage', t => {
     reply.send('hello!')
   })
 
-  setTimeout(doRequest.bind(null, 3), 950)
+  setTimeout(doRequest.bind(null, 4), 0)
+  setTimeout(doRequest.bind(null, 3), 1000)
   setTimeout(doRequest.bind(null, 2), 2000)
   setTimeout(doRequest.bind(null, 1), 3000)
-  setTimeout(doRequest.bind(null, 4), 5000)
+  setTimeout(doRequest.bind(null, 0), 4000)
+  setTimeout(doRequest.bind(null, 4), 4100)
 
   function doRequest (resetValue) {
     fastify.inject('/', (err, res) => {
