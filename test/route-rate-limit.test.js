@@ -35,7 +35,7 @@ test('Basic', t => {
     t.strictEqual(res.statusCode, 200)
     t.strictEqual(res.headers['x-ratelimit-limit'], 2)
     t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
-    t.strictEqual(res.headers['x-ratelimit-reset'], 0)
+    t.strictEqual(res.headers['x-ratelimit-reset'], 1)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
@@ -69,7 +69,7 @@ test('Basic', t => {
       t.strictEqual(res.statusCode, 200)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
-      t.strictEqual(res.headers['x-ratelimit-reset'], 0)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 1)
     })
   }
 })
