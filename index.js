@@ -66,9 +66,11 @@ function rateLimitPlugin (fastify, settings, next) {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
       if (typeof routeOptions.config.rateLimit === 'object') {
         const current = Object.create(pluginComponent)
+        const mergedRateLimitParams = makeParams(routeOptions.config.rateLimit)
+        routeOptions.config.rateLimit = mergedRateLimitParams
         current.store = pluginComponent.store.child(routeOptions)
         // if the current endpoint have a custom rateLimit configuration ...
-        buildRouteRate(current, makeParams(routeOptions.config.rateLimit), routeOptions)
+        buildRouteRate(current, mergedRateLimitParams, routeOptions)
       } else if (routeOptions.config.rateLimit === false) {
         // don't apply any rate-limit
       } else {
