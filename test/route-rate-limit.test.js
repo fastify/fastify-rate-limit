@@ -20,7 +20,7 @@ const defaultRouteConfig = {
 }
 
 test('Basic', t => {
-  t.plan(19)
+  t.plan(23)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
@@ -35,12 +35,14 @@ test('Basic', t => {
     t.strictEqual(res.statusCode, 200)
     t.strictEqual(res.headers['x-ratelimit-limit'], 2)
     t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.strictEqual(res.headers['x-ratelimit-reset'], 1)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
       t.strictEqual(res.statusCode, 200)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 0)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
@@ -49,6 +51,7 @@ test('Basic', t => {
         t.strictEqual(res.headers['x-ratelimit-limit'], 2)
         t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
         t.strictEqual(res.headers['retry-after'], 1000)
+        t.strictEqual(res.headers['x-ratelimit-reset'], 0)
         t.deepEqual({
           statusCode: 429,
           error: 'Too Many Requests',
@@ -66,6 +69,7 @@ test('Basic', t => {
       t.strictEqual(res.statusCode, 200)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 1)
     })
   }
 })
@@ -210,7 +214,7 @@ test('With function whitelist', t => {
 })
 
 test('With redis store', t => {
-  t.plan(19)
+  t.plan(23)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
   fastify.register(rateLimit, {
@@ -229,12 +233,14 @@ test('With redis store', t => {
     t.strictEqual(res.statusCode, 200)
     t.strictEqual(res.headers['x-ratelimit-limit'], 2)
     t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.strictEqual(res.headers['x-ratelimit-reset'], 1)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
       t.strictEqual(res.statusCode, 200)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 0)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
@@ -243,6 +249,7 @@ test('With redis store', t => {
         t.strictEqual(res.headers['x-ratelimit-limit'], 2)
         t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
         t.strictEqual(res.headers['retry-after'], 1000)
+        t.strictEqual(res.headers['x-ratelimit-reset'], 0)
         t.deepEqual({
           statusCode: 429,
           error: 'Too Many Requests',
@@ -262,6 +269,7 @@ test('With redis store', t => {
       t.strictEqual(res.statusCode, 200)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 1)
     })
   }
 })
@@ -616,6 +624,37 @@ test('variable max contenders', t => {
       t.error(err)
       t.strictEqual(res.statusCode, item.status)
       next()
+    })
+  }
+})
+
+test('limit reset per Local storage', t => {
+  t.plan(12)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { global: false })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 4000
+      }
+    }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  setTimeout(doRequest.bind(null, 4), 0)
+  setTimeout(doRequest.bind(null, 3), 1000)
+  setTimeout(doRequest.bind(null, 2), 2000)
+  setTimeout(doRequest.bind(null, 1), 3000)
+  setTimeout(doRequest.bind(null, 0), 4000)
+  setTimeout(doRequest.bind(null, 4), 4100)
+
+  function doRequest (resetValue) {
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.headers['x-ratelimit-reset'], resetValue)
     })
   }
 })

@@ -5,18 +5,30 @@ const ms = require('ms')
 
 function LocalStore (timeWindow, cache, app) {
   this.lru = lru(cache || 5000)
-  this.interval = setInterval(this.lru.clear.bind(this.lru), timeWindow).unref()
+  this.interval = setInterval(beat.bind(this), timeWindow).unref()
   this.app = app
+  this.timeWindow = timeWindow
 
   app.addHook('onClose', (done) => {
     clearInterval(this.interval)
   })
+
+  function beat () {
+    this.lru.clear()
+    this.msLastBeat = null
+  }
 }
 
 LocalStore.prototype.incr = function (ip, cb) {
   var current = this.lru.get(ip) || 0
   this.lru.set(ip, ++current)
-  cb(null, current)
+
+  // start counting from the first request/increment
+  if (!this.msLastBeat) {
+    this.msLastBeat = Date.now()
+  }
+
+  cb(null, { current, ttl: this.timeWindow - (Date.now() - this.msLastBeat) })
 }
 
 LocalStore.prototype.child = function (routeOptions) {
