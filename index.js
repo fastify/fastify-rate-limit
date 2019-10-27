@@ -23,6 +23,13 @@ function rateLimitPlugin (fastify, settings, next) {
     global: (typeof settings.global === 'boolean') ? settings.global : true
   }
 
+  globalParams.showHeaders = Object.assign({
+    'x-ratelimit-limit': true,
+    'x-ratelimit-remaining': true,
+    'x-ratelimit-reset': true,
+    'retry-after': true
+  }, settings.showHeaders)
+
   // define the global maximum of request allowed
   globalParams.max = (typeof settings.max === 'number' || typeof settings.max === 'function')
     ? settings.max
@@ -150,13 +157,12 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
           res.type('application/json').serializer(serializeError)
         }
 
-        res.code(429)
-          .header('x-ratelimit-limit', maximum)
-          .header('x-ratelimit-remaining', 0)
-          .header('x-ratelimit-reset', Math.floor(ttl / 1000))
-          .header('retry-after', params.timeWindow)
+        if (params.showHeaders['x-ratelimit-limit']) { res.header('x-ratelimit-limit', maximum) }
+        if (params.showHeaders['x-ratelimit-remaining']) { res.header('x-ratelimit-remaining', 0) }
+        if (params.showHeaders['x-ratelimit-reset']) { res.header('x-ratelimit-reset', Math.floor(ttl / 1000)) }
+        if (params.showHeaders['retry-after']) { res.header('retry-after', params.timeWindow) }
 
-        res.send(params.errorResponseBuilder(req, { after, max: maximum }))
+        res.code(429).send(params.errorResponseBuilder(req, { after, max: maximum }))
       }
 
       function getMax () {

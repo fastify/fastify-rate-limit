@@ -658,3 +658,62 @@ test('limit reset per Local storage', t => {
     })
   }
 })
+
+test('hide rate limit headers', t => {
+  t.plan(17)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 1,
+    timeWindow: 1000,
+    showHeaders: {
+      'x-ratelimit-limit': false,
+      'x-ratelimit-remaining': false,
+      'x-ratelimit-reset': false,
+      'retry-after': false
+    }
+  })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        timeWindow: 1000,
+        showHeaders: {
+          'x-ratelimit-limit': true, // this must override the global one
+          'x-ratelimit-remaining': false,
+          'x-ratelimit-reset': false,
+          'retry-after': false
+        }
+      }
+    }
+  }, (req, res) => { res.send('hello') })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 1)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+    t.strictEqual(res.headers['x-ratelimit-reset'], 1)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 429)
+      t.strictEqual(res.headers['content-type'], 'application/json')
+      t.strictEqual(res.headers['x-ratelimit-limit'], 1)
+      t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
+      t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+      t.notOk(res.headers['retry-after'], 'the header must be missing')
+
+      setTimeout(retry, 1100)
+    })
+  })
+
+  function retry () {
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-limit'], 1)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 1)
+    })
+  }
+})

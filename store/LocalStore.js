@@ -28,7 +28,8 @@ LocalStore.prototype.incr = function (ip, cb) {
     this.msLastBeat = Date.now()
   }
 
-  cb(null, { current, ttl: this.timeWindow - (Date.now() - this.msLastBeat) })
+  const ttl = this.timeWindow - (Date.now() - this.msLastBeat)
+  cb(null, { current, ttl })
 }
 
 LocalStore.prototype.child = function (routeOptions) {
