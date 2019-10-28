@@ -660,51 +660,34 @@ test('limit reset per Local storage', t => {
 })
 
 test('global timeWindow when not set in routes', t => {
-  t.plan(15)
+  t.plan(6)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     global: false,
-    errorResponseBuilder: function (req, context) {
-      return { code: 429, timeWindow: context.after, limit: context.max }
-    }
+    timeWindow: 6000
   })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
-      }
-    }
+  fastify.get('/six', {
+    config: { rateLimit: { max: 6 } }
   }, (req, reply) => {
     reply.send('hello!')
   })
 
-  fastify.inject('/', (err, res) => {
+  fastify.get('/four', {
+    config: { rateLimit: { max: 4, timeWindow: 4000 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/six', (err, res) => {
     t.error(err)
     t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.strictEqual(res.headers['x-ratelimit-reset'], 6)
 
-    fastify.inject('/', (err, res) => {
+    fastify.inject('/four', (err, res) => {
       t.error(err)
       t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.strictEqual(res.statusCode, 429)
-        t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-        t.strictEqual(res.headers['retry-after'], 1000)
-        t.deepEqual(JSON.parse(res.payload), {
-          code: 429,
-          timeWindow: '1 second',
-          limit: 2
-        })
-      })
+      t.strictEqual(res.headers['x-ratelimit-reset'], 4)
     })
   })
 })
