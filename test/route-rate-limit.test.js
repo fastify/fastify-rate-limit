@@ -658,3 +658,36 @@ test('limit reset per Local storage', t => {
     })
   }
 })
+
+test('global timeWindow when not set in routes', t => {
+  t.plan(6)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    global: false,
+    timeWindow: 6000
+  })
+
+  fastify.get('/six', {
+    config: { rateLimit: { max: 6 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.get('/four', {
+    config: { rateLimit: { max: 4, timeWindow: 4000 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/six', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-reset'], 6)
+
+    fastify.inject('/four', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 4)
+    })
+  })
+})
