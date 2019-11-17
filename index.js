@@ -163,7 +163,16 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
           .header('x-ratelimit-reset', Math.floor(ttl / 1000))
           .header('retry-after', params.timeWindow)
 
-        res.send(params.errorResponseBuilder(req, { statusCode: code, after, max: maximum }))
+        const respCtx = {
+          statusCode: code,
+          after,
+          max: maximum
+        }
+
+        if (code === 403) {
+          respCtx.ban = true
+        }
+        res.send(params.errorResponseBuilder(req, respCtx))
       }
 
       function getMax () {
