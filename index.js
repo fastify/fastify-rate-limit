@@ -36,6 +36,7 @@ function rateLimitPlugin (fastify, settings, next) {
       : 1000 * 60
 
   globalParams.whitelist = settings.whitelist || null
+  globalParams.ban = settings.ban || null
 
   // define the name of the app component. Related to redis, it will be use as a part of the keyname define in redis.
   const pluginComponent = {
@@ -52,7 +53,7 @@ function rateLimitPlugin (fastify, settings, next) {
     ? settings.keyGenerator
     : (req) => req.raw.ip
 
-  globalParams.errorResponseBuilder = (req, context) => ({ statusCode: 429, error: 'Too Many Requests', message: `Rate limit exceeded, retry in ${context.after}` })
+  globalParams.errorResponseBuilder = (req, context) => ({ statusCode: context.statusCode, error: 'Too Many Requests', message: `Rate limit exceeded, retry in ${context.after}` })
   globalParams.isCustomErrorMessage = false
 
   // define if error message was overwritten with a custom error response callback
@@ -155,13 +156,14 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
           res.type('application/json').serializer(serializeError)
         }
 
-        res.code(429)
+        const code = params.ban && current - maximum > params.ban ? 403 : 429
+        res.code(code)
           .header('x-ratelimit-limit', maximum)
           .header('x-ratelimit-remaining', 0)
           .header('x-ratelimit-reset', Math.floor(ttl / 1000))
           .header('retry-after', params.timeWindow)
 
-        res.send(params.errorResponseBuilder(req, { after, max: maximum }))
+        res.send(params.errorResponseBuilder(req, { statusCode: code, after, max: maximum }))
       }
 
       function getMax () {

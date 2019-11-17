@@ -436,6 +436,35 @@ test('works with existing route config', t => {
   })
 })
 
+test('With ban', t => {
+  t.plan(6)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.get('/', {
+    config: { rateLimit: { max: 1, ban: 1 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 429)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 403)
+      })
+    })
+  })
+})
+
 test('route can disable the global limit', t => {
   t.plan(4)
   const fastify = Fastify()
