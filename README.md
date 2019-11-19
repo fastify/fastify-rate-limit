@@ -55,6 +55,8 @@ The response will have some additional headers:
 
 ### Options
 
+**NOTE**: If your application is distributed, i.e. runs across multiple servers|vms|containers, then using the default LocalStore will not correctly limit requests. LocalStore is only useful for a single instance of the application and has no persistance layer. For distributed applications we recommend you use the Redis store instead.
+
 You can pass the following options during the plugin registration:
 ```js
 fastify.register(require('fastify-rate-limit'), {
