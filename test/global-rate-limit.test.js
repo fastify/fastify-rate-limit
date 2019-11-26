@@ -359,6 +359,66 @@ test('With keyGenerator', t => {
   }
 })
 
+test('With CustomStore', t => {
+  t.plan(18)
+  function CustomStore (timeWindow, key) {
+    this.timeWindow = timeWindow
+    this.key = key
+    this.current = 0
+  }
+
+  CustomStore.prototype.incr = function (key, cb) {
+    this.current++
+    cb(null, { current: this.current, ttl: this.timeWindow - (this.current * 1000) })
+  }
+
+  CustomStore.prototype.child = function (routeOptions) {
+    return new CustomStore(this.timeWindow)
+  }
+
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 10000,
+    store: CustomStore
+  })
+
+  fastify.get('/', (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.strictEqual(res.headers['x-ratelimit-reset'], 9)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 8)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 429)
+        t.strictEqual(res.headers['content-type'], 'application/json')
+        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+        t.strictEqual(res.headers['x-ratelimit-reset'], 7)
+        t.strictEqual(res.headers['retry-after'], 10000)
+        t.deepEqual({
+          statusCode: 429,
+          error: 'Too Many Requests',
+          message: 'Rate limit exceeded, retry in 10 seconds'
+        }, JSON.parse(res.payload))
+      })
+    })
+  })
+})
+
 test('does not override the preHandler', t => {
   t.plan(5)
   const fastify = Fastify()
