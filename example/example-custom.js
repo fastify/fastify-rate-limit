@@ -40,7 +40,7 @@ KnexStore.prototype.incr = function (key, cb) {
               cb(null, { current: 1, ttl: d.TTL })
             })
             .catch(err => {
-              cb(err)
+              cb(err, { current: 0 })
             })
         } else {
           trx
@@ -49,9 +49,12 @@ KnexStore.prototype.incr = function (key, cb) {
               cb(null, { current: d.Count ? d.Count + 1 : 1, ttl: d.TTL || ttl })
             })
             .catch(err => {
-              cb(err)
+              cb(err, { current: 0 })
             })
         }
+      })
+      .catch(err => {
+        cb(err, { current: 0 })
       })
   })
 }
