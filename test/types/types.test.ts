@@ -15,7 +15,7 @@ app.register(fastifyRateLimit, {
   skipOnError: true,
   keyGenerator: (req: fastify.FastifyRequest<http.IncomingMessage>) => req.ip,
   errorResponseBuilder: (req: fastify.FastifyRequest<http.IncomingMessage>, context) => ({ code: 429, timeWindow: context.after, limit: context.max }),
-  showHeaders: {
+  displayHeaders: {
     'x-ratelimit-limit': false,
     'x-ratelimit-remaining': false,
     'x-ratelimit-reset': false,
