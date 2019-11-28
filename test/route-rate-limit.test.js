@@ -436,6 +436,35 @@ test('works with existing route config', t => {
   })
 })
 
+test('With ban', t => {
+  t.plan(6)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.get('/', {
+    config: { rateLimit: { max: 1, ban: 1 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 429)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 403)
+      })
+    })
+  })
+})
+
 test('route can disable the global limit', t => {
   t.plan(4)
   const fastify = Fastify()
@@ -716,4 +745,37 @@ test('hide rate limit headers', t => {
       t.strictEqual(res.headers['x-ratelimit-reset'], 1)
     })
   }
+})
+
+test('global timeWindow when not set in routes', t => {
+  t.plan(6)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    global: false,
+    timeWindow: 6000
+  })
+
+  fastify.get('/six', {
+    config: { rateLimit: { max: 6 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.get('/four', {
+    config: { rateLimit: { max: 4, timeWindow: 4000 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/six', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-reset'], 6)
+
+    fastify.inject('/four', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 4)
+    })
+  })
 })

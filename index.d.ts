@@ -10,6 +10,7 @@ declare namespace fastifyRateLimit {
     whitelist?: string[] | ((req: fastify.FastifyRequest<http.IncomingMessage>, key: string) => boolean);
     redis?: any;
     skipOnError?: boolean;
+    ban?: number;
     keyGenerator?: (req: fastify.FastifyRequest<http.IncomingMessage>) => string | number;
     errorResponseBuilder?: (req: fastify.FastifyRequest<http.IncomingMessage>, context: errorResponseBuilderContext) => object;
     displayHeaders?: DisplayHeaders;

@@ -43,6 +43,7 @@ function rateLimitPlugin (fastify, settings, next) {
       : 1000 * 60
 
   globalParams.whitelist = settings.whitelist || null
+  globalParams.ban = settings.ban || null
 
   // define the name of the app component. Related to redis, it will be use as a part of the keyname define in redis.
   const pluginComponent = {
@@ -59,7 +60,7 @@ function rateLimitPlugin (fastify, settings, next) {
     ? settings.keyGenerator
     : (req) => req.raw.ip
 
-  globalParams.errorResponseBuilder = (req, context) => ({ statusCode: 429, error: 'Too Many Requests', message: `Rate limit exceeded, retry in ${context.after}` })
+  globalParams.errorResponseBuilder = (req, context) => ({ statusCode: context.statusCode, error: 'Too Many Requests', message: `Rate limit exceeded, retry in ${context.after}` })
   globalParams.isCustomErrorMessage = false
 
   // define if error message was overwritten with a custom error response callback
@@ -73,9 +74,14 @@ function rateLimitPlugin (fastify, settings, next) {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
       if (typeof routeOptions.config.rateLimit === 'object') {
         const current = Object.create(pluginComponent)
+        const mergedRateLimitParams = makeParams(routeOptions.config.rateLimit)
+        if (!routeOptions.config.rateLimit.timeWindow) {
+          // load the global timewindow if it is missing from the route config
+          routeOptions.config.rateLimit.timeWindow = mergedRateLimitParams.timeWindow
+        }
         current.store = pluginComponent.store.child(routeOptions)
         // if the current endpoint have a custom rateLimit configuration ...
-        buildRouteRate(current, makeParams(routeOptions.config.rateLimit), routeOptions)
+        buildRouteRate(current, mergedRateLimitParams, routeOptions)
       } else if (routeOptions.config.rateLimit === false) {
         // don't apply any rate-limit
       } else {
@@ -162,7 +168,19 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
         if (params.displayHeaders['x-ratelimit-reset']) { res.header('x-ratelimit-reset', Math.floor(ttl / 1000)) }
         if (params.displayHeaders['retry-after']) { res.header('retry-after', params.timeWindow) }
 
-        res.code(429).send(params.errorResponseBuilder(req, { after, max: maximum }))
+        const code = params.ban && current - maximum > params.ban ? 403 : 429
+        res.code(code)
+
+        const respCtx = {
+          statusCode: code,
+          after,
+          max: maximum
+        }
+
+        if (code === 403) {
+          respCtx.ban = true
+        }
+        res.send(params.errorResponseBuilder(req, respCtx))
       }
 
       function getMax () {
