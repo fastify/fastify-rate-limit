@@ -3,7 +3,7 @@ import * as fastify from 'fastify';
 
 declare namespace fastifyRateLimit {
   interface FastifyRateLimitStoreCtor {
-    new (timeWindow: number, key: string): FastifyRateLimitStore;
+    new (options: FastifyRateLimitOptions): FastifyRateLimitStore;
   }
   
   interface FastifyRateLimitStore {

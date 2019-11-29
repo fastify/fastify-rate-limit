@@ -5,11 +5,14 @@
 // the database first
 //
 // CREATE TABLE "RateLimits" (
+//   "Route" TEXT,
 //   "Source" TEXT,
 //   "Count" INTEGER,
 //   "TTL" NUMERIC,
 //   PRIMARY KEY("Source")
 // );
+//
+// CREATE UNIQUE INDEX "idx_uniq_route_source" ON "RateLimits" (Route, Source);
 //
 const Knex = require('knex')
 const fastify = require('fastify')()
@@ -21,21 +24,29 @@ var knex = Knex({
   }
 })
 
-function KnexStore (timeWindow, key) {
-  this.timeWindow = timeWindow
-  this.key = key
+function KnexStore (options) {
+  this.options = options
+  this.route = ''
+}
+
+KnexStore.prototype.routeKey = function (route) {
+  if (route) {
+    this.route = route
+  } else {
+    return route
+  }
 }
 
 KnexStore.prototype.incr = function (key, cb) {
   const now = (new Date()).getTime()
-  const ttl = now + this.timeWindow
+  const ttl = now + this.options.timeWindow
   knex.transaction(function (trx) {
     trx
-      .where('Source', key)
+      .where({ Route: this.route, Source: key })
       .then(d => {
         if (d.TTL > now) {
           trx
-            .raw(`UPDATE RateLimits SET Count = 1 WHERE Source='${key}'`)
+            .raw(`UPDATE RateLimits SET Count = 1 WHERE Route='${this.route}' AND Source='${key}'`)
             .then(() => {
               cb(null, { current: 1, ttl: d.TTL })
             })
@@ -44,7 +55,7 @@ KnexStore.prototype.incr = function (key, cb) {
             })
         } else {
           trx
-            .raw(`INSERT INTO RateLimits(Source, Count, TTL) VALUES('${key}',1,${d.TTL || ttl}) ON CONFLICT(Source) DO UPDATE SET Count=Count+1`)
+            .raw(`INSERT INTO RateLimits(Route, Source, Count, TTL) VALUES('${this.route}', '${key}',1,${d.TTL || ttl}) ON CONFLICT(Route, Source) DO UPDATE SET Count=Count+1,TTL=${ttl}`)
             .then(() => {
               cb(null, { current: d.Count ? d.Count + 1 : 1, ttl: d.TTL || ttl })
             })
@@ -60,9 +71,9 @@ KnexStore.prototype.incr = function (key, cb) {
 }
 
 KnexStore.prototype.child = function (routeOptions) {
-  const timeWindow = routeOptions.config.rateLimit.timeWindow
-  const key = this.key + routeOptions.method + routeOptions.url + '-'
-  const store = new KnexStore(timeWindow, key)
+  const options = Object.assign(this.options, routeOptions.config.rateLimit)
+  const store = new KnexStore(options)
+  store.routeKey(routeOptions.method + routeOptions.url)
   return store
 }
 

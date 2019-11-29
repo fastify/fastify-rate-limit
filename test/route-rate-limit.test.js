@@ -694,21 +694,19 @@ test('global timeWindow when not set in routes', t => {
 
 test('With CustomStore', t => {
   t.plan(18)
-  function CustomStore (timeWindow, key) {
-    this.timeWindow = timeWindow
-    this.key = key
+  function CustomStore (options) {
+    this.options = options
     this.current = 0
   }
 
   CustomStore.prototype.incr = function (key, cb) {
+    const timeWindow = this.options.timeWindow
     this.current++
-    cb(null, { current: this.current, ttl: this.timeWindow - (this.current * 1000) })
+    cb(null, { current: this.current, ttl: timeWindow - (this.current * 1000) })
   }
 
   CustomStore.prototype.child = function (routeOptions) {
-    const timeWindow = routeOptions.config.rateLimit.timeWindow
-    const key = this.key + routeOptions.method + routeOptions.url + '-'
-    const store = new CustomStore(timeWindow, key)
+    const store = new CustomStore(Object.assign(this.options, routeOptions.config.rateLimit))
     return store
   }
 

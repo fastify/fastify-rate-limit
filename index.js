@@ -44,7 +44,7 @@ function rateLimitPlugin (fastify, settings, next) {
 
   if (settings.store) {
     const Store = settings.store
-    pluginComponent.store = new Store(globalParams.timeWindow, 'fastify-rate-limit-')
+    pluginComponent.store = new Store(globalParams)
   } else {
     if (settings.redis) {
       pluginComponent.store = new RedisStore(settings.redis, 'fastify-rate-limit-', globalParams.timeWindow)

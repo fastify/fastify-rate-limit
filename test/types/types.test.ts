@@ -26,10 +26,10 @@ app.register(fastifyRateLimit, {
 });
 
 class CustomStore implements types.FastifyRateLimitStore {
-  constructor(public timeWindow: number) {}  
+  constructor(options: types.FastifyRateLimitOptions) {}
   incr(key: string, callback: ( error: Error|null, result?: { current: number, ttl: number } ) => void) {}
   child(routeOptions: fastify.RouteOptions<http.Server, http.IncomingMessage, http.ServerResponse> & { path: string, prefix: string }) {
-    return <CustomStore>({})
+    return <CustomStore>(<types.FastifyRateLimitOptions>{})
   }
 }
 
