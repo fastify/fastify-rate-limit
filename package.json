@@ -28,6 +28,8 @@
     "@types/node": "~12.11.0",
     "fastify": "^2.5.0",
     "ioredis": "^4.9.0",
+    "knex": "^0.20.2",
+    "sqlite3": "^4.1.0",
     "standard": "^14.0.2",
     "tap": "^12.6.6",
     "typescript": "^3.4.2"
