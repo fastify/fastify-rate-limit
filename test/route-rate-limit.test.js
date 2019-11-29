@@ -694,7 +694,7 @@ test('hide rate limit headers', t => {
   fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
-    displayHeaders: {
+    addHeaders: {
       'x-ratelimit-limit': false,
       'x-ratelimit-remaining': false,
       'x-ratelimit-reset': false,
@@ -706,7 +706,7 @@ test('hide rate limit headers', t => {
     config: {
       rateLimit: {
         timeWindow: 1000,
-        displayHeaders: {
+        addHeaders: {
           'x-ratelimit-limit': true, // this must override the global one
           'x-ratelimit-remaining': false,
           'x-ratelimit-reset': false,

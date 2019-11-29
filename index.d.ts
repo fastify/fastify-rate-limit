@@ -13,7 +13,7 @@ declare namespace fastifyRateLimit {
     ban?: number;
     keyGenerator?: (req: fastify.FastifyRequest<http.IncomingMessage>) => string | number;
     errorResponseBuilder?: (req: fastify.FastifyRequest<http.IncomingMessage>, context: errorResponseBuilderContext) => object;
-    displayHeaders?: DisplayHeaders;
+    addHeaders?: AddHeaders;
   }
 
   interface errorResponseBuilderContext {
@@ -21,7 +21,7 @@ declare namespace fastifyRateLimit {
     max: number;
   }
 
-  interface DisplayHeaders {
+  interface AddHeaders {
     'x-ratelimit-limit'?: boolean,
     'x-ratelimit-remaining'?: boolean,
     'x-ratelimit-reset'?: boolean,
