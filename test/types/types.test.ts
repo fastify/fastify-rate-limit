@@ -1,6 +1,7 @@
 import * as http from 'http'
 import * as http2 from 'http2'
 import * as fastify from 'fastify';
+import * as types from '../../index';
 import * as fastifyRateLimit from '../../../fastify-rate-limit';
 import * as ioredis from 'ioredis';
 import * as types from '../../index';
@@ -54,4 +55,3 @@ const appWithHttp2: fastify.FastifyInstance<
 appWithHttp2.register(fastifyRateLimit, options1)
 appWithHttp2.register(fastifyRateLimit, options2)
 appWithHttp2.register(fastifyRateLimit, options3)
-
