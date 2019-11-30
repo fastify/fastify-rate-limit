@@ -21,6 +21,7 @@ declare function fastifyRateLimit(): fastify.Plugin<
     max?: number | ((req: fastify.FastifyRequest<IncomingMessage>, key: string) => number);
     timeWindow?: number;
     cache?: number;
+    store?: fastifyRateLimit.FastifyRateLimitStoreCtor;
     whitelist?: string[] | ((req: fastify.FastifyRequest<IncomingMessage>, key: string) => boolean);
     redis?: any;
     skipOnError?: boolean;
@@ -36,6 +37,15 @@ declare namespace fastifyRateLimit {
   interface errorResponseBuilderContext {
     after: string;
     max: number;
+  }
+
+  interface FastifyRateLimitStoreCtor {
+    new (options: FastifyRateLimitOptions): FastifyRateLimitStore;
+  }
+
+  interface FastifyRateLimitStore {
+    incr(key: string, callback: ( error: Error|null, result?: { current: number, ttl: number } ) => void): void;
+    child(routeOptions: fastify.RouteOptions<Server, IncomingMessage, ServerResponse> & { path: string, prefix: string }): FastifyRateLimitStore;
   }
 }
 

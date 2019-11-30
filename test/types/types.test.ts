@@ -3,6 +3,15 @@ import * as http2 from 'http2'
 import * as fastify from 'fastify';
 import * as fastifyRateLimit from '../../../fastify-rate-limit';
 import * as ioredis from 'ioredis';
+import * as types from '../../index';
+
+class CustomStore implements types.FastifyRateLimitStore {
+  constructor(options: types.FastifyRateLimitOptions) {}
+  incr(key: string, callback: ( error: Error|null, result?: { current: number, ttl: number } ) => void) {}
+  child(routeOptions: fastify.RouteOptions<http.Server, http.IncomingMessage, http.ServerResponse> & { path: string, prefix: string }) {
+    return <CustomStore>(<types.FastifyRateLimitOptions>{})
+  }
+}
 
 const appWithImplicitHttp = fastify()
 const options1 = {
@@ -25,8 +34,16 @@ const options2 = {
   timeWindow: 5000
 }
 
+const options3 = {
+  global: true,
+  max: (req: fastify.FastifyRequest<http.IncomingMessage>, key: string) => (42),
+  timeWindow: 5000,
+  store: CustomStore
+}
+
 appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
+appWithImplicitHttp.register(fastifyRateLimit, options3)
 
 const appWithHttp2: fastify.FastifyInstance<
   http2.Http2Server,
@@ -36,3 +53,5 @@ const appWithHttp2: fastify.FastifyInstance<
 
 appWithHttp2.register(fastifyRateLimit, options1)
 appWithHttp2.register(fastifyRateLimit, options2)
+appWithHttp2.register(fastifyRateLimit, options3)
+
