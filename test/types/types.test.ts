@@ -4,7 +4,6 @@ import * as fastify from 'fastify';
 import * as types from '../../index';
 import * as fastifyRateLimit from '../../../fastify-rate-limit';
 import * as ioredis from 'ioredis';
-import * as types from '../../index';
 
 class CustomStore implements types.FastifyRateLimitStore {
   constructor(options: types.FastifyRateLimitOptions) {}
