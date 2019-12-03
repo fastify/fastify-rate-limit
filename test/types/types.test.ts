@@ -24,7 +24,13 @@ const options1 = {
   skipOnError: true,
   ban: 10,
   keyGenerator: (req: fastify.FastifyRequest<http.IncomingMessage>) => req.ip,
-  errorResponseBuilder: (req: fastify.FastifyRequest<http.IncomingMessage>, context: fastifyRateLimit.errorResponseBuilderContext) => ({ code: 429, timeWindow: context.after, limit: context.max })
+  errorResponseBuilder: (req: fastify.FastifyRequest<http.IncomingMessage>, context: fastifyRateLimit.errorResponseBuilderContext) => ({ code: 429, timeWindow: context.after, limit: context.max }),
+  addHeaders: {
+    'x-ratelimit-limit': false,
+    'x-ratelimit-remaining': false,
+    'x-ratelimit-reset': false,
+    'retry-after': false
+  }
 }
 
 const options2 = {
