@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
   "devDependencies": {
-    "@types/ioredis": "~4.0.11",
+    "@types/ioredis": "~4.14.0",
     "@types/node": "~12.11.0",
     "fastify": "^2.5.0",
     "ioredis": "^4.9.0",
