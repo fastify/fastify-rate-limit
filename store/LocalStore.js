@@ -8,8 +8,9 @@ function LocalStore (timeWindow, cache, app) {
   this.app = app
   this.timeWindow = timeWindow
 
-  app.addHook('onClose', (done) => {
+  app.addHook('onClose', (instance, done) => {
     clearInterval(this.interval)
+    done()
   })
 
   function beat () {
