@@ -16,6 +16,14 @@ const serializeError = FJS({
   }
 })
 
+function formatTimeWindow (tw) {
+  return typeof tw === 'string'
+    ? ms(tw)
+    : typeof tw === 'number'
+      ? tw
+      : 1000 * 60
+}
+
 function rateLimitPlugin (fastify, settings, next) {
   // create the object that will hold the "main" settings that can be shared during the build
   // 'global' will define, if the rate limit should be apply by default on all route. default : true
@@ -36,11 +44,7 @@ function rateLimitPlugin (fastify, settings, next) {
     : 1000
 
   // define the global Time Window
-  globalParams.timeWindow = typeof settings.timeWindow === 'string'
-    ? ms(settings.timeWindow)
-    : typeof settings.timeWindow === 'number'
-      ? settings.timeWindow
-      : 1000 * 60
+  globalParams.timeWindow = formatTimeWindow(settings.timeWindow)
 
   globalParams.whitelist = settings.whitelist || null
   globalParams.ban = settings.ban || null
@@ -84,6 +88,7 @@ function rateLimitPlugin (fastify, settings, next) {
           // load the global timewindow if it is missing from the route config
           routeOptions.config.rateLimit.timeWindow = mergedRateLimitParams.timeWindow
         }
+        routeOptions.config.rateLimit.timeWindow = formatTimeWindow(routeOptions.config.rateLimit.timeWindow)
         current.store = pluginComponent.store.child(routeOptions)
         // if the current endpoint have a custom rateLimit configuration ...
         buildRouteRate(current, mergedRateLimitParams, routeOptions)

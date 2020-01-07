@@ -780,6 +780,39 @@ test('global timeWindow when not set in routes', t => {
   })
 })
 
+test('timeWindow specified as a string', t => {
+  t.plan(10)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.get('/', {
+    config: { rateLimit: { max: 2, timeWindow: '1 minute' } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
+      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 429)
+      })
+    })
+  })
+})
+
 test('With CustomStore', t => {
   t.plan(18)
   function CustomStore (options) {
