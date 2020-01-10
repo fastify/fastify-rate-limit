@@ -781,14 +781,31 @@ test('global timeWindow when not set in routes', t => {
 })
 
 test('timeWindow specified as a string', t => {
-  t.plan(10)
+  t.plan(12)
+  function CustomStore (options) {
+    this.options = options
+    this.current = 0
+  }
+
+  CustomStore.prototype.incr = function (key, cb) {
+    const timeWindow = this.options.timeWindow
+    this.current++
+    cb(null, { current: this.current, ttl: timeWindow - (this.current * 1000) })
+  }
+
+  CustomStore.prototype.child = function (routeOptions) {
+    const store = new CustomStore(Object.assign(this.options, routeOptions))
+    return store
+  }
+
   const fastify = Fastify()
   fastify.register(rateLimit, {
-    global: false
+    global: false,
+    store: CustomStore
   })
 
   fastify.get('/', {
-    config: { rateLimit: { max: 2, timeWindow: '1 minute' } }
+    config: { rateLimit: { max: 2, timeWindow: '10 seconds' } }
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -798,12 +815,14 @@ test('timeWindow specified as a string', t => {
     t.strictEqual(res.statusCode, 200)
     t.strictEqual(res.headers['x-ratelimit-limit'], 2)
     t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.strictEqual(res.headers['x-ratelimit-reset'], 9)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
       t.strictEqual(res.statusCode, 200)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+      t.strictEqual(res.headers['x-ratelimit-reset'], 8)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
@@ -827,7 +846,7 @@ test('With CustomStore', t => {
   }
 
   CustomStore.prototype.child = function (routeOptions) {
-    const store = new CustomStore(Object.assign(this.options, routeOptions.config.rateLimit))
+    const store = new CustomStore(Object.assign(this.options, routeOptions))
     return store
   }
 

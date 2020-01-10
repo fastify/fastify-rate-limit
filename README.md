@@ -141,6 +141,9 @@ fastify.register(require('fastify-rate-limit'), {
 ```
 
 Custom `store` example usage:
+
+NOTE: The ```timeWindow``` will always be passed as the numeric value in millseconds into the store's constructor.
+
 ```js
 function CustomStore (options) {
   this.options = options
@@ -156,7 +159,7 @@ CustomStore.prototype.incr = function (key, cb) {
 CustomStore.prototype.child = function (routeOptions) {
   // We create a merged copy of the current parent parameters with the specific
   // route parameters and pass them into the child store.
-  const childParams = Object.assign(this.options, routeOptions.config.rateLimit)
+  const childParams = Object.assign(this.options, routeOptions)
   const store = new CustomStore(childParams)
   // Here is where you may want to do some custom calls on the store with the information
   // in routeOptions first...
@@ -169,6 +172,10 @@ fastify.register(require('fastify-rate-limit'), {
   store: CustomStore
 })
 ```
+
+The `routeOptions` object passed to the the `child` method of the store will contain the same options that are detailed above for plugin registration with any specific overrides provided on the route. In addition the following parameter is provided:
+
+- `routeInfo`: The configuration of the route including `method`, `url`, `path`, and the full route `config`
 
 ### Options on the endpoint itself
 

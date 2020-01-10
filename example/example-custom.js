@@ -71,9 +71,9 @@ KnexStore.prototype.incr = function (key, cb) {
 }
 
 KnexStore.prototype.child = function (routeOptions) {
-  const options = Object.assign(this.options, routeOptions.config.rateLimit)
+  const options = Object.assign(this.options, routeOptions)
   const store = new KnexStore(options)
-  store.routeKey(routeOptions.method + routeOptions.url)
+  store.routeKey(routeOptions.routeInfo.method + routeOptions.routeInfo.url)
   return store
 }
 
