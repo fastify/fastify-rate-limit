@@ -1,7 +1,13 @@
 'use strict'
 
 const Redis = require('ioredis')
-const redis = new Redis()
+const redis = new Redis({
+  connectionName: 'my-connection-name',
+  host: 'localhost',
+  port: 6379,
+  connectTimeout: 500,
+  maxRetriesPerRequest: 1
+})
 
 const fastify = require('fastify')()
 
