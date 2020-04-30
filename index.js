@@ -63,7 +63,7 @@ function rateLimitPlugin (fastify, settings, next) {
 
   globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
     ? settings.keyGenerator
-    : (req) => req.raw.ip
+    : (req) => req.ip
 
   globalParams.errorResponseBuilder = (req, context) => ({ statusCode: context.statusCode, error: 'Too Many Requests', message: `Rate limit exceeded, retry in ${context.after}` })
   globalParams.isCustomErrorMessage = false
