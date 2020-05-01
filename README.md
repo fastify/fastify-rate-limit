@@ -1,8 +1,7 @@
 # fastify-rate-limit
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/fastify/fastify-rate-limit.svg)](https://greenkeeper.io/)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](http://standardjs.com/)
-[![Build Status](https://travis-ci.org/fastify/fastify-rate-limit.svg?branch=master)](https://travis-ci.org/fastify/fastify-rate-limit)
+![CI workflow](https://github.com/fastify/fastify-rate-limit/workflows/CI%20workflow/badge.svg)
 
 A low overhead rate limiter for your routes. Supports Fastify `2.x` versions.
 
