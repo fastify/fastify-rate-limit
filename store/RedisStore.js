@@ -30,8 +30,8 @@ RedisStore.prototype.incr = function (ip, cb) {
 
 RedisStore.prototype.child = function (routeOptions) {
   const child = Object.create(this)
-  child.key = this.key + routeOptions.method + routeOptions.url + '-'
-  child.timeWindow = routeOptions.config.rateLimit.timeWindow
+  child.key = this.key + routeOptions.routeInfo.method + routeOptions.routeInfo.url + '-'
+  child.timeWindow = routeOptions.timeWindow
   return child
 }
 

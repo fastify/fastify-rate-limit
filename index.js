@@ -80,11 +80,8 @@ function rateLimitPlugin (fastify, settings, next) {
       if (typeof routeOptions.config.rateLimit === 'object') {
         const current = Object.create(pluginComponent)
         const mergedRateLimitParams = makeParams(routeOptions.config.rateLimit)
-        if (!routeOptions.config.rateLimit.timeWindow) {
-          // load the global timewindow if it is missing from the route config
-          routeOptions.config.rateLimit.timeWindow = mergedRateLimitParams.timeWindow
-        }
-        current.store = pluginComponent.store.child(routeOptions)
+        mergedRateLimitParams.routeInfo = routeOptions
+        current.store = pluginComponent.store.child(mergedRateLimitParams)
         // if the current endpoint have a custom rateLimit configuration ...
         buildRouteRate(current, mergedRateLimitParams, routeOptions)
       } else if (routeOptions.config.rateLimit === false) {
