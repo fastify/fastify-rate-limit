@@ -6,7 +6,7 @@
   "scripts": {
     "redis": "docker run -p 6379:6379 --rm redis:3.0.7",
     "test": "standard && tap --cov test/*.test.js && npm run typescript",
-    "typescript": "tsc --project ./test/types/tsconfig.json"
+    "typescript": "tsd"
   },
   "repository": {
     "type": "git",
@@ -26,23 +26,21 @@
   "devDependencies": {
     "@types/ioredis": "~4.0.11",
     "@types/node": "~12.11.0",
-    "fastify": "^2.5.0",
+    "fastify": "^3.0.0-rc.1",
     "ioredis": "^4.9.0",
     "knex": "^0.20.2",
     "sqlite3": "^4.1.0",
     "standard": "^14.0.2",
     "tap": "^12.6.6",
-    "typescript": "^3.4.2"
+    "tsd": "^0.11.0"
   },
   "dependencies": {
     "fast-json-stringify": "^1.14.0",
-    "fastify-plugin": "^1.3.0",
+    "fastify-plugin": "^2.0.0",
     "ms": "^2.1.1",
     "tiny-lru": "^7.0.0"
   },
-  "greenkeeper": {
-    "ignore": [
-      "tap"
-    ]
+  "tsd": {
+    "directory": "test/types"
   }
 }
