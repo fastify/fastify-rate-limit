@@ -427,7 +427,7 @@ test('works with existing route config', t => {
   })
 
   fastify.ready((err) => {
-    t.strictEqual(err, null)
+    t.error(err)
     fastify.inject('/', (err, res) => {
       if (err) {}
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
@@ -657,7 +657,9 @@ test('variable max contenders', t => {
   }
 })
 
-test('limit reset per Local storage', t => {
+// TODO this test gets extremely flaky because of setTimeout
+// rewrite using https://www.npmjs.com/package/@sinonjs/fake-timers
+test('limit reset per Local storage', { skip: true }, t => {
   t.plan(12)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
