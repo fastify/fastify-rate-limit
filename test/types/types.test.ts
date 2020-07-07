@@ -1,6 +1,6 @@
 import * as http from 'http'
 import * as http2 from 'http2'
-import fastify, { RouteOptions, FastifyRequest, FastifyInstance } from 'fastify';
+import fastify, { RouteOptions, FastifyRequest, FastifyInstance, RequestGenericInterface } from 'fastify';
 import * as ioredis from 'ioredis';
 import fastifyRateLimit, { FastifyRateLimitStore, FastifyRateLimitOptions, errorResponseBuilderContext, RateLimitPluginOptions } from '../../';
 
@@ -22,8 +22,8 @@ const options1: RateLimitPluginOptions = {
   redis: new ioredis({ host: '127.0.0.1' }),
   skipOnError: true,
   ban: 10,
-  keyGenerator: (req: FastifyRequest<http.Server, http.IncomingMessage>) => req.ip,
-  errorResponseBuilder: (req: FastifyRequest<http.Server, http.IncomingMessage>, context: errorResponseBuilderContext) => ({ code: 429, timeWindow: context.after, limit: context.max }),
+  keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
+  errorResponseBuilder: (req: FastifyRequest<RequestGenericInterface>, context: errorResponseBuilderContext) => ({ code: 429, timeWindow: context.after, limit: context.max }),
   addHeaders: {
     'x-ratelimit-limit': false,
     'x-ratelimit-remaining': false,
@@ -34,14 +34,14 @@ const options1: RateLimitPluginOptions = {
 
 const options2 = {
   global: true,
-  max: (req: FastifyRequest<http.Server, http.IncomingMessage>, key: string) => (42),
-  whitelist: (req: FastifyRequest<http.Server, http.IncomingMessage>, key: string) => (false),
+  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => (42),
+  whitelist: (req: FastifyRequest<RequestGenericInterface>, key: string) => (false),
   timeWindow: 5000
 }
 
 const options3 = {
   global: true,
-  max: (req: FastifyRequest<http.Server, http.IncomingMessage>, key: string) => (42),
+  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => (42),
   timeWindow: 5000,
   store: CustomStore
 }
