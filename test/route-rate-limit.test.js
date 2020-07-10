@@ -484,14 +484,14 @@ test('route can disable the global limit', t => {
   })
 })
 
-test('does not override the preHandler', t => {
+test('does not override onRequest', t => {
   t.plan(5)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
-    preHandler: function (req, reply, next) {
-      t.pass('preHandler called')
+    onRequest: function (req, reply, next) {
+      t.pass('onRequest called')
       next()
     },
     config: defaultRouteConfig
@@ -894,6 +894,42 @@ test('With CustomStore', t => {
           message: 'Rate limit exceeded, retry in 10 seconds'
         }, JSON.parse(res.payload))
       })
+    })
+  })
+})
+
+test('stops fastify lifecycle after onRequest and before preValidation', t => {
+  t.plan(6)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { global: false })
+
+  let preValidationCallCount = 0
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 1000
+      }
+    },
+    preValidation: function (req, reply, next) {
+      t.pass('preValidation called only once')
+      preValidationCallCount++
+      next()
+    }
+  },
+  (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 429)
+      t.equal(preValidationCallCount, 1)
     })
   })
 })
