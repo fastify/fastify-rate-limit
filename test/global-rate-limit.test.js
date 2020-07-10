@@ -420,7 +420,7 @@ test('With CustomStore', t => {
   })
 })
 
-test('does not override the preHandler', t => {
+test('does not override the onRequest', t => {
   t.plan(5)
   const fastify = Fastify()
   fastify.register(rateLimit, {
@@ -429,8 +429,8 @@ test('does not override the preHandler', t => {
   })
 
   fastify.get('/', {
-    preHandler: function (req, reply, next) {
-      t.pass('preHandler called')
+    onRequest: function (req, reply, next) {
+      t.pass('onRequest called')
       next()
     }
   }, (req, reply) => {
@@ -445,7 +445,7 @@ test('does not override the preHandler', t => {
   })
 })
 
-test('does not override the preHandler as an array', t => {
+test('does not override the onRequest as an array', t => {
   t.plan(5)
   const fastify = Fastify()
   fastify.register(rateLimit, {
@@ -454,8 +454,8 @@ test('does not override the preHandler as an array', t => {
   })
 
   fastify.get('/', {
-    preHandler: [function (req, reply, next) {
-      t.pass('preHandler called')
+    onRequest: [function (req, reply, next) {
+      t.pass('onRequest called')
       next()
     }]
   }, (req, reply) => {
@@ -598,6 +598,36 @@ test('With ban', t => {
         t.error(err)
         t.strictEqual(res.statusCode, 403)
       })
+    })
+  })
+})
+
+test('stops fastify lifecycle after onRequest and before preValidation', t => {
+  t.plan(6)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { max: 1, timeWindow: 1000 })
+
+  let preValidationCallCount = 0
+
+  fastify.get('/', {
+    preValidation: function (req, reply, next) {
+      t.pass('preValidation called only once')
+      preValidationCallCount++
+      next()
+    }
+  },
+  (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 429)
+      t.equal(preValidationCallCount, 1)
     })
   })
 })

@@ -74,7 +74,7 @@ function rateLimitPlugin (fastify, settings, next) {
     globalParams.isCustomErrorMessage = true
   }
 
-  // onRoute add the preHandler rate-limit function if needed
+  // onRoute add the onRequest rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
       if (typeof routeOptions.config.rateLimit === 'object') {
@@ -111,16 +111,16 @@ function rateLimitPlugin (fastify, settings, next) {
 function buildRouteRate (pluginComponent, params, routeOptions) {
   const after = ms(params.timeWindow, { long: true })
 
-  if (Array.isArray(routeOptions.preHandler)) {
-    routeOptions.preHandler.push(preHandler)
-  } else if (typeof routeOptions.preHandler === 'function') {
-    routeOptions.preHandler = [routeOptions.preHandler, preHandler]
+  if (Array.isArray(routeOptions.onRequest)) {
+    routeOptions.onRequest.push(onRequest)
+  } else if (typeof routeOptions.onRequest === 'function') {
+    routeOptions.onRequest = [routeOptions.onRequest, onRequest]
   } else {
-    routeOptions.preHandler = [preHandler]
+    routeOptions.onRequest = [onRequest]
   }
 
-  // PreHandler function that will be use for current endpoint been processed
-  function preHandler (req, res, next) {
+  // onRequest function that will be use for current endpoint been processed
+  function onRequest (req, res, next) {
     // We retrieve the key from the generator. (can be the global one, or the one define in the endpoint)
     const key = params.keyGenerator(req)
 
