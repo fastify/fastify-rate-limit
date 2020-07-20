@@ -20,7 +20,7 @@ const fastify = require('fastify')()
 
 fastify.register(require('fastify-rate-limit'), {
   max: 100,
-  timeWindow: 1000 * 60 // 1 minute
+  timeWindow: '1 minute'
 })
 
 fastify.get('/', (req, reply) => {
