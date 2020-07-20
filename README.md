@@ -20,7 +20,7 @@ const fastify = require('fastify')()
 
 fastify.register(require('fastify-rate-limit'), {
   max: 100,
-  timeWindow: '1 minute'
+  timeWindow: 1000 * 60 // 1 minute
 })
 
 fastify.get('/', (req, reply) => {
@@ -208,7 +208,7 @@ fastify.get('/', {
   config: {
     rateLimit: {
       max: 3,
-      timeWindow: '1 minute'
+      timeWindow: 1000 * 60 // 1 minute
     }
   }
 }, (req, reply) => {
@@ -220,7 +220,7 @@ fastify.get('/private', {
   config: {
     rateLimit: {
       max: 3,
-      timeWindow: '1 minute'
+      timeWindow: 1000 * 60 // 1 minute
     }
   }
 }, (req, reply) => {
@@ -236,7 +236,7 @@ fastify.get('/public', (req, reply) => {
 fastify.get('/public/sub-rated-1', {
   config: {
     rateLimit: {
-      timeWindow: '1 minute',
+      timeWindow: 1000 * 60, // 1 minute
       whitelist: ['127.0.0.1'],
       onExceeding: function (req) {
         console.log('callback on exceededing ... executed before response to client')
