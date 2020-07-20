@@ -38,7 +38,7 @@ interface AddHeaders {
 export interface RateLimitPluginOptions {
   global?: boolean;
   max?: number | ((req: FastifyRequest, key: string) => number);
-  timeWindow?: number;
+  timeWindow?: string | number;
   cache?: number;
   store?: FastifyRateLimitStoreCtor;
   whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
