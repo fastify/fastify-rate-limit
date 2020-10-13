@@ -197,6 +197,6 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
 }
 
 module.exports = fp(rateLimitPlugin, {
-  fastify: '>=3.x',
+  fastify: '2.x - 3.6.0',
   name: 'fastify-rate-limit'
 })
