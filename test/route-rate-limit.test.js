@@ -416,7 +416,7 @@ test('no rate limit with bad rate-limit parameters', t => {
 })
 
 test('works with existing route config', t => {
-  t.plan(3)
+  t.plan(4)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
@@ -429,7 +429,7 @@ test('works with existing route config', t => {
   fastify.ready((err) => {
     t.error(err)
     fastify.inject('/', (err, res) => {
-      if (err) {}
+      t.error(err)
       t.strictEqual(res.headers['x-ratelimit-limit'], 2)
       t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
     })

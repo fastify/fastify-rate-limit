@@ -9,7 +9,7 @@ function RedisStore (redis, key, timeWindow) {
 }
 
 RedisStore.prototype.incr = function (ip, cb) {
-  var key = this.key + ip
+  const key = this.key + ip
   this.redis.pipeline()
     .incr(key)
     .pttl(key)
