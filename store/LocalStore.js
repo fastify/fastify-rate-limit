@@ -20,7 +20,7 @@ function LocalStore (timeWindow, cache, app) {
 }
 
 LocalStore.prototype.incr = function (ip, cb) {
-  var current = this.lru.get(ip) || 0
+  let current = this.lru.get(ip) || 0
   this.lru.set(ip, ++current)
 
   // start counting from the first request/increment

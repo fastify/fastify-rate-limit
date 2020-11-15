@@ -17,7 +17,7 @@
 const Knex = require('knex')
 const fastify = require('fastify')()
 
-var knex = Knex({
+const knex = Knex({
   client: 'sqlite3',
   connection: {
     filename: './db.sqlite'
