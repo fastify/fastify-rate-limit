@@ -125,6 +125,7 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
     const key = params.keyGenerator(req)
 
     // whitelist doesn't apply any rate limit
+    //global whitelist
     if (pluginComponent.whitelist) {
       if (typeof pluginComponent.whitelist === 'function') {
         if (pluginComponent.whitelist(req, key)) {
@@ -136,7 +137,20 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
         return
       }
     }
+    //route whitelist
+    if (req.context.config.rateLimit.whitelist) {
+      if (typeof req.context.config.rateLimit.whitelist === 'function') {
+        if (req.context.config.rateLimit.whitelist(req, key)) {
+          next()
+          return
+        }
+      } else if (req.context.config.rateLimit.whitelist.indexOf(key) > -1) {
+        next()
+        return
+      }
+    }
 
+    
     // As the key is not whitelist in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
     pluginComponent.store.incr(key, onIncr)
 
