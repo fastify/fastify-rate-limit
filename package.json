@@ -34,7 +34,7 @@
     "sqlite3": "^5.0.0",
     "standard": "^16.0.2",
     "tap": "^14.10.7",
-    "tsd": "^0.13.1"
+    "tsd": "^0.14.0"
   },
   "dependencies": {
     "fast-json-stringify": "^2.2.1",
