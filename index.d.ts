@@ -42,6 +42,7 @@ export interface RateLimitPluginOptions {
   cache?: number;
   store?: FastifyRateLimitStoreCtor;
   whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
+  allowList?: string[] | ((req: FastifyRequest, key: string) => boolean);
   redis?: any;
   skipOnError?: boolean;
   ban?: number;
