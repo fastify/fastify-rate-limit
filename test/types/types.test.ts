@@ -18,7 +18,7 @@ const options1: RateLimitPluginOptions = {
   max: 3,
   timeWindow: 5000,
   cache: 10000,
-  whitelist: ['127.0.0.1'],
+  allowList: ['127.0.0.1'],
   redis: new ioredis({ host: '127.0.0.1' }),
   skipOnError: true,
   ban: 10,
@@ -35,7 +35,7 @@ const options1: RateLimitPluginOptions = {
 const options2 = {
   global: true,
   max: (req: FastifyRequest<RequestGenericInterface>, key: string) => (42),
-  whitelist: (req: FastifyRequest<RequestGenericInterface>, key: string) => (false),
+  allowList: (req: FastifyRequest<RequestGenericInterface>, key: string) => (false),
   timeWindow: 5000
 }
 

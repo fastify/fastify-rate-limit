@@ -17,7 +17,7 @@ fastify.register(require('../../fastify-rate-limit'),
     max: 3000, // default max rate limit
     // timeWindow: 1000*60,
     // cache: 10000,
-    whitelist: ['127.0.0.2'], // global whitelist access ( ACL based on the key from the keyGenerator)
+    allowList: ['127.0.0.2'], // global allowList access ( ACL based on the key from the keyGenerator)
     redis: redis, // connection to redis
     skipOnError: false // default false
     // keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
@@ -38,7 +38,7 @@ fastify.get('/private', {
   config: {
     rateLimit: {
       max: 3,
-      whitelist: ['127.0.2.1', '127.0.3.1'],
+      allowList: ['127.0.2.1', '127.0.3.1'],
       timeWindow: '1 minute'
     }
   }
@@ -54,7 +54,7 @@ fastify.get('/public/sub-rated-1', {
   config: {
     rateLimit: {
       timeWindow: '1 minute',
-      whitelist: ['127.0.2.1'],
+      allowList: ['127.0.2.1'],
       onExceeding: function (req) {
         console.log('callback on exceededing ... executed before response to client. req is give as argument')
       },

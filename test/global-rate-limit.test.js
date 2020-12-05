@@ -107,6 +107,35 @@ test('With text timeWindow', t => {
   }
 })
 
+test('With ips allowList', t => {
+  t.plan(6)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: '2s',
+    allowList: ['127.0.0.1']
+  })
+
+  fastify.get('/', (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 200)
+      })
+    })
+  })
+})
+
 test('With ips whitelist', t => {
   t.plan(6)
   const fastify = Fastify()
@@ -136,14 +165,14 @@ test('With ips whitelist', t => {
   })
 })
 
-test('With function whitelist', t => {
+test('With function allowList', t => {
   t.plan(24)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 2,
     timeWindow: '2s',
     keyGenerator () { return 42 },
-    whitelist: function (req, key) {
+    allowList: function (req, key) {
       t.ok(req.headers)
       t.equals(key, 42)
       return req.headers['x-my-header'] !== undefined
@@ -154,7 +183,7 @@ test('With function whitelist', t => {
     reply.send('hello!')
   })
 
-  const whitelistHeader = {
+  const allowListHeader = {
     method: 'GET',
     url: '/',
     headers: {
@@ -162,15 +191,15 @@ test('With function whitelist', t => {
     }
   }
 
-  fastify.inject(whitelistHeader, (err, res) => {
+  fastify.inject(allowListHeader, (err, res) => {
     t.error(err)
     t.strictEqual(res.statusCode, 200)
 
-    fastify.inject(whitelistHeader, (err, res) => {
+    fastify.inject(allowListHeader, (err, res) => {
       t.error(err)
       t.strictEqual(res.statusCode, 200)
 
-      fastify.inject(whitelistHeader, (err, res) => {
+      fastify.inject(allowListHeader, (err, res) => {
         t.error(err)
         t.strictEqual(res.statusCode, 200)
       })
