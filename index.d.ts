@@ -41,6 +41,9 @@ export interface RateLimitPluginOptions {
   timeWindow?: number | string;
   cache?: number;
   store?: FastifyRateLimitStoreCtor;
+  /**
+  * @deprecated Use `allowList` property
+  */
   whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
   allowList?: string[] | ((req: FastifyRequest, key: string) => boolean);
   redis?: any;

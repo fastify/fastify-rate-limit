@@ -136,6 +136,35 @@ test('With ips allowList', t => {
   })
 })
 
+test('With ips whitelist', t => {
+  t.plan(6)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: '2s',
+    whitelist: ['127.0.0.1']
+  })
+
+  fastify.get('/', (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 200)
+      })
+    })
+  })
+})
+
 test('With function allowList', t => {
   t.plan(24)
   const fastify = Fastify()
