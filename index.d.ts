@@ -7,12 +7,12 @@ declare module 'fastify' {
     RawServer extends RawServerBase = RawServerDefault,
     RawRequest extends RawRequestDefaultExpression<RawServer> = RawRequestDefaultExpression<RawServer>,
     RequestGeneric extends RequestGenericInterface = RequestGenericInterface
-  > {
+    > {
     ip: string | number
   }
 }
 
-export interface FastifyRateLimitOptions {}
+export interface FastifyRateLimitOptions { }
 
 export interface errorResponseBuilderContext {
   after: string;
@@ -20,11 +20,11 @@ export interface errorResponseBuilderContext {
 }
 
 export interface FastifyRateLimitStoreCtor {
-  new (options: FastifyRateLimitOptions): FastifyRateLimitStore;
+  new(options: FastifyRateLimitOptions): FastifyRateLimitStore;
 }
 
 export interface FastifyRateLimitStore {
-  incr(key: string, callback: ( error: Error|null, result?: { current: number, ttl: number } ) => void): void;
+  incr(key: string, callback: (error: Error | null, result?: { current: number, ttl: number }) => void): void;
   child(routeOptions: RouteOptions & { path: string, prefix: string }): FastifyRateLimitStore;
 }
 
@@ -42,7 +42,7 @@ export interface RateLimitPluginOptions {
   cache?: number;
   store?: FastifyRateLimitStoreCtor;
   /**
-  * @deprecated Use `allowList` property
+  * @deprecated Use `allowList` property 
   */
   whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
   allowList?: string[] | ((req: FastifyRequest, key: string) => boolean);
