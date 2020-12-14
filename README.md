@@ -257,6 +257,9 @@ In the route creation you can override the same settings of the plugin registrat
 - `onExceeding` : callback that will be executed each time a request is made to a route that is rate limited
 - `onExceeded` : callback that will be executed when a user reached the maximum number of tries. Can be useful to blacklist clients
 
+### Examples of Custom Store
+#### [Knex-SQLite](https://github.com/the-vishal-kumar/fastify-rate-limit/blob/master/example/example-knex.js)
+#### [Sequelize-PostgreSQL](https://github.com/the-vishal-kumar/fastify-rate-limit/blob/master/example/example-sequelize.js)
 
 <a name="license"></a>
 ## License
