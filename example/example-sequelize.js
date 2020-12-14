@@ -149,7 +149,7 @@ RateLimiterStore.prototype.child = function child (routeOptions = {}) {
   return store
 }
 
-fastify.register(require('..'),
+fastify.register(require('../../fastify-rate-limit'),
   {
     global: false,
     max: 10,
