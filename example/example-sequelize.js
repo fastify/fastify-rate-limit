@@ -2,11 +2,6 @@
 
 // Custom Store using Sequelize ORM for PostgreSQL database
 
-// author : https://github.com/the-vishal-kumar/
-// author : https://www.linkedin.com/in/the-vishal-kumar/
-
-// example usage/implementation : https://github.com/the-vishal-kumar/fastify-postgres-boilerplate
-
 // Sequelize Migration for "RateLimits" table
 //
 // module.exports = {
