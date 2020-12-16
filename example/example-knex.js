@@ -1,8 +1,8 @@
 'use strict'
 
-// Custom Store using Knex.js, below is an example
-// table to store rate limits that must be created in the
-// the database first
+// Example of a Custom Store using Knex.js ORM for SQLite database
+// Below is an example table to store rate limits that must be created
+// in the database first
 //
 // CREATE TABLE "RateLimits" (
 //   "Route" TEXT,

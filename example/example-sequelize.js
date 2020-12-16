@@ -1,6 +1,6 @@
 'use strict'
 
-// Custom Store using Sequelize ORM for PostgreSQL database
+// Example of a Custom Store using Sequelize ORM for PostgreSQL database
 
 // Sequelize Migration for "RateLimits" table
 //
