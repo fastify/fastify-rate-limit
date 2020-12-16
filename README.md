@@ -257,6 +257,12 @@ In the route creation you can override the same settings of the plugin registrat
 - `onExceeding` : callback that will be executed each time a request is made to a route that is rate limited
 - `onExceeded` : callback that will be executed when a user reached the maximum number of tries. Can be useful to blacklist clients
 
+### Examples of Custom Store
+
+These examples show an overview of the `store` feature and you should take inspiration from it and tweak as you need:
+
+- [Knex-SQLite](./example/example-knex.js)
+- [Sequelize-PostgreSQL](./example/example-sequelize.js)
 
 <a name="license"></a>
 ## License
