@@ -162,6 +162,7 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
         }
 
         if (!params.isCustomErrorMessage) {
+          // TODO is this necessary?
           res.type('application/json').serializer(serializeError)
         }
 
