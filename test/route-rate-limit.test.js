@@ -20,7 +20,7 @@ const defaultRouteConfig = {
 }
 
 test('Basic', t => {
-  t.plan(23)
+  t.plan(24)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
@@ -28,6 +28,12 @@ test('Basic', t => {
     config: defaultRouteConfig
   }, (req, reply) => {
     reply.send('hello!')
+  })
+
+  fastify.setErrorHandler(function (error, request, reply) {
+    t.pass('Error handler has been called')
+    error.message += ' from error handler'
+    reply.send(error)
   })
 
   fastify.inject('/', (err, res) => {
@@ -55,7 +61,7 @@ test('Basic', t => {
         t.deepEqual({
           statusCode: 429,
           error: 'Too Many Requests',
-          message: 'Rate limit exceeded, retry in 1 second'
+          message: 'Rate limit exceeded, retry in 1 second from error handler'
         }, JSON.parse(res.payload))
 
         setTimeout(retry, 1100)
