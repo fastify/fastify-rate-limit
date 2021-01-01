@@ -20,7 +20,7 @@ const defaultRouteConfig = {
 }
 
 test('Basic', t => {
-  t.plan(24)
+  t.plan(25)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
@@ -32,6 +32,7 @@ test('Basic', t => {
 
   fastify.setErrorHandler(function (error, request, reply) {
     t.pass('Error handler has been called')
+    t.equals(reply.statusCode, 429)
     error.message += ' from error handler'
     reply.send(error)
   })
