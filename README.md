@@ -33,7 +33,7 @@ fastify.listen(3000, err => {
 })
 ```
 
-In case a client reaches the maximum number of allowed requests, an error will be send to the user with the status code setted to `429`:
+In case a client reaches the maximum number of allowed requests, an error will be sent to the user with the status code set to `429`:
 ```js
 {
   statusCode: 429,
