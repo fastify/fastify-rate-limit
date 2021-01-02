@@ -33,7 +33,7 @@ fastify.listen(3000, err => {
 })
 ```
 
-In case a client reaches the maximum number of allowed requests, a standard Fastify error will be returned to the user with the status code setted to `429`:
+In case a client reaches the maximum number of allowed requests, an error will be sent to the user with the status code set to `429`:
 ```js
 {
   statusCode: 429,
@@ -41,7 +41,16 @@ In case a client reaches the maximum number of allowed requests, a standard Fast
   message: 'Rate limit exceeded, retry in 1 minute'
 }
 ```
-You can change the response by providing a callback to `errorResponseBuilder`.
+You can change the response by providing a callback to `errorResponseBuilder` or setting a [custom error handler](https://www.fastify.io/docs/latest/Server/#seterrorhandler):
+
+```js
+fastify.setErrorHandler(function (error, request, reply) {
+  if (reply.statusCode === 429) {
+    error.message = 'You hit the rate limit! Slow down please!'
+  }
+  reply.send(error)
+})
+```
 
 The response will have some additional headers:
 

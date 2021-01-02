@@ -1,20 +1,10 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const FJS = require('fast-json-stringify')
 const ms = require('ms')
 
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
-
-const serializeError = FJS({
-  type: 'object',
-  properties: {
-    statusCode: { type: 'number' },
-    error: { type: 'string' },
-    message: { type: 'string' }
-  }
-})
 
 function rateLimitPlugin (fastify, settings, next) {
   // create the object that will hold the "main" settings that can be shared during the build
@@ -65,7 +55,7 @@ function rateLimitPlugin (fastify, settings, next) {
     ? settings.keyGenerator
     : (req) => req.ip
 
-  globalParams.errorResponseBuilder = (req, context) => ({ statusCode: context.statusCode, error: 'Too Many Requests', message: `Rate limit exceeded, retry in ${context.after}` })
+  globalParams.errorResponseBuilder = defaultErrorResponse
   globalParams.isCustomErrorMessage = false
 
   // define if error message was overwritten with a custom error response callback
@@ -161,10 +151,6 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
           params.onExceeded(req)
         }
 
-        if (!params.isCustomErrorMessage) {
-          res.type('application/json').serializer(serializeError)
-        }
-
         if (params.addHeaders['x-ratelimit-limit']) { res.header('x-ratelimit-limit', maximum) }
         if (params.addHeaders['x-ratelimit-remaining']) { res.header('x-ratelimit-remaining', 0) }
         if (params.addHeaders['x-ratelimit-reset']) { res.header('x-ratelimit-reset', Math.floor(ttl / 1000)) }
@@ -194,6 +180,12 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
       }
     }
   }
+}
+
+function defaultErrorResponse (req, context) {
+  const err = new Error(`Rate limit exceeded, retry in ${context.after}`)
+  err.statusCode = context.statusCode
+  return err
 }
 
 module.exports = fp(rateLimitPlugin, {

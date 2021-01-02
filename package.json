@@ -37,7 +37,6 @@
     "tsd": "^0.14.0"
   },
   "dependencies": {
-    "fast-json-stringify": "^2.2.1",
     "fastify-plugin": "^3.0.0",
     "ms": "^2.1.1",
     "tiny-lru": "^7.0.0"
