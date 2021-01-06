@@ -940,3 +940,39 @@ test('stops fastify lifecycle after onRequest and before preValidation', t => {
     })
   })
 })
+
+test('avoid double onRequest', t => {
+  t.plan(4)
+
+  const fastify = Fastify()
+
+  let keyGeneratorCallCount = 0
+
+  const subroute = async (childServer) => {
+    childServer.register(rateLimit, {
+      max: 1,
+      timeWindow: 1000,
+      keyGenerator: (req) => {
+        t.pass('keyGenerator called only once')
+        keyGeneratorCallCount++
+
+        return req.ip
+      }
+    })
+
+    childServer.get('/', {}, (req, reply) => {
+      reply.send('hello!')
+    })
+  }
+
+  fastify.register(subroute, { prefix: '/test' })
+
+  fastify.inject({
+    url: '/test',
+    method: 'GET'
+  }, (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.equal(keyGeneratorCallCount, 1)
+  })
+})
