@@ -6,6 +6,8 @@ const ms = require('ms')
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
 
+const routeRateAdded = Symbol('fastify-rate-limit.routeRateAdded')
+
 function rateLimitPlugin (fastify, settings, next) {
   // create the object that will hold the "main" settings that can be shared during the build
   // 'global' will define, if the rate limit should be apply by default on all route. default : true
@@ -99,6 +101,12 @@ function rateLimitPlugin (fastify, settings, next) {
 }
 
 function buildRouteRate (pluginComponent, params, routeOptions) {
+  if (routeOptions[routeRateAdded]) {
+    return
+  }
+
+  routeOptions[routeRateAdded] = true
+
   const after = ms(params.timeWindow, { long: true })
 
   if (Array.isArray(routeOptions.onRequest)) {
