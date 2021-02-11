@@ -8,7 +8,7 @@ const RedisStore = require('./store/RedisStore')
 
 const routeRateAdded = Symbol('fastify-rate-limit.routeRateAdded')
 
-function rateLimitPlugin (fastify, settings, next) {
+async function rateLimitPlugin (fastify, settings, next) {
   // create the object that will hold the "main" settings that can be shared during the build
   // 'global' will define, if the rate limit should be apply by default on all route. default : true
   const globalParams = {
@@ -67,11 +67,11 @@ function rateLimitPlugin (fastify, settings, next) {
   }
 
   // onRoute add the onRequest rate-limit function if needed
-  fastify.addHook('onRoute', (routeOptions) => {
+  fastify.addHook('onRoute', async (routeOptions) => {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
       if (typeof routeOptions.config.rateLimit === 'object') {
         const current = Object.create(pluginComponent)
-        const mergedRateLimitParams = makeParams(routeOptions.config.rateLimit)
+        const mergedRateLimitParams = await makeParams(routeOptions.config.rateLimit)
         mergedRateLimitParams.routeInfo = routeOptions
         current.store = pluginComponent.store.child(mergedRateLimitParams)
         // if the current endpoint have a custom rateLimit configuration ...
@@ -100,7 +100,7 @@ function rateLimitPlugin (fastify, settings, next) {
   next()
 }
 
-function buildRouteRate (pluginComponent, params, routeOptions) {
+async function buildRouteRate (pluginComponent, params, routeOptions) {
   if (routeOptions[routeRateAdded]) {
     return
   }
@@ -118,7 +118,7 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
   }
 
   // onRequest function that will be use for current endpoint been processed
-  function onRequest (req, res, next) {
+  async function onRequest (req, res, next) {
     // We retrieve the key from the generator. (can be the global one, or the one define in the endpoint)
     const key = params.keyGenerator(req)
 
@@ -138,12 +138,12 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
     // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
     pluginComponent.store.incr(key, onIncr)
 
-    function onIncr (err, { current, ttl }) {
+    async function onIncr (err, { current, ttl }) {
       if (err && params.skipOnError === false) {
         return next(err)
       }
 
-      const maximum = getMax()
+      const maximum = await getMax()
       if (current <= maximum) {
         res.header('x-ratelimit-limit', maximum)
           .header('x-ratelimit-remaining', maximum - current)
@@ -179,9 +179,11 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
         res.send(params.errorResponseBuilder(req, respCtx))
       }
 
-      function getMax () {
+      async function getMax () {
         if (typeof params.max === 'number') {
           return params.max
+        } else if (typeof params.max === 'object') {
+          return await params.max(req, key)
         } else {
           return params.max(req, key)
         }
