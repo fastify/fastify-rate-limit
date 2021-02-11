@@ -118,7 +118,7 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
   }
 
   // onRequest function that will be use for current endpoint been processed
-  async function onRequest (req, res, next) {
+  function onRequest (req, res, next) {
     // We retrieve the key from the generator. (can be the global one, or the one define in the endpoint)
     const key = params.keyGenerator(req)
 
