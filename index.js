@@ -182,10 +182,8 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
       async function getMax () {
         if (typeof params.max === 'number') {
           return params.max
-        } else if (typeof params.max === 'object') {
-          return await params.max(req, key)
         } else {
-          return params.max(req, key)
+          return await params.max(req, key)
         }
       }
     }
