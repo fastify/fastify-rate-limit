@@ -28,10 +28,17 @@ export interface FastifyRateLimitStore {
   child(routeOptions: RouteOptions & { path: string, prefix: string }): FastifyRateLimitStore;
 }
 
-interface AddHeaders {
+interface DefaultAddHeaders {
   'x-ratelimit-limit'?: boolean,
   'x-ratelimit-remaining'?: boolean,
   'x-ratelimit-reset'?: boolean,
+  'retry-after'?: boolean
+}
+
+interface DraftSpecAddHeaders {
+  'ratelimit-limit'?: boolean,
+  'ratelimit-remaining'?: boolean,
+  'ratelimit-reset'?: boolean,
   'retry-after'?: boolean
 }
 
@@ -51,7 +58,8 @@ export interface RateLimitPluginOptions {
   ban?: number;
   keyGenerator?: (req: FastifyRequest) => string | number;
   errorResponseBuilder?: (req: FastifyRequest, context: errorResponseBuilderContext) => object;
-  addHeaders?: AddHeaders;
+  addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
+  enableDraftSpec?: boolean;
 }
 
 declare const fastifyRateLimit: FastifyPlugin<RateLimitPluginOptions>;

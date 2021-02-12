@@ -76,6 +76,7 @@ fastify.register(require('fastify-rate-limit'), {
   skipOnError: true, // default false
   keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
   errorResponseBuilder: function(req, context) { /* ... */},
+  enableDraftSpec: true, // default false. Uses IEFT draft header standard 
   addHeaders: { // default show all the response headers when rate limit is reached
     'x-ratelimit-limit': true,
     'x-ratelimit-remaining': true,
@@ -98,6 +99,7 @@ You can pass a Redis client here and magically the issue is solved. To achieve t
 - `keyGenerator`: a function to generate a unique identifier for each incoming request. Defaults to `(req) => req.ip`, the IP is resolved by fastify using `req.connection.remoteAddress` or `req.headers['x-forwarded-for']` if [trustProxy](https://www.fastify.io/docs/master/Server/#trustproxy) option is enabled. Use it if you want to override this behavior
 - `errorResponseBuilder`: a function to generate a custom response object. Defaults to `(req, context) => ({statusCode: 429, error: 'Too Many Requests', message: ``Rate limit exceeded, retry in ${context.after}``})`
 - `addHeaders`: define which headers should be added in the response when the limit is reached. Defaults all the headers will be shown
+- `enableDraftSpec`: if `true` it will change the HTTP rate limit headers following the IEFT draft document. More information at [draft-ietf-httpapi-ratelimit-headers.md](https://github.com/ietf-wg-httpapi/ratelimit-headers/blob/f6a7bc7560a776ea96d800cf5ed3752d6d397b06/draft-ietf-httpapi-ratelimit-headers.md).
 
 `keyGenerator` example usage:
 ```js
@@ -272,6 +274,19 @@ These examples show an overview of the `store` feature and you should take inspi
 
 - [Knex-SQLite](./example/example-knex.js)
 - [Sequelize-PostgreSQL](./example/example-sequelize.js)
+
+
+### IETF Draft Spec Headers
+
+The response will have the following headers if `enableDraftSpec` is `true`:
+
+
+| Header | Description |
+|--------|-------------|
+|`ratelimit-limit`       | how many request the client can do
+|`ratelimit-remaining`   | how many request remain to the client in the timewindow
+|`ratelimit-reset`       | how many seconds must pass before the rate limit resets
+|`retry-after`           | contains the same value in time as `ratelimit-reset`
 
 <a name="license"></a>
 ## License

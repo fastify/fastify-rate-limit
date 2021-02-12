@@ -976,3 +976,26 @@ test('avoid double onRequest', t => {
     t.equal(keyGeneratorCallCount, 1)
   })
 })
+
+test('With enable IETF draft spec', t => {
+  t.plan(5)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    global: false,
+    enableDraftSpec: true
+  })
+
+  fastify.get('/', {
+    config: defaultRouteConfig
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['ratelimit-limit'], 2)
+    t.strictEqual(res.headers['ratelimit-remaining'], 1)
+    t.strictEqual(res.headers['ratelimit-reset'], 1)
+  })
+})
