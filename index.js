@@ -67,11 +67,11 @@ async function rateLimitPlugin (fastify, settings, next) {
   }
 
   // onRoute add the onRequest rate-limit function if needed
-  fastify.addHook('onRoute', async (routeOptions) => {
+  fastify.addHook('onRoute', (routeOptions) => {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
       if (typeof routeOptions.config.rateLimit === 'object') {
         const current = Object.create(pluginComponent)
-        const mergedRateLimitParams = await makeParams(routeOptions.config.rateLimit)
+        const mergedRateLimitParams = makeParams(routeOptions.config.rateLimit)
         mergedRateLimitParams.routeInfo = routeOptions
         current.store = pluginComponent.store.child(mergedRateLimitParams)
         // if the current endpoint have a custom rateLimit configuration ...
