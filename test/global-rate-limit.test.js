@@ -666,13 +666,11 @@ test('async max', t => {
   const fastify = Fastify()
   fastify.register(rateLimit, {
     keyGenerator (req) { return req.headers['api-key'] },
-    max: async (req, key) => { return await requestSequencekey(key) },
+    max: async (req, key) => { return await requestSequence(key) },
     timeWindow: 10000
   })
 
   fastify.get('/', (req, res) => { res.send('hello') })
 
-  const requestSequence = async (key) => await key == 'pro' ? 5 : 2
-
-  next()
+  const requestSequence = async (key) => await key === 'pro' ? 5 : 2
 })
