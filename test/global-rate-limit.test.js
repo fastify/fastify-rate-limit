@@ -661,16 +661,16 @@ test('stops fastify lifecycle after onRequest and before preValidation', t => {
   })
 })
 
-test('async max', t => {
-  t.plan(14)
+test('async max', async t => {
+  t.plan(6)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     keyGenerator (req) { return req.headers['api-key'] },
     max: async (req, key) => { return await requestSequence(key) },
     timeWindow: 10000
   })
 
-  fastify.get('/', (req, res) => { res.send('hello') })
+  await fastify.get('/', (req, res) => { res.send('hello') })
 
   const requestSequence = async (key) => await key === 'pro' ? 5 : 2
 })
