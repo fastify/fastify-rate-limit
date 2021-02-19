@@ -660,3 +660,139 @@ test('stops fastify lifecycle after onRequest and before preValidation', t => {
     })
   })
 })
+
+test('With enabled IETF Draft Spec', t => {
+  t.plan(19)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: '1s',
+    enableDraftSpec: true
+  })
+
+  fastify.get('/', (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['ratelimit-limit'], 2)
+    t.strictEqual(res.headers['ratelimit-remaining'], 1)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['ratelimit-limit'], 2)
+      t.strictEqual(res.headers['ratelimit-remaining'], 0)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.strictEqual(res.statusCode, 429)
+        t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
+        t.strictEqual(res.headers['ratelimit-limit'], 2)
+        t.strictEqual(res.headers['ratelimit-remaining'], 0)
+        t.strictEqual(res.headers['ratelimit-remaining'], res.headers['retry-after'])
+        t.deepEqual({
+          statusCode: 429,
+          error: 'Too Many Requests',
+          message: 'Rate limit exceeded, retry in 1 second'
+        }, JSON.parse(res.payload))
+
+        setTimeout(retry, 1100)
+      })
+    })
+  })
+
+  function retry () {
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['ratelimit-limit'], 2)
+      t.strictEqual(res.headers['ratelimit-remaining'], 1)
+    })
+  }
+})
+
+test('hide IETF draft spec headers', t => {
+  t.plan(17)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 1,
+    timeWindow: 1000,
+    enableDraftSpec: true,
+    addHeaders: {
+      'ratelimit-limit': false,
+      'ratelimit-remaining': false,
+      'ratelimit-reset': false,
+      'retry-after': false
+    }
+  })
+
+  fastify.get('/', (req, res) => { res.send('hello') })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['ratelimit-limit'], 1)
+    t.strictEqual(res.headers['ratelimit-remaining'], 0)
+    t.strictEqual(res.headers['ratelimit-reset'], 1)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 429)
+      t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
+      t.notOk(res.headers['ratelimit-limit'], 'the header must be missing')
+      t.notOk(res.headers['ratelimit-remaining'], 'the header must be missing')
+      t.notOk(res.headers['ratelimit-reset'], 'the header must be missing')
+      t.notOk(res.headers['retry-after'], 'the header must be missing')
+
+      setTimeout(retry, 1100)
+    })
+  })
+
+  function retry () {
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 200)
+      t.strictEqual(res.headers['ratelimit-limit'], 1)
+      t.strictEqual(res.headers['ratelimit-remaining'], 0)
+      t.strictEqual(res.headers['ratelimit-reset'], 1)
+    })
+  }
+})
+
+test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled', t => {
+  t.plan(16)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 1,
+    timeWindow: '10s',
+    enableDraftSpec: true
+  })
+
+  fastify.get('/', (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.strictEqual(res.statusCode, 200)
+    t.strictEqual(res.headers['ratelimit-limit'], 1)
+    t.strictEqual(res.headers['ratelimit-remaining'], 0)
+
+    setTimeout(retry.bind(null, 9), 500)
+    setTimeout(retry.bind(null, 8), 1500)
+  })
+
+  function retry (timeLeft) {
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.strictEqual(res.statusCode, 429)
+      t.strictEqual(res.headers['ratelimit-limit'], 1)
+      t.strictEqual(res.headers['ratelimit-remaining'], 0)
+      t.strictEqual(res.headers['ratelimit-reset'], timeLeft)
+      t.strictEqual(res.headers['ratelimit-reset'], res.headers['retry-after'])
+    })
+  }
+})

@@ -8,6 +8,20 @@ const RedisStore = require('./store/RedisStore')
 
 const routeRateAdded = Symbol('fastify-rate-limit.routeRateAdded')
 
+let labels = {
+  rateLimit: 'x-ratelimit-limit',
+  rateRemaining: 'x-ratelimit-remaining',
+  rateReset: 'x-ratelimit-reset',
+  retryAfter: 'retry-after'
+}
+
+const draftSpecHeaders = {
+  rateLimit: 'ratelimit-limit',
+  rateRemaining: 'ratelimit-remaining',
+  rateReset: 'ratelimit-reset',
+  retryAfter: 'retry-after'
+}
+
 function rateLimitPlugin (fastify, settings, next) {
   // create the object that will hold the "main" settings that can be shared during the build
   // 'global' will define, if the rate limit should be apply by default on all route. default : true
@@ -15,12 +29,19 @@ function rateLimitPlugin (fastify, settings, next) {
     global: (typeof settings.global === 'boolean') ? settings.global : true
   }
 
+  if (typeof settings.enableDraftSpec === 'boolean' && settings.enableDraftSpec) {
+    globalParams.enableDraftSpec = true
+    labels = draftSpecHeaders
+  }
+
   globalParams.addHeaders = Object.assign({
-    'x-ratelimit-limit': true,
-    'x-ratelimit-remaining': true,
-    'x-ratelimit-reset': true,
-    'retry-after': true
+    [labels.rateLimit]: true,
+    [labels.rateRemaining]: true,
+    [labels.rateReset]: true,
+    [labels.retryAfter]: true
   }, settings.addHeaders)
+
+  globalParams.labels = labels
 
   // define the global maximum of request allowed
   globalParams.max = (typeof settings.max === 'number' || typeof settings.max === 'function')
@@ -144,10 +165,12 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
       }
 
       const maximum = getMax()
+      const timeLeft = Math.floor(ttl / 1000)
+
       if (current <= maximum) {
-        res.header('x-ratelimit-limit', maximum)
-          .header('x-ratelimit-remaining', maximum - current)
-          .header('x-ratelimit-reset', Math.floor(ttl / 1000))
+        res.header(params.labels.rateLimit, maximum)
+          .header(params.labels.rateRemaining, maximum - current)
+          .header(params.labels.rateReset, timeLeft)
 
         if (typeof params.onExceeding === 'function') {
           params.onExceeding(req)
@@ -159,10 +182,13 @@ function buildRouteRate (pluginComponent, params, routeOptions) {
           params.onExceeded(req)
         }
 
-        if (params.addHeaders['x-ratelimit-limit']) { res.header('x-ratelimit-limit', maximum) }
-        if (params.addHeaders['x-ratelimit-remaining']) { res.header('x-ratelimit-remaining', 0) }
-        if (params.addHeaders['x-ratelimit-reset']) { res.header('x-ratelimit-reset', Math.floor(ttl / 1000)) }
-        if (params.addHeaders['retry-after']) { res.header('retry-after', params.timeWindow) }
+        if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
+        if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
+        if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
+        if (params.addHeaders[params.labels.retryAfter]) {
+          const resetAfterTime = (params.enableDraftSpec) ? timeLeft : params.timeWindow
+          res.header(params.labels.retryAfter, resetAfterTime)
+        }
 
         const code = params.ban && current - maximum > params.ban ? 403 : 429
         res.code(code)
