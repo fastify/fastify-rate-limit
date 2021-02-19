@@ -16,6 +16,7 @@ export interface FastifyRateLimitOptions { }
 
 export interface errorResponseBuilderContext {
   after: string;
+  ban?: boolean;
   max: number;
 }
 
