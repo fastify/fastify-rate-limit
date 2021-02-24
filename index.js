@@ -118,14 +118,6 @@ async function rateLimitPlugin (fastify, settings) {
 }
 
 async function buildRouteRate (pluginComponent, params, routeOptions) {
-  const routeRateAdded = Symbol('fastify-rate-limit.routeRateAdded')
-
-  if (routeOptions[routeRateAdded]) {
-    return
-  }
-
-  routeOptions[routeRateAdded] = true
-
   const after = ms(params.timeWindow, { long: true })
 
   if (Array.isArray(routeOptions.onRequest)) {
