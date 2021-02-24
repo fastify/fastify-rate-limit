@@ -6,8 +6,6 @@ const ms = require('ms')
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
 
-const routeRateAdded = Symbol('fastify-rate-limit.routeRateAdded')
-
 let labels = {
   rateLimit: 'x-ratelimit-limit',
   rateRemaining: 'x-ratelimit-remaining',
@@ -120,12 +118,6 @@ async function rateLimitPlugin (fastify, settings) {
 }
 
 async function buildRouteRate (pluginComponent, params, routeOptions) {
-  if (routeOptions[routeRateAdded]) {
-    return
-  }
-
-  routeOptions[routeRateAdded] = true
-
   const after = ms(params.timeWindow, { long: true })
 
   if (Array.isArray(routeOptions.onRequest)) {
