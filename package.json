@@ -28,7 +28,7 @@
   "devDependencies": {
     "@types/ioredis": "^4.17.0",
     "@types/node": "^14.0.18",
-    "fastify": "^3.0.0",
+    "fastify": "^3.12.0",
     "ioredis": "^4.9.0",
     "knex": "^0.21.1",
     "sqlite3": "^5.0.0",
