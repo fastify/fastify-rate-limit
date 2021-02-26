@@ -1066,7 +1066,7 @@ test('With enable IETF draft spec', t => {
   })
 })
 
-test("per route rate limit", async t => {
+test('per route rate limit', async t => {
   const fastifyR = Fastify({
     exposeHeadRoutes: true
   })
@@ -1083,21 +1083,21 @@ test("per route rate limit", async t => {
     return 'hello!'
   })
 
-  let res = await fastifyR.inject({
+  const res = await fastifyR.inject({
     url: '/',
     method: 'GET'
-  });
+  })
 
-  let resHead = await fastifyR.inject({
+  const resHead = await fastifyR.inject({
     url: '/',
     method: 'HEAD'
-  });
+  })
 
-  t.strictEqual(res.statusCode, 200, "GET: Response status code")
-  t.strictEqual(res.headers['x-ratelimit-limit'], 10, "GET: x-ratelimit-limit header (per route limit)")
-  t.strictEqual(res.headers['x-ratelimit-remaining'], 9, "GET: x-ratelimit-remaining header (per route limit)")
+  t.strictEqual(res.statusCode, 200, 'GET: Response status code')
+  t.strictEqual(res.headers['x-ratelimit-limit'], 10, 'GET: x-ratelimit-limit header (per route limit)')
+  t.strictEqual(res.headers['x-ratelimit-remaining'], 9, 'GET: x-ratelimit-remaining header (per route limit)')
 
-  t.strictEqual(resHead.statusCode, 200, "HEAD: Response status code")
-  t.strictEqual(resHead.headers['x-ratelimit-limit'], 10, "HEAD: x-ratelimit-limit header (per route limit)")
-  t.strictEqual(resHead.headers['x-ratelimit-remaining'], 8, "HEAD: x-ratelimit-remaining header (per route limit)")
+  t.strictEqual(resHead.statusCode, 200, 'HEAD: Response status code')
+  t.strictEqual(resHead.headers['x-ratelimit-limit'], 10, 'HEAD: x-ratelimit-limit header (per route limit)')
+  t.strictEqual(resHead.headers['x-ratelimit-remaining'], 8, 'HEAD: x-ratelimit-remaining header (per route limit)')
 })

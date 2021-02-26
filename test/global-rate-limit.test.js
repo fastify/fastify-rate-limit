@@ -810,7 +810,7 @@ test('Before async in "max"', async t => {
   const requestSequence = async (key) => await key === 'pro' ? 5 : 2
 })
 
-test("exposeHeadRoutes", async t => {
+test('exposeHeadRoutes', async t => {
   const fastify = Fastify({
     exposeHeadRoutes: true
   })
@@ -822,21 +822,21 @@ test("exposeHeadRoutes", async t => {
     return 'hello!'
   })
 
-  let res = await fastify.inject({
+  const res = await fastify.inject({
     url: '/',
     method: 'GET'
-  });
+  })
 
-  let resHead = await fastify.inject({
+  const resHead = await fastify.inject({
     url: '/',
     method: 'HEAD'
-  });
+  })
 
-  t.strictEqual(res.statusCode, 200, "GET: Response status code")
-  t.strictEqual(res.headers['x-ratelimit-limit'], 10, "GET: x-ratelimit-limit header (global rate limit)")
-  t.strictEqual(res.headers['x-ratelimit-remaining'], 9, "GET: x-ratelimit-remaining header (global rate limit)")
+  t.strictEqual(res.statusCode, 200, 'GET: Response status code')
+  t.strictEqual(res.headers['x-ratelimit-limit'], 10, 'GET: x-ratelimit-limit header (global rate limit)')
+  t.strictEqual(res.headers['x-ratelimit-remaining'], 9, 'GET: x-ratelimit-remaining header (global rate limit)')
 
-  t.strictEqual(resHead.statusCode, 200, "HEAD: Response status code")
-  t.strictEqual(resHead.headers['x-ratelimit-limit'], 10, "HEAD: x-ratelimit-limit header (global rate limit)")
-  t.strictEqual(resHead.headers['x-ratelimit-remaining'], 8, "HEAD: x-ratelimit-remaining header (global rate limit)")
+  t.strictEqual(resHead.statusCode, 200, 'HEAD: Response status code')
+  t.strictEqual(resHead.headers['x-ratelimit-limit'], 10, 'HEAD: x-ratelimit-limit header (global rate limit)')
+  t.strictEqual(resHead.headers['x-ratelimit-remaining'], 8, 'HEAD: x-ratelimit-remaining header (global rate limit)')
 })
