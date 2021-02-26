@@ -6,21 +6,21 @@ const ms = require('ms')
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
 
-let labels = {
-  rateLimit: 'x-ratelimit-limit',
-  rateRemaining: 'x-ratelimit-remaining',
-  rateReset: 'x-ratelimit-reset',
-  retryAfter: 'retry-after'
-}
-
-const draftSpecHeaders = {
-  rateLimit: 'ratelimit-limit',
-  rateRemaining: 'ratelimit-remaining',
-  rateReset: 'ratelimit-reset',
-  retryAfter: 'retry-after'
-}
-
 async function rateLimitPlugin (fastify, settings) {
+  let labels = {
+    rateLimit: 'x-ratelimit-limit',
+    rateRemaining: 'x-ratelimit-remaining',
+    rateReset: 'x-ratelimit-reset',
+    retryAfter: 'retry-after'
+  }
+
+  const draftSpecHeaders = {
+    rateLimit: 'ratelimit-limit',
+    rateRemaining: 'ratelimit-remaining',
+    rateReset: 'ratelimit-reset',
+    retryAfter: 'retry-after'
+  }
+
   // create the object that will hold the "main" settings that can be shared during the build
   // 'global' will define, if the rate limit should be apply by default on all route. default : true
   const globalParams = {
