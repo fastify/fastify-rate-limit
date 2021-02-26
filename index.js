@@ -85,6 +85,8 @@ async function rateLimitPlugin (fastify, settings) {
     globalParams.isCustomErrorMessage = true
   }
 
+  globalParams.skipOnError = settings.skipOnError || false
+
   // onRoute add the onRequest rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
@@ -129,7 +131,7 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
   }
 
   // onRequest function that will be use for current endpoint been processed
-  function onRequest (req, res, next) {
+  async function onRequest (req, res) {
     // We retrieve the key from the generator. (can be the global one, or the one define in the endpoint)
     const key = params.keyGenerator(req)
 
@@ -137,72 +139,83 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
     if (pluginComponent.allowList) {
       if (typeof pluginComponent.allowList === 'function') {
         if (pluginComponent.allowList(req, key)) {
-          next()
           return
         }
       } else if (pluginComponent.allowList.indexOf(key) > -1) {
-        next()
         return
       }
     }
 
+    let current = 0
+    let ttl = 0
+
     // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
-    pluginComponent.store.incr(key, onIncr)
+    try {
+      const res = await new Promise(function (resolve, reject) {
+        pluginComponent.store.incr(key, function (err, res) {
+          if (err) {
+            reject(err)
+            return
+          }
 
-    async function onIncr (err, { current, ttl }) {
-      if (err && params.skipOnError === false) {
-        return next(err)
-      }
+          resolve(res)
+        })
+      })
 
-      const maximum = await getMax()
-      const timeLeft = Math.floor(ttl / 1000)
-
-      if (current <= maximum) {
-        res.header(params.labels.rateLimit, maximum)
-          .header(params.labels.rateRemaining, maximum - current)
-          .header(params.labels.rateReset, timeLeft)
-
-        if (typeof params.onExceeding === 'function') {
-          params.onExceeding(req)
-        }
-
-        next()
-      } else {
-        if (typeof params.onExceeded === 'function') {
-          params.onExceeded(req)
-        }
-
-        if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
-        if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
-        if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
-        if (params.addHeaders[params.labels.retryAfter]) {
-          const resetAfterTime = (params.enableDraftSpec) ? timeLeft : params.timeWindow
-          res.header(params.labels.retryAfter, resetAfterTime)
-        }
-
-        const code = params.ban && current - maximum > params.ban ? 403 : 429
-        res.code(code)
-
-        const respCtx = {
-          statusCode: code,
-          after,
-          max: maximum
-        }
-
-        if (code === 403) {
-          respCtx.ban = true
-        }
-        res.send(params.errorResponseBuilder(req, respCtx))
-      }
-
-      async function getMax () {
-        if (typeof params.max === 'number') {
-          return params.max
-        } else {
-          return await params.max(req, key)
-        }
+      current = res.current
+      ttl = res.ttl
+    } catch (err) {
+      if (!params.skipOnError) {
+        throw err
       }
     }
+
+    let maximum
+
+    if (typeof params.max === 'number') {
+      maximum = params.max
+    } else {
+      maximum = await params.max(req, key)
+    }
+
+    const timeLeft = Math.floor(ttl / 1000)
+
+    if (current <= maximum) {
+      res.header(params.labels.rateLimit, maximum)
+        .header(params.labels.rateRemaining, maximum - current)
+        .header(params.labels.rateReset, timeLeft)
+
+      if (typeof params.onExceeding === 'function') {
+        params.onExceeding(req)
+      }
+
+      return
+    }
+    if (typeof params.onExceeded === 'function') {
+      params.onExceeded(req)
+    }
+
+    if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
+    if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
+    if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
+    if (params.addHeaders[params.labels.retryAfter]) {
+      const resetAfterTime = (params.enableDraftSpec) ? timeLeft : params.timeWindow
+      res.header(params.labels.retryAfter, resetAfterTime)
+    }
+
+    const code = params.ban && current - maximum > params.ban ? 403 : 429
+    res.code(code)
+
+    const respCtx = {
+      statusCode: code,
+      after,
+      max: maximum
+    }
+
+    if (code === 403) {
+      respCtx.ban = true
+    }
+    return res.send(params.errorResponseBuilder(req, respCtx))
   }
 }
 

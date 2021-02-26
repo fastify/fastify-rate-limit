@@ -287,12 +287,17 @@ test('Skip on redis error', t => {
   const redis = new Redis({ host: REDIS_HOST })
   fastify.register(rateLimit, {
     redis: redis,
-    global: false,
-    skipError: false
+    global: false
   })
 
   fastify.get('/', {
-    config: defaultRouteConfig
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000,
+        skipOnError: true
+      }
+    }
   }, (req, reply) => {
     reply.send('hello!')
   })
