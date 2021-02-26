@@ -1065,3 +1065,39 @@ test('With enable IETF draft spec', t => {
     t.strictEqual(res.headers['ratelimit-reset'], 1)
   })
 })
+
+test('per route rate limit', async t => {
+  const fastifyR = Fastify({
+    exposeHeadRoutes: true
+  })
+  fastifyR.register(rateLimit, { global: false })
+
+  fastifyR.get('/', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: 1000
+      }
+    }
+  }, async (req, reply) => {
+    return 'hello!'
+  })
+
+  const res = await fastifyR.inject({
+    url: '/',
+    method: 'GET'
+  })
+
+  const resHead = await fastifyR.inject({
+    url: '/',
+    method: 'HEAD'
+  })
+
+  t.strictEqual(res.statusCode, 200, 'GET: Response status code')
+  t.strictEqual(res.headers['x-ratelimit-limit'], 10, 'GET: x-ratelimit-limit header (per route limit)')
+  t.strictEqual(res.headers['x-ratelimit-remaining'], 9, 'GET: x-ratelimit-remaining header (per route limit)')
+
+  t.strictEqual(resHead.statusCode, 200, 'HEAD: Response status code')
+  t.strictEqual(resHead.headers['x-ratelimit-limit'], 10, 'HEAD: x-ratelimit-limit header (per route limit)')
+  t.strictEqual(resHead.headers['x-ratelimit-remaining'], 8, 'HEAD: x-ratelimit-remaining header (per route limit)')
+})

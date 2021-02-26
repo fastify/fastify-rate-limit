@@ -6,21 +6,21 @@ const ms = require('ms')
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
 
-let labels = {
-  rateLimit: 'x-ratelimit-limit',
-  rateRemaining: 'x-ratelimit-remaining',
-  rateReset: 'x-ratelimit-reset',
-  retryAfter: 'retry-after'
-}
-
-const draftSpecHeaders = {
-  rateLimit: 'ratelimit-limit',
-  rateRemaining: 'ratelimit-remaining',
-  rateReset: 'ratelimit-reset',
-  retryAfter: 'retry-after'
-}
-
 async function rateLimitPlugin (fastify, settings) {
+  let labels = {
+    rateLimit: 'x-ratelimit-limit',
+    rateRemaining: 'x-ratelimit-remaining',
+    rateReset: 'x-ratelimit-reset',
+    retryAfter: 'retry-after'
+  }
+
+  const draftSpecHeaders = {
+    rateLimit: 'ratelimit-limit',
+    rateRemaining: 'ratelimit-remaining',
+    rateReset: 'ratelimit-reset',
+    retryAfter: 'retry-after'
+  }
+
   // create the object that will hold the "main" settings that can be shared during the build
   // 'global' will define, if the rate limit should be apply by default on all route. default : true
   const globalParams = {
@@ -87,6 +87,10 @@ async function rateLimitPlugin (fastify, settings) {
 
   globalParams.skipOnError = settings.skipOnError || false
 
+  const run = Symbol('rate-limit-did-run')
+  pluginComponent.run = run
+  fastify.decorateRequest(run, false)
+
   // onRoute add the onRequest rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
@@ -120,6 +124,7 @@ async function rateLimitPlugin (fastify, settings) {
 }
 
 async function buildRouteRate (pluginComponent, params, routeOptions) {
+  const run = pluginComponent.run
   const after = ms(params.timeWindow, { long: true })
 
   if (Array.isArray(routeOptions.onRequest)) {
@@ -132,6 +137,11 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
 
   // onRequest function that will be use for current endpoint been processed
   async function onRequest (req, res) {
+    if (req[run]) {
+      return
+    }
+    req[run] = true
+
     // We retrieve the key from the generator. (can be the global one, or the one define in the endpoint)
     const key = params.keyGenerator(req)
 
