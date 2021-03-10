@@ -90,7 +90,11 @@ async function rateLimitPlugin (fastify, settings) {
   const run = Symbol('rate-limit-did-run')
   pluginComponent.run = run
   fastify.decorateRequest(run, false)
-  fastify.decorate('rateLimit', rateLimitRequestHandler(globalParams, pluginComponent))
+
+  if (!fastify.hasDecorator('rateLimit')) {
+    // The rate limit plugin can be registered multiple times but decorate throws if called multiple times for the same field
+    fastify.decorate('rateLimit', rateLimitRequestHandler(globalParams, pluginComponent))
+  }
 
   // onRoute add the onRequest rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
