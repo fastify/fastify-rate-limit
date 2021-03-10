@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { FastifyPlugin, FastifyRequest, RouteOptions, RawServerBase, RawServerDefault, RawRequestDefaultExpression, RequestGenericInterface } from 'fastify';
+import { FastifyPlugin, FastifyRequest, RouteOptions, RawServerBase, RawServerDefault, RawRequestDefaultExpression, RequestGenericInterface, preHandlerAsyncHookHandler } from 'fastify';
 
 declare module 'fastify' {
   interface FastifyRequestInterface<
@@ -9,6 +9,9 @@ declare module 'fastify' {
     RequestGeneric extends RequestGenericInterface = RequestGenericInterface
     > {
     ip: string | number
+  }
+  interface FastifyInstance {
+    rateLimit: preHandlerAsyncHookHandler;
   }
 }
 
@@ -49,7 +52,7 @@ export interface RateLimitPluginOptions {
   cache?: number;
   store?: FastifyRateLimitStoreCtor;
   /**
-  * @deprecated Use `allowList` property 
+  * @deprecated Use `allowList` property
   */
   whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
   allowList?: string[] | ((req: FastifyRequest, key: string) => boolean);

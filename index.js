@@ -90,6 +90,7 @@ async function rateLimitPlugin (fastify, settings) {
   const run = Symbol('rate-limit-did-run')
   pluginComponent.run = run
   fastify.decorateRequest(run, false)
+  fastify.decorate('rateLimit', rateLimitRequestHandler(globalParams, pluginComponent))
 
   // onRoute add the onRequest rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
@@ -124,9 +125,7 @@ async function rateLimitPlugin (fastify, settings) {
 }
 
 async function buildRouteRate (pluginComponent, params, routeOptions) {
-  const run = pluginComponent.run
-  const after = ms(params.timeWindow, { long: true })
-
+  const onRequest = rateLimitRequestHandler(params, pluginComponent)
   if (Array.isArray(routeOptions.onRequest)) {
     routeOptions.onRequest.push(onRequest)
   } else if (typeof routeOptions.onRequest === 'function') {
@@ -134,9 +133,13 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
   } else {
     routeOptions.onRequest = [onRequest]
   }
+}
 
-  // onRequest function that will be use for current endpoint been processed
-  async function onRequest (req, res) {
+function rateLimitRequestHandler (params, pluginComponent) {
+  return async function onRequestRateLimiter (req, res) {
+    const run = pluginComponent.run
+    const after = ms(params.timeWindow, { long: true })
+
     if (req[run]) {
       return
     }
@@ -198,7 +201,6 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
       if (typeof params.onExceeding === 'function') {
         params.onExceeding(req)
       }
-
       return
     }
     if (typeof params.onExceeded === 'function') {
