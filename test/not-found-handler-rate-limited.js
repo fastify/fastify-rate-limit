@@ -9,7 +9,6 @@ test('Set not found handler can be rate limited', t => {
   t.plan(27)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 }).then(() => {
-
     t.ok(fastify.rateLimit)
 
     fastify.setNotFoundHandler({
