@@ -11,7 +11,7 @@ declare module 'fastify' {
     ip: string | number
   }
   interface FastifyInstance {
-    rateLimit: preHandlerAsyncHookHandler;
+    rateLimit: () => preHandlerAsyncHookHandler;
   }
 }
 

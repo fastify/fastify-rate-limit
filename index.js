@@ -93,7 +93,7 @@ async function rateLimitPlugin (fastify, settings) {
 
   if (!fastify.hasDecorator('rateLimit')) {
     // The rate limit plugin can be registered multiple times but decorate throws if called multiple times for the same field
-    fastify.decorate('rateLimit', rateLimitRequestHandler(globalParams, pluginComponent))
+    fastify.decorate('rateLimit', function rateLimit () { return rateLimitRequestHandler(globalParams, pluginComponent) })
   }
 
   // onRoute add the onRequest rate-limit function if needed
