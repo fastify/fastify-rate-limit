@@ -71,7 +71,22 @@ To rate limit your 404 response, you can use a custom handler:
 const fastify = Fastify()
 await fastify.register(rateLimit, { global: true, max: 2, timeWindow: 1000 })
 fastify.setNotFoundHandler({
-  preHandler: fastify.rateLimit
+  preHandler: fastify.rateLimit()
+}, function (request, reply) {
+  reply.code(404).send({ hello: 'world' })
+})
+```
+
+Note that you can customize the behaviour of the preHandler in the same way you would for specific routes:
+
+```js
+const fastify = Fastify()
+await fastify.register(rateLimit, { global: true, max: 2, timeWindow: 1000 })
+fastify.setNotFoundHandler({
+  preHandler: fastify.rateLimit({
+    max: 4,
+    timeWindow: 500
+  })
 }, function (request, reply) {
   reply.code(404).send({ hello: 'world' })
 })
