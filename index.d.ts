@@ -11,7 +11,7 @@ declare module 'fastify' {
     ip: string | number
   }
   interface FastifyInstance {
-    rateLimit: (options?:RateLimitPluginOptions) => preHandlerAsyncHookHandler;
+    rateLimit: (options?:RateLimitOptions) => preHandlerAsyncHookHandler;
   }
 }
 
@@ -45,8 +45,7 @@ interface DraftSpecAddHeaders {
   'retry-after'?: boolean
 }
 
-export interface RateLimitPluginOptions {
-  global?: boolean;
+export interface RateLimitOptions {
   max?: number | ((req: FastifyRequest, key: string) => number);
   timeWindow?: number | string;
   cache?: number;
@@ -56,13 +55,18 @@ export interface RateLimitPluginOptions {
   */
   whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
   allowList?: string[] | ((req: FastifyRequest, key: string) => boolean);
-  redis?: any;
   skipOnError?: boolean;
   ban?: number;
   keyGenerator?: (req: FastifyRequest) => string | number;
   errorResponseBuilder?: (req: FastifyRequest, context: errorResponseBuilderContext) => object;
-  addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
   enableDraftSpec?: boolean;
+}
+
+export interface RateLimitPluginOptions extends RateLimitOptions {
+  global?: boolean;
+  cache?: number;
+  redis?: any;
+  addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
 }
 
 declare const fastifyRateLimit: FastifyPlugin<RateLimitPluginOptions>;
