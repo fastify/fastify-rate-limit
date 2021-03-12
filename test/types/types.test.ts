@@ -49,7 +49,10 @@ appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
-  const preHandler:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
+  const preHandler1:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
+  const preHandler2:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options1)
+  const preHandler3:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options2)
+  const preHandler4:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options3)
   // The following test is dependent on https://github.com/fastify/fastify/pull/2929
   // appWithImplicitHttp.setNotFoundHandler({
   //   preHandler: appWithImplicitHttp.rateLimit()
