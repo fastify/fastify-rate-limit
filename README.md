@@ -61,6 +61,37 @@ The response will have some additional headers:
 |`x-ratelimit-reset`     | how many seconds must pass before the rate limit resets
 |`retry-after`           | if the max has been reached, the millisecond the client must wait before perform new requests
 
+
+### Preventing guessing of URLS through 404s
+
+An attacker could search for valid URLs if your 404 error handling is not rate limited.
+To rate limit your 404 response, you can use a custom handler:
+
+```js
+const fastify = Fastify()
+await fastify.register(rateLimit, { global: true, max: 2, timeWindow: 1000 })
+fastify.setNotFoundHandler({
+  preHandler: fastify.rateLimit()
+}, function (request, reply) {
+  reply.code(404).send({ hello: 'world' })
+})
+```
+
+Note that you can customize the behaviour of the preHandler in the same way you would for specific routes:
+
+```js
+const fastify = Fastify()
+await fastify.register(rateLimit, { global: true, max: 2, timeWindow: 1000 })
+fastify.setNotFoundHandler({
+  preHandler: fastify.rateLimit({
+    max: 4,
+    timeWindow: 500
+  })
+}, function (request, reply) {
+  reply.code(404).send({ hello: 'world' })
+})
+```
+
 ### Options
 
 You can pass the following options during the plugin registration:
@@ -76,7 +107,7 @@ fastify.register(require('fastify-rate-limit'), {
   skipOnError: true, // default false
   keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
   errorResponseBuilder: function(req, context) { /* ... */},
-  enableDraftSpec: true, // default false. Uses IEFT draft header standard 
+  enableDraftSpec: true, // default false. Uses IEFT draft header standard
   addHeaders: { // default show all the response headers when rate limit is reached
     'x-ratelimit-limit': true,
     'x-ratelimit-remaining': true,
@@ -211,7 +242,7 @@ fastify.register(require('fastify-rate-limit'),
   {
     global : false, // don't apply these settings to all the routes of the context
     max: 3000, // default global max rate limit
-    allowList: ['192.168.0.10'], // global allowlist access. 
+    allowList: ['192.168.0.10'], // global allowlist access.
     redis: redis, // custom connection to redis
   })
 

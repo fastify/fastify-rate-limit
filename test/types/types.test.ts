@@ -1,6 +1,5 @@
-import * as http from 'http'
 import * as http2 from 'http2'
-import fastify, { RouteOptions, FastifyRequest, FastifyInstance, RequestGenericInterface } from 'fastify';
+import fastify, { RouteOptions, FastifyRequest, FastifyInstance, RequestGenericInterface, FastifyReply, preHandlerAsyncHookHandler } from 'fastify';
 import * as ioredis from 'ioredis';
 import fastifyRateLimit, { FastifyRateLimitStore, FastifyRateLimitOptions, errorResponseBuilderContext, RateLimitPluginOptions } from '../../';
 
@@ -48,7 +47,20 @@ const options3 = {
 
 appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
-appWithImplicitHttp.register(fastifyRateLimit, options3)
+
+appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
+  const preHandler1:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
+  const preHandler2:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options1)
+  const preHandler3:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options2)
+  const preHandler4:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options3)
+  // The following test is dependent on https://github.com/fastify/fastify/pull/2929
+  // appWithImplicitHttp.setNotFoundHandler({
+  //   preHandler: appWithImplicitHttp.rateLimit()
+  // }, function (request:FastifyRequest<RequestGenericInterface>, reply: FastifyReply<ReplyGenericInterface>) {
+  //   reply.status(404).send(new Error('Not found'))
+  // })
+})
+
 
 const appWithHttp2: FastifyInstance<
   http2.Http2Server,

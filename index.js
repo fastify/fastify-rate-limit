@@ -91,6 +91,17 @@ async function rateLimitPlugin (fastify, settings) {
   pluginComponent.run = run
   fastify.decorateRequest(run, false)
 
+  if (!fastify.hasDecorator('rateLimit')) {
+    // The rate limit plugin can be registered multiple times but decorate throws if called multiple times for the same field
+    fastify.decorate('rateLimit', function rateLimit (options) {
+      let params = globalParams
+      if (options) {
+        params = makeParams(options)
+      }
+      return rateLimitRequestHandler(params, pluginComponent)
+    })
+  }
+
   // onRoute add the onRequest rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
@@ -124,9 +135,7 @@ async function rateLimitPlugin (fastify, settings) {
 }
 
 async function buildRouteRate (pluginComponent, params, routeOptions) {
-  const run = pluginComponent.run
-  const after = ms(params.timeWindow, { long: true })
-
+  const onRequest = rateLimitRequestHandler(params, pluginComponent)
   if (Array.isArray(routeOptions.onRequest)) {
     routeOptions.onRequest.push(onRequest)
   } else if (typeof routeOptions.onRequest === 'function') {
@@ -134,9 +143,13 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
   } else {
     routeOptions.onRequest = [onRequest]
   }
+}
 
-  // onRequest function that will be use for current endpoint been processed
-  async function onRequest (req, res) {
+function rateLimitRequestHandler (params, pluginComponent) {
+  return async function onRequestRateLimiter (req, res) {
+    const run = pluginComponent.run
+    const after = ms(params.timeWindow, { long: true })
+
     if (req[run]) {
       return
     }
@@ -198,7 +211,6 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
       if (typeof params.onExceeding === 'function') {
         params.onExceeding(req)
       }
-
       return
     }
     if (typeof params.onExceeded === 'function') {

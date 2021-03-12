@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { FastifyPlugin, FastifyRequest, RouteOptions, RawServerBase, RawServerDefault, RawRequestDefaultExpression, RequestGenericInterface } from 'fastify';
+import { FastifyPlugin, FastifyRequest, RouteOptions, RawServerBase, RawServerDefault, RawRequestDefaultExpression, RequestGenericInterface, preHandlerAsyncHookHandler } from 'fastify';
 
 declare module 'fastify' {
   interface FastifyRequestInterface<
@@ -9,6 +9,9 @@ declare module 'fastify' {
     RequestGeneric extends RequestGenericInterface = RequestGenericInterface
     > {
     ip: string | number
+  }
+  interface FastifyInstance {
+    rateLimit: (options?:RateLimitOptions) => preHandlerAsyncHookHandler;
   }
 }
 
@@ -42,24 +45,28 @@ interface DraftSpecAddHeaders {
   'retry-after'?: boolean
 }
 
-export interface RateLimitPluginOptions {
-  global?: boolean;
+export interface RateLimitOptions {
   max?: number | ((req: FastifyRequest, key: string) => number);
   timeWindow?: number | string;
   cache?: number;
   store?: FastifyRateLimitStoreCtor;
   /**
-  * @deprecated Use `allowList` property 
+  * @deprecated Use `allowList` property
   */
   whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
   allowList?: string[] | ((req: FastifyRequest, key: string) => boolean);
-  redis?: any;
   skipOnError?: boolean;
   ban?: number;
   keyGenerator?: (req: FastifyRequest) => string | number;
   errorResponseBuilder?: (req: FastifyRequest, context: errorResponseBuilderContext) => object;
-  addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
   enableDraftSpec?: boolean;
+}
+
+export interface RateLimitPluginOptions extends RateLimitOptions {
+  global?: boolean;
+  cache?: number;
+  redis?: any;
+  addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
 }
 
 declare const fastifyRateLimit: FastifyPlugin<RateLimitPluginOptions>;
