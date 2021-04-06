@@ -4,9 +4,9 @@
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "scripts": {
-    "redis": "docker run -p 6379:6379 --rm redis:3.0.7",
     "lint": "standard",
     "lint:fix": "standard --fix",
+    "redis": "docker run -p 6379:6379 --rm redis:3.0.7",
     "test": "standard && tap test/*.test.js && npm run typescript",
     "typescript": "tsd"
   },
