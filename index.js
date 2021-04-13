@@ -231,7 +231,8 @@ function rateLimitRequestHandler (params, pluginComponent) {
     const respCtx = {
       statusCode: code,
       after,
-      max: maximum
+      max: maximum,
+      ttl
     }
 
     if (code === 403) {

@@ -168,7 +168,8 @@ fastify.register(require('fastify-rate-limit'), {
       code: 429,
       error: 'Too Many Requests',
       message: `I only allow ${context.max} requests per ${context.after} to this Website. Try again soon.`,
-      date: Date.now()
+      date: Date.now(),
+      expiresIn: context.ttl // milliseconds
     }
   }
 })

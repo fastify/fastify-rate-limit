@@ -20,6 +20,7 @@ export interface FastifyRateLimitOptions { }
 export interface errorResponseBuilderContext {
   after: string;
   max: number;
+  ttl: number;
 }
 
 export interface FastifyRateLimitStoreCtor {
