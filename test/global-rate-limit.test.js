@@ -662,12 +662,20 @@ test('stops fastify lifecycle after onRequest and before preValidation', t => {
 })
 
 test('With enabled IETF Draft Spec', t => {
-  t.plan(19)
+  t.plan(20)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 2,
     timeWindow: '1s',
-    enableDraftSpec: true
+    enableDraftSpec: true,
+    errorResponseBuilder: function (req, context) {
+      return {
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Rate limit exceeded, retry in 1 second',
+        ttl: context.ttl
+      }
+    }
   })
 
   fastify.get('/', (req, reply) => {
@@ -693,11 +701,13 @@ test('With enabled IETF Draft Spec', t => {
         t.strictEqual(res.headers['ratelimit-limit'], 2)
         t.strictEqual(res.headers['ratelimit-remaining'], 0)
         t.strictEqual(res.headers['ratelimit-remaining'], res.headers['retry-after'])
+        const { ttl, ...payload } = JSON.parse(res.payload)
+        t.strictEqual(res.headers['retry-after'], Math.floor(ttl / 1000))
         t.deepEqual({
           statusCode: 429,
           error: 'Too Many Requests',
           message: 'Rate limit exceeded, retry in 1 second'
-        }, JSON.parse(res.payload))
+        }, payload)
 
         setTimeout(retry, 1100)
       })
