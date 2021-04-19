@@ -15,6 +15,6 @@ test('Fastify close on local store', t => {
     done()
   })
   fastify.close(() => {
-    t.strictEqual(counter, 2)
+    t.equal(counter, 2)
   })
 })
