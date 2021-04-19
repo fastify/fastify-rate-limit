@@ -225,7 +225,7 @@ test('With function allowList', t => {
 test('With redis store', t => {
   t.plan(23)
   const fastify = Fastify()
-  const redis = new Redequal({ host: REDIS_HOST })
+  const redis = new Redis({ host: REDIS_HOST })
   fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000,
@@ -285,7 +285,7 @@ test('With redis store', t => {
 test('Skip on redis error', t => {
   t.plan(13)
   const fastify = Fastify()
-  const redis = new Redequal({ host: REDIS_HOST })
+  const redis = new Redis({ host: REDIS_HOST })
   fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000,
@@ -811,7 +811,7 @@ test('Before async in "max"', async t => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     keyGenerator (req) { return req.headers['api-key'] },
-    max: async (req, key) => { return await requestSequence(key) },
+    max: async (req, key) => { return requestSequence(key) },
     timeWindow: 10000
   })
 
