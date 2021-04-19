@@ -20,24 +20,24 @@ test('Basic', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 2)
+    t.equal(res.headers['x-ratelimit-remaining'], 1)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 2)
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 429)
-        t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-        t.strictEqual(res.headers['retry-after'], 1000)
-        t.deepEqual({
+        t.equal(res.statusCode, 429)
+        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+        t.equal(res.headers['x-ratelimit-limit'], 2)
+        t.equal(res.headers['x-ratelimit-remaining'], 0)
+        t.equal(res.headers['retry-after'], 1000)
+        t.same({
           statusCode: 429,
           error: 'Too Many Requests',
           message: 'Rate limit exceeded, retry in 1 second'
@@ -51,9 +51,9 @@ test('Basic', t => {
   function retry () {
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 2)
+      t.equal(res.headers['x-ratelimit-remaining'], 1)
     })
   }
 })
@@ -69,24 +69,24 @@ test('With text timeWindow', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 2)
+    t.equal(res.headers['x-ratelimit-remaining'], 1)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 2)
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 429)
-        t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-        t.strictEqual(res.headers['retry-after'], 1000)
-        t.deepEqual({
+        t.equal(res.statusCode, 429)
+        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+        t.equal(res.headers['x-ratelimit-limit'], 2)
+        t.equal(res.headers['x-ratelimit-remaining'], 0)
+        t.equal(res.headers['retry-after'], 1000)
+        t.same({
           statusCode: 429,
           error: 'Too Many Requests',
           message: 'Rate limit exceeded, retry in 1 second'
@@ -100,9 +100,9 @@ test('With text timeWindow', t => {
   function retry () {
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 2)
+      t.equal(res.headers['x-ratelimit-remaining'], 1)
     })
   }
 })
@@ -122,15 +122,15 @@ test('With ips allowList', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
+    t.equal(res.statusCode, 200)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
+      t.equal(res.statusCode, 200)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 200)
+        t.equal(res.statusCode, 200)
       })
     })
   })
@@ -151,15 +151,15 @@ test('With ips whitelist', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
+    t.equal(res.statusCode, 200)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
+      t.equal(res.statusCode, 200)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 200)
+        t.equal(res.statusCode, 200)
       })
     })
   })
@@ -174,7 +174,7 @@ test('With function allowList', t => {
     keyGenerator () { return 42 },
     allowList: function (req, key) {
       t.ok(req.headers)
-      t.equals(key, 42)
+      t.equal(key, 42)
       return req.headers['x-my-header'] !== undefined
     }
   })
@@ -193,30 +193,30 @@ test('With function allowList', t => {
 
   fastify.inject(allowListHeader, (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
+    t.equal(res.statusCode, 200)
 
     fastify.inject(allowListHeader, (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
+      t.equal(res.statusCode, 200)
 
       fastify.inject(allowListHeader, (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 200)
+        t.equal(res.statusCode, 200)
       })
     })
   })
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
+    t.equal(res.statusCode, 200)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
+      t.equal(res.statusCode, 200)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 429)
+        t.equal(res.statusCode, 429)
       })
     })
   })
@@ -238,27 +238,27 @@ test('With redis store', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
-    t.strictEqual(res.headers['x-ratelimit-reset'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 2)
+    t.equal(res.headers['x-ratelimit-remaining'], 1)
+    t.equal(res.headers['x-ratelimit-reset'], 1)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-      t.strictEqual(res.headers['x-ratelimit-reset'], 0)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 2)
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
+      t.equal(res.headers['x-ratelimit-reset'], 0)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 429)
-        t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-        t.strictEqual(res.headers['x-ratelimit-reset'], 0)
-        t.strictEqual(res.headers['retry-after'], 1000)
-        t.deepEqual({
+        t.equal(res.statusCode, 429)
+        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+        t.equal(res.headers['x-ratelimit-limit'], 2)
+        t.equal(res.headers['x-ratelimit-remaining'], 0)
+        t.equal(res.headers['x-ratelimit-reset'], 0)
+        t.equal(res.headers['retry-after'], 1000)
+        t.same({
           statusCode: 429,
           error: 'Too Many Requests',
           message: 'Rate limit exceeded, retry in 1 second'
@@ -274,10 +274,10 @@ test('With redis store', t => {
       redis.flushall(noop)
       redis.quit(noop)
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
-      t.strictEqual(res.headers['x-ratelimit-reset'], 1)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 2)
+      t.equal(res.headers['x-ratelimit-remaining'], 1)
+      t.equal(res.headers['x-ratelimit-reset'], 1)
     })
   }
 })
@@ -299,9 +299,9 @@ test('Skip on redis error', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 2)
+    t.equal(res.headers['x-ratelimit-remaining'], 1)
 
     redis.flushall(noop)
     redis.quit(err => {
@@ -309,15 +309,15 @@ test('Skip on redis error', t => {
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 200)
-        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-        t.strictEqual(res.headers['x-ratelimit-remaining'], 2)
+        t.equal(res.statusCode, 200)
+        t.equal(res.headers['x-ratelimit-limit'], 2)
+        t.equal(res.headers['x-ratelimit-remaining'], 2)
 
         fastify.inject('/', (err, res) => {
           t.error(err)
-          t.strictEqual(res.statusCode, 200)
-          t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-          t.strictEqual(res.headers['x-ratelimit-remaining'], 2)
+          t.equal(res.statusCode, 200)
+          t.equal(res.headers['x-ratelimit-limit'], 2)
+          t.equal(res.headers['x-ratelimit-remaining'], 2)
         })
       })
     })
@@ -331,7 +331,7 @@ test('With keyGenerator', t => {
     max: 2,
     timeWindow: 1000,
     keyGenerator (req) {
-      t.strictEqual(req.headers['my-custom-header'], 'random-value')
+      t.equal(req.headers['my-custom-header'], 'random-value')
       return req.headers['my-custom-header']
     }
   })
@@ -350,24 +350,24 @@ test('With keyGenerator', t => {
 
   fastify.inject(payload, (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 2)
+    t.equal(res.headers['x-ratelimit-remaining'], 1)
 
     fastify.inject(payload, (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 2)
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
 
       fastify.inject(payload, (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 429)
-        t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-        t.strictEqual(res.headers['retry-after'], 1000)
-        t.deepEqual({
+        t.equal(res.statusCode, 429)
+        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+        t.equal(res.headers['x-ratelimit-limit'], 2)
+        t.equal(res.headers['x-ratelimit-remaining'], 0)
+        t.equal(res.headers['retry-after'], 1000)
+        t.same({
           statusCode: 429,
           error: 'Too Many Requests',
           message: 'Rate limit exceeded, retry in 1 second'
@@ -381,9 +381,9 @@ test('With keyGenerator', t => {
   function retry () {
     fastify.inject(payload, (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 2)
+      t.equal(res.headers['x-ratelimit-remaining'], 1)
     })
   }
 })
@@ -419,27 +419,27 @@ test('With CustomStore', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
-    t.strictEqual(res.headers['x-ratelimit-reset'], 9)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 2)
+    t.equal(res.headers['x-ratelimit-remaining'], 1)
+    t.equal(res.headers['x-ratelimit-reset'], 9)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-      t.strictEqual(res.headers['x-ratelimit-reset'], 8)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 2)
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
+      t.equal(res.headers['x-ratelimit-reset'], 8)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 429)
-        t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-        t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-        t.strictEqual(res.headers['x-ratelimit-reset'], 7)
-        t.strictEqual(res.headers['retry-after'], 10000)
-        t.deepEqual({
+        t.equal(res.statusCode, 429)
+        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+        t.equal(res.headers['x-ratelimit-limit'], 2)
+        t.equal(res.headers['x-ratelimit-remaining'], 0)
+        t.equal(res.headers['x-ratelimit-reset'], 7)
+        t.equal(res.headers['retry-after'], 10000)
+        t.same({
           statusCode: 429,
           error: 'Too Many Requests',
           message: 'Rate limit exceeded, retry in 10 seconds'
@@ -468,9 +468,9 @@ test('does not override the onRequest', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 2)
+    t.equal(res.headers['x-ratelimit-remaining'], 1)
   })
 })
 
@@ -493,9 +493,9 @@ test('does not override the onRequest as an array', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 2)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 2)
+    t.equal(res.headers['x-ratelimit-remaining'], 1)
   })
 })
 
@@ -514,9 +514,9 @@ test('variable max', t => {
 
   fastify.inject({ url: '/', headers: { 'secret-max': 50 } }, (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 50)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 49)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 50)
+    t.equal(res.headers['x-ratelimit-remaining'], 49)
   })
 })
 
@@ -550,7 +550,7 @@ test('variable max contenders', t => {
     }
     fastify.inject({ url: item.url, headers: item.headers }, (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, item.status)
+      t.equal(res.statusCode, item.status)
       next()
     })
   }
@@ -574,15 +574,15 @@ test('hide rate limit headers', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['x-ratelimit-limit'], 1)
-    t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-    t.strictEqual(res.headers['x-ratelimit-reset'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 1)
+    t.equal(res.headers['x-ratelimit-remaining'], 0)
+    t.equal(res.headers['x-ratelimit-reset'], 1)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 429)
-      t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
+      t.equal(res.statusCode, 429)
+      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
       t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
       t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
       t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
@@ -595,10 +595,10 @@ test('hide rate limit headers', t => {
   function retry () {
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['x-ratelimit-limit'], 1)
-      t.strictEqual(res.headers['x-ratelimit-remaining'], 0)
-      t.strictEqual(res.headers['x-ratelimit-reset'], 1)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 1)
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
+      t.equal(res.headers['x-ratelimit-reset'], 1)
     })
   }
 })
@@ -617,15 +617,15 @@ test('With ban', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
+    t.equal(res.statusCode, 200)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 429)
+      t.equal(res.statusCode, 429)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 403)
+        t.equal(res.statusCode, 403)
       })
     })
   })
@@ -651,11 +651,11 @@ test('stops fastify lifecycle after onRequest and before preValidation', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
+    t.equal(res.statusCode, 200)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 429)
+      t.equal(res.statusCode, 429)
       t.equal(preValidationCallCount, 1)
     })
   })
@@ -684,26 +684,26 @@ test('With enabled IETF Draft Spec', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['ratelimit-limit'], 2)
-    t.strictEqual(res.headers['ratelimit-remaining'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['ratelimit-limit'], 2)
+    t.equal(res.headers['ratelimit-remaining'], 1)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['ratelimit-limit'], 2)
-      t.strictEqual(res.headers['ratelimit-remaining'], 0)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['ratelimit-limit'], 2)
+      t.equal(res.headers['ratelimit-remaining'], 0)
 
       fastify.inject('/', (err, res) => {
         t.error(err)
-        t.strictEqual(res.statusCode, 429)
-        t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.strictEqual(res.headers['ratelimit-limit'], 2)
-        t.strictEqual(res.headers['ratelimit-remaining'], 0)
-        t.strictEqual(res.headers['ratelimit-remaining'], res.headers['retry-after'])
+        t.equal(res.statusCode, 429)
+        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+        t.equal(res.headers['ratelimit-limit'], 2)
+        t.equal(res.headers['ratelimit-remaining'], 0)
+        t.equal(res.headers['ratelimit-remaining'], res.headers['retry-after'])
         const { ttl, ...payload } = JSON.parse(res.payload)
-        t.strictEqual(res.headers['retry-after'], Math.floor(ttl / 1000))
-        t.deepEqual({
+        t.equal(res.headers['retry-after'], Math.floor(ttl / 1000))
+        t.same({
           statusCode: 429,
           error: 'Too Many Requests',
           message: 'Rate limit exceeded, retry in 1 second'
@@ -717,9 +717,9 @@ test('With enabled IETF Draft Spec', t => {
   function retry () {
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['ratelimit-limit'], 2)
-      t.strictEqual(res.headers['ratelimit-remaining'], 1)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['ratelimit-limit'], 2)
+      t.equal(res.headers['ratelimit-remaining'], 1)
     })
   }
 })
@@ -743,15 +743,15 @@ test('hide IETF draft spec headers', t => {
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['ratelimit-limit'], 1)
-    t.strictEqual(res.headers['ratelimit-remaining'], 0)
-    t.strictEqual(res.headers['ratelimit-reset'], 1)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['ratelimit-limit'], 1)
+    t.equal(res.headers['ratelimit-remaining'], 0)
+    t.equal(res.headers['ratelimit-reset'], 1)
 
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 429)
-      t.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
+      t.equal(res.statusCode, 429)
+      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
       t.notOk(res.headers['ratelimit-limit'], 'the header must be missing')
       t.notOk(res.headers['ratelimit-remaining'], 'the header must be missing')
       t.notOk(res.headers['ratelimit-reset'], 'the header must be missing')
@@ -764,10 +764,10 @@ test('hide IETF draft spec headers', t => {
   function retry () {
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 200)
-      t.strictEqual(res.headers['ratelimit-limit'], 1)
-      t.strictEqual(res.headers['ratelimit-remaining'], 0)
-      t.strictEqual(res.headers['ratelimit-reset'], 1)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['ratelimit-limit'], 1)
+      t.equal(res.headers['ratelimit-remaining'], 0)
+      t.equal(res.headers['ratelimit-reset'], 1)
     })
   }
 })
@@ -787,9 +787,9 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
 
   fastify.inject('/', (err, res) => {
     t.error(err)
-    t.strictEqual(res.statusCode, 200)
-    t.strictEqual(res.headers['ratelimit-limit'], 1)
-    t.strictEqual(res.headers['ratelimit-remaining'], 0)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['ratelimit-limit'], 1)
+    t.equal(res.headers['ratelimit-remaining'], 0)
 
     setTimeout(retry.bind(null, 9), 500)
     setTimeout(retry.bind(null, 8), 1500)
@@ -798,11 +798,11 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
   function retry (timeLeft) {
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.strictEqual(res.statusCode, 429)
-      t.strictEqual(res.headers['ratelimit-limit'], 1)
-      t.strictEqual(res.headers['ratelimit-remaining'], 0)
-      t.strictEqual(res.headers['ratelimit-reset'], timeLeft)
-      t.strictEqual(res.headers['ratelimit-reset'], res.headers['retry-after'])
+      t.equal(res.statusCode, 429)
+      t.equal(res.headers['ratelimit-limit'], 1)
+      t.equal(res.headers['ratelimit-remaining'], 0)
+      t.equal(res.headers['ratelimit-reset'], timeLeft)
+      t.equal(res.headers['ratelimit-reset'], res.headers['retry-after'])
     })
   }
 })
@@ -811,7 +811,7 @@ test('Before async in "max"', async t => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     keyGenerator (req) { return req.headers['api-key'] },
-    max: async (req, key) => { return await requestSequence(key) },
+    max: async (req, key) => { return requestSequence(key) },
     timeWindow: 10000
   })
 
@@ -842,11 +842,11 @@ test('exposeHeadRoutes', async t => {
     method: 'HEAD'
   })
 
-  t.strictEqual(res.statusCode, 200, 'GET: Response status code')
-  t.strictEqual(res.headers['x-ratelimit-limit'], 10, 'GET: x-ratelimit-limit header (global rate limit)')
-  t.strictEqual(res.headers['x-ratelimit-remaining'], 9, 'GET: x-ratelimit-remaining header (global rate limit)')
+  t.equal(res.statusCode, 200, 'GET: Response status code')
+  t.equal(res.headers['x-ratelimit-limit'], 10, 'GET: x-ratelimit-limit header (global rate limit)')
+  t.equal(res.headers['x-ratelimit-remaining'], 9, 'GET: x-ratelimit-remaining header (global rate limit)')
 
-  t.strictEqual(resHead.statusCode, 200, 'HEAD: Response status code')
-  t.strictEqual(resHead.headers['x-ratelimit-limit'], 10, 'HEAD: x-ratelimit-limit header (global rate limit)')
-  t.strictEqual(resHead.headers['x-ratelimit-remaining'], 8, 'HEAD: x-ratelimit-remaining header (global rate limit)')
+  t.equal(resHead.statusCode, 200, 'HEAD: Response status code')
+  t.equal(resHead.headers['x-ratelimit-limit'], 10, 'HEAD: x-ratelimit-limit header (global rate limit)')
+  t.equal(resHead.headers['x-ratelimit-remaining'], 8, 'HEAD: x-ratelimit-remaining header (global rate limit)')
 })
