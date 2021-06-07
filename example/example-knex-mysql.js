@@ -49,50 +49,45 @@ KnexStore.prototype.incr = async function (key, cb) {
   const ttl = now + this.options.timeWindow
   const max = this.options.max
   const cond = { route: this.route, source: key }
-  try {
-    await knex.transaction(async (trx) => {
-      try {
-        // NOTE: MySQL syntax FOR UPDATE for read lock on counter stats in row
-        const row = await trx('rate_limits')
-          .whereRaw('route = ? AND source = ? FOR UPDATE', [cond.route || '', cond.source]) // Create read lock
-        const d = row[0]
-        if (d && d.ttl > now) {
-          // Optimization - no need to UPDATE if max has been reached.
-          if(d.count < max) {
-            try {
-              await trx
-                .raw('UPDATE rate_limits SET count = ? WHERE route = ? AND source = ?', [d.count + 1, cond.route, key])
-              cb(null, { current: d.count + 1, ttl: d.ttl })
-            } catch(err) {
-              // TODO: Handle as appropriate
-              fastify.log.error(err)
-              cb(err, { current: 0 })
-            }
-          } else { // We're already at max. No UPDATE above saves a write, but we must send d.count + 1 to trigger rate limit.
-            cb(null, { current: d.count +1, ttl: d.ttl })
-          }
-        } else {
+  await knex.transaction(async (trx) => {
+    try {
+      // NOTE: MySQL syntax FOR UPDATE for read lock on counter stats in row
+      const row = await trx('rate_limits')
+        .whereRaw('route = ? AND source = ? FOR UPDATE', [cond.route || '', cond.source]) // Create read lock
+      const d = row[0]
+      if (d && d.ttl > now) {
+        // Optimization - no need to UPDATE if max has been reached.
+        if(d.count < max) {
           try {
-            // NOTE: MySQL syntax for ON DUPLICATE KEY UPDATE
             await trx
-              .raw('INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?', [cond.route, key, (d && d.ttl) || ttl, ttl])
-            cb(null, { current: 1, ttl: (d && d.ttl) || ttl })
+              .raw('UPDATE rate_limits SET count = ? WHERE route = ? AND source = ?', [d.count + 1, cond.route, key])
+            cb(null, { current: d.count + 1, ttl: d.ttl })
           } catch(err) {
             // TODO: Handle as appropriate
             fastify.log.error(err)
             cb(err, { current: 0 })
           }
+        } else { // We're already at max. No UPDATE above saves a write, but we must send d.count + 1 to trigger rate limit.
+          cb(null, { current: d.count +1, ttl: d.ttl })
         }
-      } catch(err) {
-        // TODO: Handle as appropriate
-        fastify.log.error(err)
-        cb(err, { current: 0 })
+      } else {
+        try {
+          // NOTE: MySQL syntax for ON DUPLICATE KEY UPDATE
+          await trx
+            .raw('INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?', [cond.route, key, (d && d.ttl) || ttl, ttl])
+          cb(null, { current: 1, ttl: (d && d.ttl) || ttl })
+        } catch(err) {
+          // TODO: Handle as appropriate
+          fastify.log.error(err)
+          cb(err, { current: 0 })
+        }
       }
-    })
-  } catch(err) {
-    // TODO: Handle as appropriate
-    fastify.log.error(err)
-  }
+    } catch(err) {
+      // TODO: Handle as appropriate
+      fastify.log.error(err)
+      cb(err, { current: 0 })
+    }
+  })
 }
 
 KnexStore.prototype.child = function (routeOptions = {}) {
