@@ -307,8 +307,8 @@ In the route creation you can override the same settings of the plugin registrat
 These examples show an overview of the `store` feature and you should take inspiration from it and tweak as you need:
 
 - [Knex-SQLite](./example/example-knex.js)
+- [Knex-MySQL](./example/example-knex-mysql.js)
 - [Sequelize-PostgreSQL](./example/example-sequelize.js)
-
 
 ### IETF Draft Spec Headers
 
