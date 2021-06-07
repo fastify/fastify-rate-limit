@@ -44,62 +44,61 @@ KnexStore.prototype.routeKey = function (route) {
   return route
 }
 
-KnexStore.prototype.incr = function (key, cb) {
+KnexStore.prototype.incr = async function (key, cb) {
   const now = (new Date()).getTime()
   const ttl = now + this.options.timeWindow
   const max = this.options.max
   const cond = { route: this.route, source: key }
-  knex.transaction(function (trx) {
-    // NOTE: MySQL syntax FOR UPDATE for read lock on counter stats in row
-    trx('rate_limits')
-      .whereRaw('route = ? AND source = ? FOR UPDATE', [cond.route || '', cond.source]) // Create read lock
-      .then(r => {
-        const d = r[0]
+  try {
+    await knex.transaction(async (trx) => {
+      try {
+        // NOTE: MySQL syntax FOR UPDATE for read lock on counter stats in row
+        const row = await trx('rate_limits')
+          .whereRaw('route = ? AND source = ? FOR UPDATE', [cond.route || '', cond.source]) // Create read lock
+        const d = row[0]
         if (d && d.ttl > now) {
           // Optimization - no need to UPDATE if max has been reached.
           if(d.count < max) {
-            trx
-              .raw('UPDATE rate_limits SET count = ? WHERE route = ? AND source = ?', [d.count + 1, cond.route, key])
-              .then(() => {
-                cb(null, { current: d.count + 1, ttl: d.ttl })
-              })
-              .catch(err => {
-                trx.rollback()
-                cb(err, {
-                  current: 0,
-                })
-              })
-          } else { // No need to update the counter if we're already at max. Saves a write to the DB
+            try {
+              await trx
+                .raw('UPDATE rate_limits SET count = ? WHERE route = ? AND source = ?', [d.count + 1, cond.route, key])
+              cb(null, { current: d.count + 1, ttl: d.ttl })
+            } catch(err) {
+              // TODO: Handle as appropriate
+              fastify.log.error(err)
+              cb(err, { current: 0 })
+            }
+          } else { // We're already at max. No UPDATE above saves a write, but we must send d.count + 1 to trigger rate limit.
             cb(null, { current: d.count +1, ttl: d.ttl })
           }
         } else {
-          // NOTE: MySQL syntax for ON DUPLICATE KEY UPDATE
-          trx
-            .raw('INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?', [cond.route, key, (d && d.ttl) || ttl, ttl])
-            .then(() => {
-              cb(null, {
-                current: 1,
-                ttl: (d && d.ttl) || ttl,
-              })
-            })
-            .catch(err => {
-              trx.rollback()
-              cb(err, { current: 0 })
-            })
+          try {
+            // NOTE: MySQL syntax for ON DUPLICATE KEY UPDATE
+            await trx
+              .raw('INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?', [cond.route, key, (d && d.ttl) || ttl, ttl])
+            cb(null, { current: 1, ttl: (d && d.ttl) || ttl })
+          } catch(err) {
+            // TODO: Handle as appropriate
+            fastify.log.error(err)
+            cb(err, { current: 0 })
+          }
         }
-      })
-      .then(trx.commit)
-      .catch(err => {
-        trx.rollback()
+      } catch(err) {
+        // TODO: Handle as appropriate
+        fastify.log.error(err)
         cb(err, { current: 0 })
-      })
-  })
+      }
+    })
+  } catch(err) {
+    // TODO: Handle as appropriate
+    fastify.log.error(err)
+  }
 }
 
 KnexStore.prototype.child = function (routeOptions = {}) {
-  // NOTE: Force override and set global: false here for route specific
-  // options, which then allows you to use global: true, during initial
-  // registration below.
+  // NOTE: Optionally override and set global: false here for route specific
+  // options, which then allows you to use `global: true` should you
+  // wish to during initial registration below.
   const options = { ...this.options, ...routeOptions, global: false }
   const store = new KnexStore(options)
   store.routeKey(routeOptions.routeInfo.method + routeOptions.routeInfo.url)
