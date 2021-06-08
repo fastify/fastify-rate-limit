@@ -60,10 +60,9 @@ KnexStore.prototype.incr = async function (key, cb) {
       if(d.count < max) {
         await trx
           .raw('UPDATE rate_limits SET count = ? WHERE route = ? AND source = ?', [d.count + 1, cond.route, key])
-        process.nextTick(cb, null, { current: d.count + 1, ttl: d.ttl })
-      } else { // We're already at max. No UPDATE above saves a write, but we must send d.count + 1 to trigger rate limit.
-        process.nextTick(cb, null, { current: d.count +1, ttl: d.ttl })
       }
+      // If we were already at max no need to UPDATE but we must still send d.count + 1 to trigger rate limit.
+      process.nextTick(cb, null, { current: d.count +1, ttl: d.ttl })
     } else {
       await trx
         .raw('INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?', [cond.route, key, (d && d.ttl) || ttl, ttl])
