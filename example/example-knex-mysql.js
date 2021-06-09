@@ -1,4 +1,5 @@
 'use strict'
+/* eslint-disable no-undef */
 
 // Example of a custom store using Knex.js and MySQL.
 //
@@ -34,7 +35,7 @@
 //   PRIMARY KEY (`route`,`source`)
 // ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-function KnexStore(options) {
+function KnexStore (options) {
   this.options = options
   this.route = ''
 }
@@ -57,19 +58,19 @@ KnexStore.prototype.incr = async function (key, cb) {
     const d = row[0]
     if (d && d.ttl > now) {
       // Optimization - no need to UPDATE if max has been reached.
-      if(d.count < max) {
+      if (d.count < max) {
         await trx
           .raw('UPDATE rate_limits SET count = ? WHERE route = ? AND source = ?', [d.count + 1, cond.route, key])
       }
       // If we were already at max no need to UPDATE but we must still send d.count + 1 to trigger rate limit.
-      process.nextTick(cb, null, { current: d.count +1, ttl: d.ttl })
+      process.nextTick(cb, null, { current: d.count + 1, ttl: d.ttl })
     } else {
       await trx
         .raw('INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?', [cond.route, key, (d && d.ttl) || ttl, ttl])
       process.nextTick(cb, null, { current: 1, ttl: (d && d.ttl) || ttl })
     }
     await trx.commit()
-  } catch(err) {
+  } catch (err) {
     await trx.rollback()
     // TODO: Handle as desired
     fastify.log.error(err)
@@ -92,7 +93,7 @@ fastify.register(require('../../fastify-rate-limit'),
     global: false,
     max: 10,
     store: KnexStore,
-    skipOnError: false,
+    skipOnError: false
   }
 )
 
@@ -100,9 +101,9 @@ fastify.get('/', {
   config: {
     rateLimit: {
       max: 10,
-      timeWindow: '1 minute',
-    },
-  },
+      timeWindow: '1 minute'
+    }
+  }
 }, (req, reply) => {
   reply.send({ hello: 'from ... root' })
 })
@@ -111,9 +112,9 @@ fastify.get('/private', {
   config: {
     rateLimit: {
       max: 3,
-      timeWindow: '1 minute',
-    },
-  },
+      timeWindow: '1 minute'
+    }
+  }
 }, (req, reply) => {
   reply.send({ hello: 'from ... private' })
 })
@@ -121,4 +122,3 @@ fastify.get('/private', {
 fastify.get('/public', (req, reply) => {
   reply.send({ hello: 'from ... public' })
 })
-
