@@ -34,7 +34,7 @@
     "sqlite3": "^5.0.0",
     "standard": "^16.0.2",
     "tap": "^15.0.1",
-    "tsd": "^0.14.0"
+    "tsd": "^0.17.0"
   },
   "dependencies": {
     "fastify-plugin": "^3.0.0",
