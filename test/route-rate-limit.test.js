@@ -761,6 +761,132 @@ test('hide rate limit headers', t => {
   }
 })
 
+test('hide rate limit headers on exceeding', t => {
+  t.plan(17)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 1,
+    timeWindow: 1000,
+    addHeadersOnExceeding: {
+      'x-ratelimit-limit': false,
+      'x-ratelimit-remaining': false,
+      'x-ratelimit-reset': false
+    }
+  })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        timeWindow: 1000,
+        addHeadersOnExceeding: {
+          'x-ratelimit-limit': true, // this must override the global one
+          'x-ratelimit-remaining': false,
+          'x-ratelimit-reset': false
+        }
+      }
+    }
+  }, (req, res) => { res.send('hello') })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 1)
+    t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
+    t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.equal(res.statusCode, 429)
+      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+      t.equal(res.headers['x-ratelimit-limit'], 1)
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
+      t.not(res.headers['x-ratelimit-reset'], undefined)
+      t.equal(res.headers['retry-after'], 1000)
+
+      setTimeout(retry, 1100)
+    })
+  })
+
+  function retry () {
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.equal(res.statusCode, 200)
+      t.equal(res.headers['x-ratelimit-limit'], 1)
+      t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
+      t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+    })
+  }
+})
+
+test('hide rate limit headers at all times', t => {
+  t.plan(17)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: 1,
+    timeWindow: 1000,
+    addHeaders: {
+      'x-ratelimit-limit': false,
+      'x-ratelimit-remaining': false,
+      'x-ratelimit-reset': false,
+      'retry-after': false
+    },
+    addHeadersOnExceeding: {
+      'x-ratelimit-limit': false,
+      'x-ratelimit-remaining': false,
+      'x-ratelimit-reset': false
+    }
+  })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        timeWindow: 1000,
+        addHeaders: {
+          'x-ratelimit-limit': true, // this must override the global one
+          'x-ratelimit-remaining': false,
+          'x-ratelimit-reset': false,
+          'retry-after': false
+        },
+        addHeadersOnExceeding: {
+          'x-ratelimit-limit': false,
+          'x-ratelimit-remaining': true, // this must override the global one
+          'x-ratelimit-reset': false
+        }
+      }
+    }
+  }, (req, res) => { res.send('hello') })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.equal(res.statusCode, 200)
+    t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
+    t.equal(res.headers['x-ratelimit-remaining'], 0)
+    t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.equal(res.statusCode, 429)
+      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+      t.equal(res.headers['x-ratelimit-limit'], 1)
+      t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
+      t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+      t.notOk(res.headers['retry-after'], 'the header must be missing')
+
+      setTimeout(retry, 1100)
+    })
+  })
+
+  function retry () {
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.equal(res.statusCode, 200)
+      t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
+      t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+    })
+  }
+})
+
 test('global timeWindow when not set in routes', t => {
   t.plan(6)
   const fastify = Fastify()
