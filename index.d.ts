@@ -46,6 +46,18 @@ interface DraftSpecAddHeaders {
   'retry-after'?: boolean
 }
 
+interface DefaultAddHeadersOnExceeding {
+  'x-ratelimit-limit'?: boolean,
+  'x-ratelimit-remaining'?: boolean,
+  'x-ratelimit-reset'?: boolean
+}
+
+interface DraftSpecAddHeadersOnExceeding {
+  'ratelimit-limit'?: boolean,
+  'ratelimit-remaining'?: boolean,
+  'ratelimit-reset'?: boolean
+}
+
 export interface RateLimitOptions {
   max?: number | ((req: FastifyRequest, key: string) => number);
   timeWindow?: number | string;
@@ -68,6 +80,7 @@ export interface RateLimitPluginOptions extends RateLimitOptions {
   cache?: number;
   redis?: any;
   addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
+  addHeadersOnExceeding?: DefaultAddHeadersOnExceeding | DraftSpecAddHeadersOnExceeding;
 }
 
 declare const fastifyRateLimit: FastifyPlugin<RateLimitPluginOptions>;

@@ -23,6 +23,11 @@ const options1: RateLimitPluginOptions = {
   ban: 10,
   keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
   errorResponseBuilder: (req: FastifyRequest<RequestGenericInterface>, context: errorResponseBuilderContext) => ({ code: 429, timeWindow: context.after, limit: context.max }),
+  addHeadersOnExceeding: {
+    'x-ratelimit-limit': false,
+    'x-ratelimit-remaining': false,
+    'x-ratelimit-reset': false
+  },
   addHeaders: {
     'x-ratelimit-limit': false,
     'x-ratelimit-remaining': false,
