@@ -39,6 +39,12 @@ async function rateLimitPlugin (fastify, settings) {
     [labels.retryAfter]: true
   }, settings.addHeaders)
 
+  globalParams.addHeadersOnExceeding = Object.assign({
+    [labels.rateLimit]: true,
+    [labels.rateRemaining]: true,
+    [labels.rateReset]: true
+  }, settings.addHeadersOnExceeding)
+
   globalParams.labels = labels
 
   // define the global maximum of request allowed
@@ -204,9 +210,9 @@ function rateLimitRequestHandler (params, pluginComponent) {
     const timeLeft = Math.floor(ttl / 1000)
 
     if (current <= maximum) {
-      res.header(params.labels.rateLimit, maximum)
-        .header(params.labels.rateRemaining, maximum - current)
-        .header(params.labels.rateReset, timeLeft)
+      if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
+      if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, maximum - current) }
+      if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
 
       if (typeof params.onExceeding === 'function') {
         params.onExceeding(req)
