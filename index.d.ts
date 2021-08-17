@@ -59,7 +59,7 @@ interface DraftSpecAddHeadersOnExceeding {
 }
 
 export interface RateLimitOptions {
-  max?: number | ((req: FastifyRequest, key: string) => number);
+  max?: number | ((req: FastifyRequest, key: string) => number) | ((req: FastifyRequest, key: string) => Promise<number>);
   timeWindow?: number | string;
   cache?: number;
   store?: FastifyRateLimitStoreCtor;
