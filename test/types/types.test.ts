@@ -45,7 +45,7 @@ const options2 = {
 
 const options3 = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => (42),
+  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => Promise.resolve(42),
   timeWindow: 5000,
   store: CustomStore
 }
