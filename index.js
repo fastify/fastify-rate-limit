@@ -104,9 +104,8 @@ async function rateLimitPlugin (fastify, settings) {
         params = makeParams(options)
       }
       if (params.timeWindow && params.timeWindow !== pluginComponent.store.timeWindow) {
-        const _store = Object.create(pluginComponent.store)
-        _store.timeWindow = params.timeWindow
-        pluginComponent.store = _store
+        const child = pluginComponent.store.child(Object.assign({}, { routeInfo: {} }, params))
+        pluginComponent.store = child
       }
       return rateLimitRequestHandler(params, pluginComponent)
     })

@@ -5,7 +5,8 @@ const test = t.test
 const Redis = require('ioredis')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
-const noop = () => {}
+
+const noop = () => { }
 
 const REDIS_HOST = '127.0.0.1'
 
@@ -417,7 +418,7 @@ test('no rate limit with bad rate-limit parameters', t => {
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
-    config: Object.assign({}, defaultRouteConfig, { rateLimit: () => {} })
+    config: Object.assign({}, defaultRouteConfig, { rateLimit: () => { } })
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -1226,4 +1227,81 @@ test('per route rate limit', async t => {
   t.equal(resHead.statusCode, 200, 'HEAD: Response status code')
   t.equal(resHead.headers['x-ratelimit-limit'], 10, 'HEAD: x-ratelimit-limit header (per route limit)')
   t.equal(resHead.headers['x-ratelimit-remaining'], 8, 'HEAD: x-ratelimit-remaining header (per route limit)')
+})
+
+test('Allow custom timeWindow in preHandler', t => {
+  t.plan(20)
+  const fastify = Fastify()
+  fastify.register(rateLimit, { global: false })
+  fastify.register((fastify, options, done) => {
+    fastify.route({
+      method: 'GET',
+      url: '/2',
+      preHandler: [
+        fastify.rateLimit({
+          max: 1,
+          timeWindow: '2 minutes',
+          keyGenerator: function (request) {
+            return 245
+          }
+        })
+      ],
+
+      handler: (request, reply) => {
+        reply.send({ hello: 'world' })
+      }
+    })
+
+    fastify.route({
+      method: 'GET',
+      url: '/3',
+      preHandler: [
+        fastify.rateLimit({
+          max: 1,
+          timeWindow: '3 minutes',
+          keyGenerator: function (request) {
+            return 345
+          }
+        })
+      ],
+
+      handler: (request, reply) => {
+        reply.send({ hello: 'world' })
+      }
+    })
+
+    done()
+  })
+
+  fastify.inject('/2', (err, res) => {
+    t.error(err)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 1)
+    t.equal(res.headers['x-ratelimit-remaining'], 0)
+
+    fastify.inject('/2', (err, res) => {
+      t.error(err)
+      t.equal(res.statusCode, 429)
+      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+      t.equal(res.headers['x-ratelimit-limit'], 1)
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
+      t.equal(res.headers['retry-after'], 120000)
+    })
+  })
+
+  fastify.inject('/3', (err, res) => {
+    t.error(err)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 1)
+    t.equal(res.headers['x-ratelimit-remaining'], 0)
+
+    fastify.inject('/3', (err, res) => {
+      t.error(err)
+      t.equal(res.statusCode, 429)
+      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+      t.equal(res.headers['x-ratelimit-limit'], 1)
+      t.equal(res.headers['x-ratelimit-remaining'], 0)
+      t.equal(res.headers['retry-after'], 180000)
+    })
+  })
 })
