@@ -1,6 +1,6 @@
 'use strict'
 
-const noop = () => {}
+const noop = () => { }
 
 function RedisStore (redis, key, timeWindow) {
   this.redis = redis
