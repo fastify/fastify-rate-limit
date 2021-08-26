@@ -1230,10 +1230,15 @@ test('per route rate limit', async t => {
 })
 
 test('Allow custom timeWindow in preHandler', t => {
-  t.plan(20)
+  t.plan(27)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
   fastify.register((fastify, options, done) => {
+    fastify.get('/default', {
+      config: { rateLimit: { max: 1, timeWindow: '10 seconds' } }
+    }, (req, reply) => {
+      reply.send('Global rateLimiter should limit this with 60seconds timeWindow')
+    })
     fastify.route({
       method: 'GET',
       url: '/2',
@@ -1302,6 +1307,18 @@ test('Allow custom timeWindow in preHandler', t => {
       t.equal(res.headers['x-ratelimit-limit'], 1)
       t.equal(res.headers['x-ratelimit-remaining'], 0)
       t.equal(res.headers['retry-after'], 180000)
+    })
+  })
+  fastify.inject('/default', (err, res) => {
+    t.error(err)
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 1)
+    t.equal(res.headers['x-ratelimit-remaining'], 0)
+
+    fastify.inject('/default', (err, res) => {
+      t.error(err)
+      t.equal(res.headers['retry-after'], 10000)
+      t.equal(res.statusCode, 429)
     })
   })
 })
