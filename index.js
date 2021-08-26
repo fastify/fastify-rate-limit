@@ -96,13 +96,18 @@ async function rateLimitPlugin (fastify, settings) {
   const run = Symbol('rate-limit-did-run')
   pluginComponent.run = run
   fastify.decorateRequest(run, false)
-
   if (!fastify.hasDecorator('rateLimit')) {
     // The rate limit plugin can be registered multiple times but decorate throws if called multiple times for the same field
     fastify.decorate('rateLimit', function rateLimit (options) {
       let params = globalParams
       if (options) {
         params = makeParams(options)
+      }
+      if (params.timeWindow && params.timeWindow !== globalParams.timeWindow) {
+        const newPluginComponent = Object.create(pluginComponent)
+        const newStore = newPluginComponent.store.child(Object.assign({}, { routeInfo: {} }, params))
+        newPluginComponent.store = newStore
+        return rateLimitRequestHandler(params, newPluginComponent)
       }
       return rateLimitRequestHandler(params, pluginComponent)
     })
@@ -152,6 +157,7 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
 }
 
 function rateLimitRequestHandler (params, pluginComponent) {
+  const theStore = pluginComponent.store
   return async function onRequestRateLimiter (req, res) {
     const run = pluginComponent.run
     const after = ms(params.timeWindow, { long: true })
@@ -181,12 +187,11 @@ function rateLimitRequestHandler (params, pluginComponent) {
     // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
     try {
       const res = await new Promise(function (resolve, reject) {
-        pluginComponent.store.incr(key, function (err, res) {
+        theStore.incr(key, function (err, res) {
           if (err) {
             reject(err)
             return
           }
-
           resolve(res)
         })
       })
