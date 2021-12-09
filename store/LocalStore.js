@@ -31,6 +31,15 @@ LocalStore.prototype.incr = function (ip, cb) {
   cb(null, { current, ttl: this.timeWindow - (Date.now() - this.msLastBeat) })
 }
 
+LocalStore.prototype.incrAndRenew = function (ip, cb) {
+  let current = this.lru.get(ip) || 0
+  this.lru.set(ip, ++current)
+
+  this.msLastBeat = Date.now()
+
+  cb(null, { current, ttl: this.timeWindow })
+}
+
 LocalStore.prototype.child = function (routeOptions) {
   return new LocalStore(routeOptions.timeWindow,
     routeOptions.cache, this.app)

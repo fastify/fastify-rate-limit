@@ -28,6 +28,18 @@ RedisStore.prototype.incr = function (ip, cb) {
     })
 }
 
+RedisStore.prototype.incrAndRenew = function (ip, cb) {
+  const key = this.key + ip
+  this.redis.pipeline()
+    .incr(key)
+    .pexpire(key, this.timeWindow)
+    .exec((err, result) => {
+      if (err) return cb(err, { current: 0 })
+      if (result[0][0]) return cb(result[0][0], { current: 0 })
+      cb(null, { current: result[0][1], ttl: this.timeWindow })
+    })
+}
+
 RedisStore.prototype.child = function (routeOptions) {
   const child = Object.create(this)
   child.key = this.key + routeOptions.routeInfo.method + routeOptions.routeInfo.url + '-'
