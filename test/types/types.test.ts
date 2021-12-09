@@ -6,6 +6,7 @@ import fastifyRateLimit, { FastifyRateLimitStore, FastifyRateLimitOptions, error
 class CustomStore implements FastifyRateLimitStore {
   constructor(options: FastifyRateLimitOptions) {}
   incr(key: string, callback: ( error: Error|null, result?: { current: number, ttl: number } ) => void) {}
+  incrAndRenew(key: string, callback: ( error: Error|null, result?: { current: number, ttl: number } ) => void) {}
   child(routeOptions: RouteOptions & { path: string, prefix: string }) {
     return <CustomStore>(<FastifyRateLimitOptions>{})
   }
@@ -21,6 +22,7 @@ const options1: RateLimitPluginOptions = {
   redis: new ioredis({ host: '127.0.0.1' }),
   skipOnError: true,
   ban: 10,
+  continueExceeding: false,
   keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
   errorResponseBuilder: (req: FastifyRequest<RequestGenericInterface>, context: errorResponseBuilderContext) => ({ code: 429, timeWindow: context.after, limit: context.max }),
   addHeadersOnExceeding: {
