@@ -62,6 +62,8 @@ async function rateLimitPlugin (fastify, settings) {
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = settings.ban || null
 
+  globalParams.continueExceeding = settings.continueExceeding || false
+
   // define the name of the app component. Related to redis, it will be use as a part of the keyname define in redis.
   const pluginComponent = {
     allowList: globalParams.allowList
@@ -187,13 +189,23 @@ function rateLimitRequestHandler (params, pluginComponent) {
     // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
     try {
       const res = await new Promise(function (resolve, reject) {
-        theStore.incr(key, function (err, res) {
-          if (err) {
-            reject(err)
-            return
-          }
-          resolve(res)
-        })
+        if (params.continueExceeding) {
+          theStore.incrAndRenew(key, function (err, res) {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve(res)
+          })
+        } else {
+          theStore.incr(key, function (err, res) {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve(res)
+          })
+        }
       })
 
       current = res.current
