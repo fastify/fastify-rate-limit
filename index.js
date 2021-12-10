@@ -74,9 +74,9 @@ async function rateLimitPlugin (fastify, settings) {
     pluginComponent.store = new Store(globalParams)
   } else {
     if (settings.redis) {
-      pluginComponent.store = new RedisStore(settings.redis, 'fastify-rate-limit-', globalParams.timeWindow)
+      pluginComponent.store = new RedisStore(settings.redis, 'fastify-rate-limit-', globalParams.timeWindow, settings.continueExceeding)
     } else {
-      pluginComponent.store = new LocalStore(globalParams.timeWindow, settings.cache, fastify)
+      pluginComponent.store = new LocalStore(globalParams.timeWindow, settings.cache, fastify, settings.continueExceeding)
     }
   }
 
@@ -189,23 +189,13 @@ function rateLimitRequestHandler (params, pluginComponent) {
     // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
     try {
       const res = await new Promise(function (resolve, reject) {
-        if (params.continueExceeding) {
-          theStore.incrAndRenew(key, function (err, res) {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve(res)
-          })
-        } else {
-          theStore.incr(key, function (err, res) {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve(res)
-          })
-        }
+        theStore.incr(key, function (err, res) {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(res)
+        })
       })
 
       current = res.current

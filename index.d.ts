@@ -29,7 +29,6 @@ export interface FastifyRateLimitStoreCtor {
 
 export interface FastifyRateLimitStore {
   incr(key: string, callback: (error: Error | null, result?: { current: number, ttl: number }) => void): void;
-  incrAndRenew(key: string, callback: (error: Error | null, result?: { current: number, ttl: number }) => void): void;
   child(routeOptions: RouteOptions & { path: string, prefix: string }): FastifyRateLimitStore;
 }
 

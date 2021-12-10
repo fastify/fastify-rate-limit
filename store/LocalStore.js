@@ -2,11 +2,12 @@
 
 const lru = require('tiny-lru')
 
-function LocalStore (timeWindow, cache, app) {
+function LocalStore (timeWindow, cache, app, continueExceeding) {
   this.lru = lru(cache || 5000)
   this.interval = setInterval(beat.bind(this), timeWindow).unref()
   this.app = app
   this.timeWindow = timeWindow
+  this.continueExceeding = continueExceeding
 
   app.addHook('onClose', (instance, done) => {
     clearInterval(this.interval)
@@ -23,21 +24,17 @@ LocalStore.prototype.incr = function (ip, cb) {
   let current = this.lru.get(ip) || 0
   this.lru.set(ip, ++current)
 
-  // start counting from the first request/increment
-  if (!this.msLastBeat) {
+  if (this.continueExceeding) {
     this.msLastBeat = Date.now()
+    cb(null, { current, ttl: this.timeWindow })
+  } else {
+    // start counting from the first request/increment
+    if (!this.msLastBeat) {
+      this.msLastBeat = Date.now()
+    }
+
+    cb(null, { current, ttl: this.timeWindow - (Date.now() - this.msLastBeat) })
   }
-
-  cb(null, { current, ttl: this.timeWindow - (Date.now() - this.msLastBeat) })
-}
-
-LocalStore.prototype.incrAndRenew = function (ip, cb) {
-  let current = this.lru.get(ip) || 0
-  this.lru.set(ip, ++current)
-
-  this.msLastBeat = Date.now()
-
-  cb(null, { current, ttl: this.timeWindow })
 }
 
 LocalStore.prototype.child = function (routeOptions) {

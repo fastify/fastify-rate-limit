@@ -6,7 +6,6 @@ import fastifyRateLimit, { FastifyRateLimitStore, FastifyRateLimitOptions, error
 class CustomStore implements FastifyRateLimitStore {
   constructor(options: FastifyRateLimitOptions) {}
   incr(key: string, callback: ( error: Error|null, result?: { current: number, ttl: number } ) => void) {}
-  incrAndRenew(key: string, callback: ( error: Error|null, result?: { current: number, ttl: number } ) => void) {}
   child(routeOptions: RouteOptions & { path: string, prefix: string }) {
     return <CustomStore>(<FastifyRateLimitOptions>{})
   }
