@@ -962,25 +962,21 @@ test('When continue exceeding is on (Local)', async t => {
     return 'hello!'
   })
 
-  try {
-    const first = await fastify.inject({
-      url: '/',
-      method: 'GET'
-    })
-    const second = await fastify.inject({
-      url: '/',
-      method: 'GET'
-    })
+  const first = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+  const second = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
 
-    t.equal(first.statusCode, 200)
+  t.equal(first.statusCode, 200)
 
-    t.equal(second.statusCode, 429)
-    t.equal(second.headers['x-ratelimit-limit'], 1)
-    t.equal(second.headers['x-ratelimit-remaining'], 0)
-    t.equal(second.headers['x-ratelimit-reset'], 5)
-  } catch (error) {
-    t.error(error)
-  }
+  t.equal(second.statusCode, 429)
+  t.equal(second.headers['x-ratelimit-limit'], 1)
+  t.equal(second.headers['x-ratelimit-remaining'], 0)
+  t.equal(second.headers['x-ratelimit-reset'], 5)
 })
 
 test('When continue exceeding is on (Redis)', async t => {
@@ -999,26 +995,24 @@ test('When continue exceeding is on (Redis)', async t => {
     return 'hello!'
   })
 
-  try {
-    const first = await fastify.inject({
-      url: '/',
-      method: 'GET'
-    })
-    const second = await fastify.inject({
-      url: '/',
-      method: 'GET'
-    })
+  const first = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+  const second = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
 
-    t.equal(first.statusCode, 200)
+  t.equal(first.statusCode, 200)
 
-    t.equal(second.statusCode, 429)
-    t.equal(second.headers['x-ratelimit-limit'], 1)
-    t.equal(second.headers['x-ratelimit-remaining'], 0)
-    t.equal(second.headers['x-ratelimit-reset'], 5)
-  } catch (error) {
-    t.error(error)
-  }
+  t.equal(second.statusCode, 429)
+  t.equal(second.headers['x-ratelimit-limit'], 1)
+  t.equal(second.headers['x-ratelimit-remaining'], 0)
+  t.equal(second.headers['x-ratelimit-reset'], 5)
 
-  redis.flushall(noop)
-  redis.quit(noop)
+  t.teardown(() => {
+    redis.flushall(noop)
+    redis.quit(noop)
+  })
 })
