@@ -44,6 +44,7 @@ RedisStore.prototype.child = function (routeOptions) {
   const child = Object.create(this)
   child.key = this.key + routeOptions.routeInfo.method + routeOptions.routeInfo.url + '-'
   child.timeWindow = routeOptions.timeWindow
+  child.continueExceeding = routeOptions.continueExceeding
   return child
 }
 

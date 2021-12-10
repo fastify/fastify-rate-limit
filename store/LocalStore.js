@@ -39,7 +39,7 @@ LocalStore.prototype.incr = function (ip, cb) {
 
 LocalStore.prototype.child = function (routeOptions) {
   return new LocalStore(routeOptions.timeWindow,
-    routeOptions.cache, this.app)
+    routeOptions.cache, this.app, routeOptions.continueExceeding)
 }
 
 module.exports = LocalStore
