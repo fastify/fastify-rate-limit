@@ -21,6 +21,7 @@ const options1: RateLimitPluginOptions = {
   redis: new ioredis({ host: '127.0.0.1' }),
   skipOnError: true,
   ban: 10,
+  continueExceeding: false,
   keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
   errorResponseBuilder: (req: FastifyRequest<RequestGenericInterface>, context: errorResponseBuilderContext) => ({ code: 429, timeWindow: context.after, limit: context.max }),
   addHeadersOnExceeding: {

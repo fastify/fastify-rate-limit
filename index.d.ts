@@ -68,6 +68,7 @@ export interface RateLimitOptions {
   */
   whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
   allowList?: string[] | ((req: FastifyRequest, key: string) => boolean);
+  continueExceeding?: boolean;
   skipOnError?: boolean;
   ban?: number;
   keyGenerator?: (req: FastifyRequest) => string | number;

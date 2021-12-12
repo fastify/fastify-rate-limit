@@ -948,3 +948,71 @@ test('exposeHeadRoutes', async t => {
   t.equal(resHead.headers['x-ratelimit-limit'], 10, 'HEAD: x-ratelimit-limit header (global rate limit)')
   t.equal(resHead.headers['x-ratelimit-remaining'], 8, 'HEAD: x-ratelimit-remaining header (global rate limit)')
 })
+
+test('When continue exceeding is on (Local)', async t => {
+  const fastify = Fastify()
+
+  fastify.register(rateLimit, {
+    max: 1,
+    timeWindow: 5000,
+    continueExceeding: true
+  })
+
+  fastify.get('/', async (req, reply) => {
+    return 'hello!'
+  })
+
+  const first = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+  const second = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+
+  t.equal(first.statusCode, 200)
+
+  t.equal(second.statusCode, 429)
+  t.equal(second.headers['x-ratelimit-limit'], 1)
+  t.equal(second.headers['x-ratelimit-remaining'], 0)
+  t.equal(second.headers['x-ratelimit-reset'], 5)
+})
+
+test('When continue exceeding is on (Redis)', async t => {
+  const fastify = Fastify()
+
+  const redis = new Redis({ host: REDIS_HOST })
+
+  fastify.register(rateLimit, {
+    redis: redis,
+    max: 1,
+    timeWindow: 5000,
+    continueExceeding: true
+  })
+
+  fastify.get('/', async (req, reply) => {
+    return 'hello!'
+  })
+
+  const first = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+  const second = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+
+  t.equal(first.statusCode, 200)
+
+  t.equal(second.statusCode, 429)
+  t.equal(second.headers['x-ratelimit-limit'], 1)
+  t.equal(second.headers['x-ratelimit-remaining'], 0)
+  t.equal(second.headers['x-ratelimit-reset'], 5)
+
+  t.teardown(() => {
+    redis.flushall(noop)
+    redis.quit(noop)
+  })
+})

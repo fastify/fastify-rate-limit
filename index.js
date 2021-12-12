@@ -62,6 +62,8 @@ async function rateLimitPlugin (fastify, settings) {
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = settings.ban || null
 
+  globalParams.continueExceeding = settings.continueExceeding || false
+
   // define the name of the app component. Related to redis, it will be use as a part of the keyname define in redis.
   const pluginComponent = {
     allowList: globalParams.allowList
@@ -72,9 +74,9 @@ async function rateLimitPlugin (fastify, settings) {
     pluginComponent.store = new Store(globalParams)
   } else {
     if (settings.redis) {
-      pluginComponent.store = new RedisStore(settings.redis, 'fastify-rate-limit-', globalParams.timeWindow)
+      pluginComponent.store = new RedisStore(settings.redis, 'fastify-rate-limit-', globalParams.timeWindow, settings.continueExceeding)
     } else {
-      pluginComponent.store = new LocalStore(globalParams.timeWindow, settings.cache, fastify)
+      pluginComponent.store = new LocalStore(globalParams.timeWindow, settings.cache, fastify, settings.continueExceeding)
     }
   }
 
