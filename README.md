@@ -106,7 +106,7 @@ fastify.register(require('fastify-rate-limit'), {
   cache: 10000, // default 5000
   allowList: ['127.0.0.1'], // default []
   redis: new Redis({ host: '127.0.0.1' }), // default null
-  continueExceeding: true, // defualt false
+  continueExceeding: true, // default false
   skipOnError: true, // default false
   keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
   errorResponseBuilder: function(req, context) { /* ... */},
