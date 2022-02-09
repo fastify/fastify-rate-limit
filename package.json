@@ -7,7 +7,7 @@
     "lint": "standard",
     "lint:fix": "standard --fix",
     "redis": "docker run -p 6379:6379 --rm redis",
-    "test": "standard && tap && npm run typescript",
+    "test": "standard && tap test/*.test.js test/**/*.test.js && npm run typescript",
     "typescript": "tsd"
   },
   "repository": {
