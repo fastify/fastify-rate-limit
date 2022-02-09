@@ -1,13 +1,20 @@
 'use strict'
 
+const FakeTimers = require('@sinonjs/fake-timers')
 const t = require('tap')
 const test = t.test
 const Fastify = require('fastify')
 const rateLimit = require('../../index')
 
-test('issue #207 - when continueExceeding is true and the store is local then it should reset the rate-limit', async t => {
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+t.beforeEach(t => {
+  t.context.clock = FakeTimers.install()
+})
 
+t.afterEach(t => {
+  t.context.clock.uninstall()
+})
+
+test('issue #207 - when continueExceeding is true and the store is local then it should reset the rate-limit', async t => {
   const fastify = Fastify()
 
   fastify.register(rateLimit, {
@@ -35,7 +42,7 @@ test('issue #207 - when continueExceeding is true and the store is local then it
     method: 'GET'
   })
 
-  await sleep(3000)
+  t.context.clock.tick(3000)
 
   const secondRateLimitWithResettingTheRateLimitTimer = await fastify.inject({
     url: '/',
@@ -43,7 +50,7 @@ test('issue #207 - when continueExceeding is true and the store is local then it
   })
 
   // after this the total time passed is 6s which WITHOUT `continueExceeding` the next request should be OK
-  await sleep(3000)
+  t.context.clock.tick(3000)
 
   const thirdRateLimitWithResettingTheRateLimitTimer = await fastify.inject({
     url: '/',
@@ -51,7 +58,7 @@ test('issue #207 - when continueExceeding is true and the store is local then it
   })
 
   // After this the rate limiter should allow for new requests
-  await sleep(5000)
+  t.context.clock.tick(5000)
 
   const okResponseAfterRateLimitCompleted = await fastify.inject({
     url: '/',
