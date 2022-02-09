@@ -48,14 +48,14 @@ async function rateLimitPlugin (fastify, settings) {
   globalParams.labels = labels
 
   // define the global maximum of request allowed
-  globalParams.max = (typeof settings.max === 'number' || typeof settings.max === 'function')
+  globalParams.max = ((typeof settings.max === 'number' && !isNaN(settings.max)) || typeof settings.max === 'function')
     ? settings.max
     : 1000
 
   // define the global Time Window
   globalParams.timeWindow = typeof settings.timeWindow === 'string'
     ? ms(settings.timeWindow)
-    : typeof settings.timeWindow === 'number'
+    : typeof settings.timeWindow === 'number' && !isNaN(settings.timeWindow)
       ? settings.timeWindow
       : 1000 * 60
 
@@ -208,7 +208,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
 
     let maximum
 
-    if (typeof params.max === 'number') {
+    if (typeof params.max === 'number' && !isNaN(params.max)) {
       maximum = params.max
     } else {
       maximum = await params.max(req, key)
