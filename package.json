@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "standard",
     "lint:fix": "standard --fix",
-    "redis": "docker run -p 6379:6379 --rm redis:3.0.7",
+    "redis": "docker run -p 6379:6379 --rm redis",
     "test": "standard && tap test/*.test.js && npm run typescript",
     "typescript": "tsd"
   },
