@@ -1060,16 +1060,14 @@ test('per route rate limit', async t => {
   t.equal(resHead.headers['x-ratelimit-remaining'], 8, 'HEAD: x-ratelimit-remaining header (per route limit)')
 })
 
-test('Allow custom timeWindow in preHandler', t => {
-  t.plan(27)
+test('Allow custom timeWindow in preHandler', async t => {
+  t.plan(21)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
   fastify.register((fastify, options, done) => {
     fastify.get('/default', {
       config: { rateLimit: { max: 1, timeWindow: '10 seconds' } }
-    }, (req, reply) => {
-      reply.send('Global rateLimiter should limit this with 60seconds timeWindow')
-    })
+    }, async (req, reply) => 'Global rateLimiter should limit this with 60seconds timeWindow')
     fastify.route({
       method: 'GET',
       url: '/2',
@@ -1077,15 +1075,11 @@ test('Allow custom timeWindow in preHandler', t => {
         fastify.rateLimit({
           max: 1,
           timeWindow: '2 minutes',
-          keyGenerator: function (request) {
-            return 245
-          }
+          keyGenerator: (request) => 245
         })
       ],
 
-      handler: (request, reply) => {
-        reply.send({ hello: 'world' })
-      }
+      handler: async (request, reply) => ({ hello: 'world' })
     })
 
     fastify.route({
@@ -1095,63 +1089,48 @@ test('Allow custom timeWindow in preHandler', t => {
         fastify.rateLimit({
           max: 1,
           timeWindow: '3 minutes',
-          keyGenerator: function (request) {
-            return 345
-          }
+          keyGenerator: (request) => 345
         })
       ],
 
-      handler: (request, reply) => {
-        reply.send({ hello: 'world' })
-      }
+      handler: async (request, reply) => ({ hello: 'world' })
     })
 
     done()
   })
 
-  fastify.inject('/2', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 1)
-    t.equal(res.headers['x-ratelimit-remaining'], 0)
+  let res = await fastify.inject('/2')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 1)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
 
-    fastify.inject('/2', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 429)
-      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-      t.equal(res.headers['x-ratelimit-limit'], 1)
-      t.equal(res.headers['x-ratelimit-remaining'], 0)
-      t.equal(res.headers['retry-after'], 120000)
-    })
-  })
+  res = await fastify.inject('/2')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], 1)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['retry-after'], 120000)
 
-  fastify.inject('/3', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 1)
-    t.equal(res.headers['x-ratelimit-remaining'], 0)
+  res = await fastify.inject('/3')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 1)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
 
-    fastify.inject('/3', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 429)
-      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-      t.equal(res.headers['x-ratelimit-limit'], 1)
-      t.equal(res.headers['x-ratelimit-remaining'], 0)
-      t.equal(res.headers['retry-after'], 180000)
-    })
-  })
-  fastify.inject('/default', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 1)
-    t.equal(res.headers['x-ratelimit-remaining'], 0)
+  res = await fastify.inject('/3')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], 1)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['retry-after'], 180000)
 
-    fastify.inject('/default', (err, res) => {
-      t.error(err)
-      t.equal(res.headers['retry-after'], 10000)
-      t.equal(res.statusCode, 429)
-    })
-  })
+  res = await fastify.inject('/default')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 1)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+
+  res = await fastify.inject('/default')
+  t.equal(res.headers['retry-after'], 10000)
+  t.equal(res.statusCode, 429)
 })
 
 test('When continue exceeding is on (Local)', async t => {
