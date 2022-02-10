@@ -432,8 +432,8 @@ test('does not override the onRequest as an array', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 })
 
-test('variable max', t => {
-  t.plan(5)
+test('variable max', async t => {
+  t.plan(4)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: (req, key) => {
@@ -443,14 +443,13 @@ test('variable max', t => {
     timeWindow: 1000
   })
 
-  fastify.get('/', (req, res) => { res.send('hello') })
+  fastify.get('/', async (req, res) => 'hello')
 
-  fastify.inject({ url: '/', headers: { 'secret-max': 50 } }, (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 50)
-    t.equal(res.headers['x-ratelimit-remaining'], 49)
-  })
+  const res = await fastify.inject({ url: '/', headers: { 'secret-max': 50 } })
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 50)
+  t.equal(res.headers['x-ratelimit-remaining'], 49)
 })
 
 test('variable max contenders', t => {
