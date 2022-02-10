@@ -432,8 +432,8 @@ test('does not override onRequest', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 })
 
-test('onExceeding and onExceeded events', t => {
-  t.plan(14)
+test('onExceeding and onExceeded events', async t => {
+  t.plan(11)
 
   let onExceedingCounter = 0
   let onExceededCounter = 0
@@ -457,32 +457,26 @@ test('onExceeding and onExceeded events', t => {
         }
       }
     })
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
   const payload = { method: 'GET', url: '/' }
 
-  fastify.inject(payload, (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-remaining'], 1)
+  let res
 
-    fastify.inject(payload, (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['x-ratelimit-remaining'], 0)
+  res = await fastify.inject(payload)
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
 
-      fastify.inject(payload, (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 429)
-        t.equal(res.headers['x-ratelimit-remaining'], 0)
+  res = await fastify.inject(payload)
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
 
-        t.equal(onExceedingCounter, 2)
-        t.equal(onExceededCounter, 1)
-      })
-    })
-  })
+  res = await fastify.inject(payload)
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+
+  t.equal(onExceedingCounter, 2)
+  t.equal(onExceededCounter, 1)
 })
 
 test('custom error response', t => {
