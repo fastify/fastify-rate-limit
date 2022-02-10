@@ -928,8 +928,8 @@ test('stops fastify lifecycle after onRequest and before preValidation', async t
   t.equal(preValidationCallCount, 1)
 })
 
-test('avoid double onRequest', t => {
-  t.plan(4)
+test('avoid double onRequest', async t => {
+  t.plan(3)
 
   const fastify = Fastify()
 
@@ -947,21 +947,17 @@ test('avoid double onRequest', t => {
       }
     })
 
-    childServer.get('/', {}, (req, reply) => {
-      reply.send('hello!')
-    })
+    childServer.get('/', {}, async (req, reply) => 'hello!')
   }
 
   fastify.register(subroute, { prefix: '/test' })
 
-  fastify.inject({
+  const res = await fastify.inject({
     url: '/test',
     method: 'GET'
-  }, (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(keyGeneratorCallCount, 1)
   })
+  t.equal(res.statusCode, 200)
+  t.equal(keyGeneratorCallCount, 1)
 })
 
 test('Allow multiple different rate limiter registrations', t => {
