@@ -186,7 +186,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
     let current = 0
     let ttl = 0
 
-    // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
+    // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request
     try {
       const res = await new Promise(function (resolve, reject) {
         theStore.incr(key, function (err, res) {
