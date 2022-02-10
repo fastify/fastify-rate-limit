@@ -730,8 +730,8 @@ test('With enabled IETF Draft Spec', async t => {
   t.equal(res.headers['ratelimit-remaining'], 1)
 })
 
-test('hide IETF draft spec headers', t => {
-  t.plan(17)
+test('hide IETF draft spec headers', async t => {
+  t.plan(14)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 1,
@@ -745,37 +745,35 @@ test('hide IETF draft spec headers', t => {
     }
   })
 
-  fastify.get('/', (req, res) => { res.send('hello') })
+  fastify.get('/', async (req, res) => 'hello')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['ratelimit-limit'], 1)
-    t.equal(res.headers['ratelimit-remaining'], 0)
-    t.equal(res.headers['ratelimit-reset'], 1)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 429)
-      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-      t.notOk(res.headers['ratelimit-limit'], 'the header must be missing')
-      t.notOk(res.headers['ratelimit-remaining'], 'the header must be missing')
-      t.notOk(res.headers['ratelimit-reset'], 'the header must be missing')
-      t.notOk(res.headers['retry-after'], 'the header must be missing')
+  res = await fastify.inject('/')
 
-      setTimeout(retry, 1100)
-    })
-  })
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['ratelimit-limit'], 1)
+  t.equal(res.headers['ratelimit-remaining'], 0)
+  t.equal(res.headers['ratelimit-reset'], 1)
 
-  function retry () {
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['ratelimit-limit'], 1)
-      t.equal(res.headers['ratelimit-remaining'], 0)
-      t.equal(res.headers['ratelimit-reset'], 1)
-    })
-  }
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.notOk(res.headers['ratelimit-limit'], 'the header must be missing')
+  t.notOk(res.headers['ratelimit-remaining'], 'the header must be missing')
+  t.notOk(res.headers['ratelimit-reset'], 'the header must be missing')
+  t.notOk(res.headers['retry-after'], 'the header must be missing')
+
+  // TODO - use sinom timers
+  await sleep(1100)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['ratelimit-limit'], 1)
+  t.equal(res.headers['ratelimit-remaining'], 0)
+  t.equal(res.headers['ratelimit-reset'], 1)
 })
 
 test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled', t => {
