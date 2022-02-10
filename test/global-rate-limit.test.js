@@ -330,8 +330,8 @@ test('With keyGenerator', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 })
 
-test('With CustomStore', t => {
-  t.plan(18)
+test('With CustomStore', async t => {
+  t.plan(15)
 
   function CustomStore (options) {
     this.options = options
@@ -356,40 +356,37 @@ test('With CustomStore', t => {
     store: CustomStore
   })
 
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get('/', async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 2)
-    t.equal(res.headers['x-ratelimit-remaining'], 1)
-    t.equal(res.headers['x-ratelimit-reset'], 9)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['x-ratelimit-limit'], 2)
-      t.equal(res.headers['x-ratelimit-remaining'], 0)
-      t.equal(res.headers['x-ratelimit-reset'], 8)
+  res = await fastify.inject('/')
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 429)
-        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.equal(res.headers['x-ratelimit-limit'], 2)
-        t.equal(res.headers['x-ratelimit-remaining'], 0)
-        t.equal(res.headers['x-ratelimit-reset'], 7)
-        t.equal(res.headers['retry-after'], 10000)
-        t.same({
-          statusCode: 429,
-          error: 'Too Many Requests',
-          message: 'Rate limit exceeded, retry in 10 seconds'
-        }, JSON.parse(res.payload))
-      })
-    })
-  })
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
+  t.equal(res.headers['x-ratelimit-reset'], 9)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['x-ratelimit-reset'], 8)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['x-ratelimit-reset'], 7)
+  t.equal(res.headers['retry-after'], 10000)
+  t.same({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 10 seconds'
+  }, JSON.parse(res.payload))
 })
 
 test('does not override the onRequest', t => {
