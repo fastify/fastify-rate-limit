@@ -766,8 +766,8 @@ test('hide rate limit headers at all times', async t => {
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 })
 
-test('global timeWindow when not set in routes', t => {
-  t.plan(6)
+test('global timeWindow when not set in routes', async t => {
+  t.plan(4)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     global: false,
@@ -776,31 +776,25 @@ test('global timeWindow when not set in routes', t => {
 
   fastify.get('/six', {
     config: { rateLimit: { max: 6 } }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, res) => 'hello!')
 
   fastify.get('/four', {
     config: { rateLimit: { max: 4, timeWindow: 4000 } }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, res) => 'hello!')
 
-  fastify.inject('/six', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-reset'], 6)
+  let res
 
-    fastify.inject('/four', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['x-ratelimit-reset'], 4)
-    })
-  })
+  res = await fastify.inject('/six')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-reset'], 6)
+
+  res = await fastify.inject('/four')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-reset'], 4)
 })
 
-test('timeWindow specified as a string', t => {
-  t.plan(12)
+test('timeWindow specified as a string', async t => {
+  t.plan(9)
   function CustomStore (options) {
     this.options = options
     this.current = 0
@@ -825,30 +819,24 @@ test('timeWindow specified as a string', t => {
 
   fastify.get('/', {
     config: { rateLimit: { max: 2, timeWindow: '10 seconds' } }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, res) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 2)
-    t.equal(res.headers['x-ratelimit-remaining'], 1)
-    t.equal(res.headers['x-ratelimit-reset'], 9)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['x-ratelimit-limit'], 2)
-      t.equal(res.headers['x-ratelimit-remaining'], 0)
-      t.equal(res.headers['x-ratelimit-reset'], 8)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
+  t.equal(res.headers['x-ratelimit-reset'], 9)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 429)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['x-ratelimit-reset'], 8)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
 })
 
 test('With CustomStore', t => {
