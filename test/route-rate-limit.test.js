@@ -333,21 +333,17 @@ test('With keyGenerator', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 })
 
-test('no rate limit without settings', t => {
-  t.plan(4)
+test('no rate limit without settings', async t => {
+  t.plan(3)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get('/', async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], undefined)
-    t.equal(res.headers['x-ratelimit-remaining'], undefined)
-  })
+  const res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], undefined)
+  t.equal(res.headers['x-ratelimit-remaining'], undefined)
 })
 
 test('no rate limit with bad rate-limit parameters', t => {
