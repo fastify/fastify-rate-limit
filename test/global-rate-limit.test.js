@@ -674,67 +674,60 @@ test('stops fastify lifecycle after onRequest and before preValidation', async t
   t.equal(preValidationCallCount, 1)
 })
 
-test('With enabled IETF Draft Spec', t => {
-  t.plan(20)
+test('With enabled IETF Draft Spec', async t => {
+  t.plan(16)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 2,
     timeWindow: '1s',
     enableDraftSpec: true,
-    errorResponseBuilder: function (req, context) {
-      return {
-        statusCode: 429,
-        error: 'Too Many Requests',
-        message: 'Rate limit exceeded, retry in 1 second',
-        ttl: context.ttl
-      }
-    }
-  })
-
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
-
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['ratelimit-limit'], 2)
-    t.equal(res.headers['ratelimit-remaining'], 1)
-
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['ratelimit-limit'], 2)
-      t.equal(res.headers['ratelimit-remaining'], 0)
-
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 429)
-        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.equal(res.headers['ratelimit-limit'], 2)
-        t.equal(res.headers['ratelimit-remaining'], 0)
-        t.equal(res.headers['ratelimit-remaining'], res.headers['retry-after'])
-        const { ttl, ...payload } = JSON.parse(res.payload)
-        t.equal(res.headers['retry-after'], Math.floor(ttl / 1000))
-        t.same({
-          statusCode: 429,
-          error: 'Too Many Requests',
-          message: 'Rate limit exceeded, retry in 1 second'
-        }, payload)
-
-        setTimeout(retry, 1100)
-      })
+    errorResponseBuilder: (req, context) => ({
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 1 second',
+      ttl: context.ttl
     })
   })
 
-  function retry () {
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['ratelimit-limit'], 2)
-      t.equal(res.headers['ratelimit-remaining'], 1)
-    })
-  }
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['ratelimit-limit'], 2)
+  t.equal(res.headers['ratelimit-remaining'], 1)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['ratelimit-limit'], 2)
+  t.equal(res.headers['ratelimit-remaining'], 0)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['ratelimit-limit'], 2)
+  t.equal(res.headers['ratelimit-remaining'], 0)
+  t.equal(res.headers['ratelimit-remaining'], res.headers['retry-after'])
+  const { ttl, ...payload } = JSON.parse(res.payload)
+  t.equal(res.headers['retry-after'], Math.floor(ttl / 1000))
+  t.same({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 1 second'
+  }, payload)
+
+  // TODO - use sinom timers
+  await sleep(1100)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['ratelimit-limit'], 2)
+  t.equal(res.headers['ratelimit-remaining'], 1)
 })
 
 test('hide IETF draft spec headers', t => {
