@@ -116,8 +116,8 @@ test('With text timeWindow', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 })
 
-test('With ips allowList', t => {
-  t.plan(6)
+test('With ips allowList', async t => {
+  t.plan(3)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     global: false,
@@ -126,24 +126,18 @@ test('With ips allowList', t => {
 
   fastify.get('/', {
     config: defaultRouteConfig
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 200)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 })
 
 test('With function allowList', t => {
