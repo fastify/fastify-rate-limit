@@ -98,8 +98,8 @@ test('With text timeWindow', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 })
 
-test('With ips allowList', t => {
-  t.plan(6)
+test('With ips allowList', async t => {
+  t.plan(3)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 2,
@@ -107,28 +107,22 @@ test('With ips allowList', t => {
     allowList: ['127.0.0.1']
   })
 
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get('/', async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 200)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 })
 
-test('With ips whitelist', t => {
-  t.plan(6)
+test('With ips whitelist', async t => {
+  t.plan(3)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 2,
@@ -136,28 +130,22 @@ test('With ips whitelist', t => {
     whitelist: ['127.0.0.1']
   })
 
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get('/', async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 200)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 })
 
-test('With function allowList', t => {
-  t.plan(24)
+test('With function allowList', async t => {
+  t.plan(18)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 2,
@@ -170,9 +158,7 @@ test('With function allowList', t => {
     }
   })
 
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get('/', async (req, reply) => 'hello!')
 
   const allowListHeader = {
     method: 'GET',
@@ -182,35 +168,25 @@ test('With function allowList', t => {
     }
   }
 
-  fastify.inject(allowListHeader, (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  let res
 
-    fastify.inject(allowListHeader, (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
+  res = await fastify.inject(allowListHeader)
+  t.equal(res.statusCode, 200)
 
-      fastify.inject(allowListHeader, (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 200)
-      })
-    })
-  })
+  res = await fastify.inject(allowListHeader)
+  t.equal(res.statusCode, 200)
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  res = await fastify.inject(allowListHeader)
+  t.equal(res.statusCode, 200)
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 429)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
 })
 
 test('With redis store', t => {
