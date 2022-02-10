@@ -389,8 +389,8 @@ test('With CustomStore', async t => {
   }, JSON.parse(res.payload))
 })
 
-test('does not override the onRequest', t => {
-  t.plan(5)
+test('does not override the onRequest', async t => {
+  t.plan(4)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 2,
@@ -402,16 +402,12 @@ test('does not override the onRequest', t => {
       t.pass('onRequest called')
       next()
     }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 2)
-    t.equal(res.headers['x-ratelimit-remaining'], 1)
-  })
+  const res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
 })
 
 test('does not override the onRequest as an array', t => {
