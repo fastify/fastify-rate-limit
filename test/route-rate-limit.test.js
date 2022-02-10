@@ -1039,9 +1039,7 @@ test('per route rate limit', async t => {
         timeWindow: 1000
       }
     }
-  }, async (req, reply) => {
-    return 'hello!'
-  })
+  }, async (req, reply) => 'hello!')
 
   const res = await fastifyR.inject({
     url: '/',
