@@ -546,6 +546,30 @@ test('when passing NaN to max variable then it should use the default max - 1000
   t.equal(res.headers['x-ratelimit-limit'], 1000)
 })
 
+test('when passing NaN to max variable then it should use the default max - 1000', async t => {
+  t.plan(2002)
+
+  const defaultMax = 1000
+
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: NaN,
+    timeWindow: 1000
+  })
+
+  fastify.get('/', async (req, res) => 'hello')
+
+  for (let i = 0; i < defaultMax; i++) {
+    const res = await fastify.inject('/')
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 1000)
+  }
+
+  const res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['x-ratelimit-limit'], 1000)
+})
+
 test('hide rate limit headers', async t => {
   t.plan(14)
   const fastify = Fastify()
