@@ -537,8 +537,8 @@ test('variable max contenders', async t => {
   fastify.get('/', {
     config: {
       rateLimit: {
-        keyGenerator (req) { return req.headers['api-key'] },
-        max: (req, key) => { return key === 'pro' ? 3 : 2 }
+        keyGenerator: (req) => req.headers['api-key'],
+        max: (req, key) => key === 'pro' ? 3 : 2
       }
     }
   }, async (req, reply) => 'hello')
