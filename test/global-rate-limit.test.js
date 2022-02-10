@@ -262,7 +262,7 @@ test('Skip on redis error', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 
   redis.flushall(noop)
-  await new Promise((resolve, reject) => redis.quit(err => err ? reject(err) : resolve()))
+  await redis.quit()
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
@@ -473,18 +473,9 @@ test('variable max contenders', async t => {
     { headers: { 'api-key': 'NOT' }, status: 429, url: '/' }
   ]
 
-  await next()
-
-  async function next () {
-    const item = requestSequence.shift()
-    if (!item) {
-      return
-    }
-
+  for (const item of requestSequence) {
     const res = await fastify.inject({ url: item.url, headers: item.headers })
     t.equal(res.statusCode, item.status)
-
-    await next()
   }
 })
 

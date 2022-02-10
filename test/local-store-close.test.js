@@ -5,7 +5,7 @@ const test = t.test
 const Fastify = require('fastify')
 const rateLimit = require('../index')
 
-test('Fastify close on local store', t => {
+test('Fastify close on local store', async t => {
   t.plan(1)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
@@ -14,7 +14,6 @@ test('Fastify close on local store', t => {
     counter++
     done()
   })
-  fastify.close(() => {
-    t.equal(counter, 2)
-  })
+  await fastify.close()
+  t.equal(counter, 2)
 })
