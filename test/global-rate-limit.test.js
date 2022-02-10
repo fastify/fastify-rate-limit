@@ -830,9 +830,7 @@ test('exposeHeadRoutes', async t => {
     max: 10,
     timeWindow: 1000
   })
-  fastify.get('/', async (req, reply) => {
-    return 'hello!'
-  })
+  fastify.get('/', async (req, reply) => 'hello!')
 
   const res = await fastify.inject({
     url: '/',
