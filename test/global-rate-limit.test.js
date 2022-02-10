@@ -262,7 +262,7 @@ test('Skip on redis error', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 
   redis.flushall(noop)
-  await new Promise((resolve, reject) => redis.quit(err => err ? reject(err) : resolve()))
+  await redis.quit()
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
