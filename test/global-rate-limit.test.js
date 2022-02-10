@@ -452,16 +452,16 @@ test('variable max', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 49)
 })
 
-test('variable max contenders', t => {
-  t.plan(14)
+test('variable max contenders', async t => {
+  t.plan(7)
   const fastify = Fastify()
   fastify.register(rateLimit, {
-    keyGenerator (req) { return req.headers['api-key'] },
-    max: (req, key) => { return key === 'pro' ? 3 : 2 },
+    keyGenerator: (req) => req.headers['api-key'],
+    max: (req, key) => key === 'pro' ? 3 : 2,
     timeWindow: 10000
   })
 
-  fastify.get('/', (req, res) => { res.send('hello') })
+  fastify.get('/', async (req, res) => 'hello')
 
   const requestSequence = [
     { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
@@ -473,18 +473,18 @@ test('variable max contenders', t => {
     { headers: { 'api-key': 'NOT' }, status: 429, url: '/' }
   ]
 
-  next()
+  await next()
 
-  function next () {
+  async function next () {
     const item = requestSequence.shift()
     if (!item) {
       return
     }
-    fastify.inject({ url: item.url, headers: item.headers }, (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, item.status)
-      next()
-    })
+
+    const res = await fastify.inject({ url: item.url, headers: item.headers })
+    t.equal(res.statusCode, item.status)
+
+    await next()
   }
 })
 
