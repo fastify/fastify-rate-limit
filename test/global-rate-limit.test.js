@@ -648,8 +648,8 @@ test('With ban', async t => {
   t.equal(res.statusCode, 403)
 })
 
-test('stops fastify lifecycle after onRequest and before preValidation', t => {
-  t.plan(6)
+test('stops fastify lifecycle after onRequest and before preValidation', async t => {
+  t.plan(4)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 1, timeWindow: 1000 })
 
@@ -662,20 +662,16 @@ test('stops fastify lifecycle after onRequest and before preValidation', t => {
       next()
     }
   },
-  (req, reply) => {
-    reply.send('hello!')
-  })
+  async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 429)
-      t.equal(preValidationCallCount, 1)
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(preValidationCallCount, 1)
 })
 
 test('With enabled IETF Draft Spec', t => {
