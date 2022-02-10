@@ -398,23 +398,19 @@ test('With ban', async t => {
   t.equal(res.statusCode, 403)
 })
 
-test('route can disable the global limit', t => {
-  t.plan(4)
+test('route can disable the global limit', async t => {
+  t.plan(3)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
     config: Object.assign({}, defaultRouteConfig, { rateLimit: false })
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], undefined)
-    t.equal(res.headers['x-ratelimit-remaining'], undefined)
-  })
+  const res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], undefined)
+  t.equal(res.headers['x-ratelimit-remaining'], undefined)
 })
 
 test('does not override onRequest', t => {
