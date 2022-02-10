@@ -702,7 +702,7 @@ test('With enabled IETF Draft Spec', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['ratelimit-limit'], 2)
   t.equal(res.headers['ratelimit-remaining'], 0)
-  t.equal(res.headers['ratelimit-remaining'], res.headers['retry-after'])
+  t.equal(res.headers['ratelimit-reset'], res.headers['retry-after'])
   const { ttl, ...payload } = JSON.parse(res.payload)
   t.equal(res.headers['retry-after'], Math.floor(ttl / 1000))
   t.same({
