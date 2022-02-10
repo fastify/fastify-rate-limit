@@ -140,13 +140,13 @@ test('With ips allowList', async t => {
   t.equal(res.statusCode, 200)
 })
 
-test('With function allowList', t => {
-  t.plan(24)
+test('With function allowList', async t => {
+  t.plan(18)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     global: false,
-    keyGenerator () { return 42 },
-    allowList: function (req, key) {
+    keyGenerator: () => 42,
+    allowList: (req, key) => {
       t.ok(req.headers)
       t.equal(key, 42)
       return req.headers['x-my-header'] !== undefined
@@ -155,9 +155,7 @@ test('With function allowList', t => {
 
   fastify.get('/', {
     config: defaultRouteConfig
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
   const allowListHeader = {
     method: 'GET',
@@ -167,35 +165,25 @@ test('With function allowList', t => {
     }
   }
 
-  fastify.inject(allowListHeader, (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  let res
 
-    fastify.inject(allowListHeader, (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
+  res = await fastify.inject(allowListHeader)
+  t.equal(res.statusCode, 200)
 
-      fastify.inject(allowListHeader, (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 200)
-      })
-    })
-  })
+  res = await fastify.inject(allowListHeader)
+  t.equal(res.statusCode, 200)
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  res = await fastify.inject(allowListHeader)
+  t.equal(res.statusCode, 200)
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 429)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
 })
 
 test('With redis store', t => {
