@@ -123,14 +123,14 @@ test('When passing NaN to the timeWindow property then the timeWindow should be 
   t.equal(res.statusCode, 429)
 
   // Wait for almost 60s to make sure the time limit is right
-  t.context.clock.tick(55_000)
+  t.context.clock.tick(55 * 1000)
 
   res = await fastify.inject('/')
 
   t.equal(res.statusCode, 429)
 
-  // Wait for seconds left until the time limit reset
-  t.context.clock.tick(5_000)
+  // Wait for the seconds that left until the time limit reset
+  t.context.clock.tick(5 * 1000)
 
   res = await fastify.inject('/')
 
