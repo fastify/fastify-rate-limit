@@ -576,8 +576,8 @@ test('hide rate limit headers on exceeding', async t => {
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 })
 
-test('hide rate limit headers at all times', t => {
-  t.plan(17)
+test('hide rate limit headers at all times', async t => {
+  t.plan(14)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 1,
@@ -595,37 +595,35 @@ test('hide rate limit headers at all times', t => {
     }
   })
 
-  fastify.get('/', (req, res) => { res.send('hello') })
+  fastify.get('/', async (req, res) => 'hello')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
-    t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
-    t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 429)
-      t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-      t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
-      t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
-      t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
-      t.notOk(res.headers['retry-after'], 'the header must be missing')
+  res = await fastify.inject('/')
 
-      setTimeout(retry, 1100)
-    })
-  })
+  t.equal(res.statusCode, 200)
+  t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
+  t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
+  t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 
-  function retry () {
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
-      t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
-      t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
-    })
-  }
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
+  t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
+  t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+  t.notOk(res.headers['retry-after'], 'the header must be missing')
+
+  // TODO - use sinom timers
+  await sleep(1100)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
+  t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
+  t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 })
 
 test('With ban', t => {
