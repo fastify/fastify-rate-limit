@@ -241,46 +241,38 @@ test('With redis store', async t => {
   t.equal(res.headers['x-ratelimit-reset'], 1)
 })
 
-test('Skip on redis error', t => {
-  t.plan(13)
+test('Skip on redis error', async t => {
+  t.plan(9)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
   fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000,
-    redis: redis,
+    redis,
     skipOnError: true
   })
 
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get('/', async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 2)
-    t.equal(res.headers['x-ratelimit-remaining'], 1)
+  let res
 
-    redis.flushall(noop)
-    redis.quit(err => {
-      t.error(err)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 200)
-        t.equal(res.headers['x-ratelimit-limit'], 2)
-        t.equal(res.headers['x-ratelimit-remaining'], 2)
+  redis.flushall(noop)
+  await new Promise((resolve, reject) => redis.quit(err => err ? reject(err) : resolve()))
 
-        fastify.inject('/', (err, res) => {
-          t.error(err)
-          t.equal(res.statusCode, 200)
-          t.equal(res.headers['x-ratelimit-limit'], 2)
-          t.equal(res.headers['x-ratelimit-remaining'], 2)
-        })
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 2)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 2)
 })
 
 test('With keyGenerator', t => {
