@@ -812,12 +812,12 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
 test('Before async in "max"', async t => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
-    keyGenerator (req) { return req.headers['api-key'] },
-    max: async (req, key) => { return requestSequence(key) },
+    keyGenerator: (req) => req.headers['api-key'],
+    max: async (req, key) => requestSequence(key),
     timeWindow: 10000
   })
 
-  await fastify.get('/', (req, res) => { res.send('hello') })
+  await fastify.get('/', async (req, res) => 'hello')
 
   const requestSequence = async (key) => await key === 'pro' ? 5 : 2
 })
