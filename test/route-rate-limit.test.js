@@ -353,34 +353,26 @@ test('no rate limit with bad rate-limit parameters', t => {
 
   fastify.get('/', {
     config: Object.assign({}, defaultRouteConfig, { rateLimit: () => { } })
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
   fastify.ready((err) => {
     t.equal(err.message, 'Unknown value for route rate-limit configuration')
   })
 })
 
-test('works with existing route config', t => {
-  t.plan(4)
+test('works with existing route config', async t => {
+  t.plan(2)
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
     config: defaultRouteConfig
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
-  fastify.ready((err) => {
-    t.error(err)
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.headers['x-ratelimit-limit'], 2)
-      t.equal(res.headers['x-ratelimit-remaining'], 1)
-    })
-  })
+  await fastify.ready()
+  const res = await fastify.inject('/')
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
 })
 
 test('With ban', t => {
