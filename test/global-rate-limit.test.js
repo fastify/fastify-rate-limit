@@ -776,8 +776,8 @@ test('hide IETF draft spec headers', async t => {
   t.equal(res.headers['ratelimit-reset'], 1)
 })
 
-test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled', t => {
-  t.plan(16)
+test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled', async t => {
+  t.plan(13)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 1,
@@ -785,29 +785,27 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
     enableDraftSpec: true
   })
 
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get('/', async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  const res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['ratelimit-limit'], 1)
+  t.equal(res.headers['ratelimit-remaining'], 0)
+
+  await Promise.all([
+    sleep(500).then(retry.bind(null, 9)),
+    sleep(1500).then(retry.bind(null, 8))
+  ])
+
+  async function retry (timeLeft) {
+    const res = await fastify.inject('/')
+
+    t.equal(res.statusCode, 429)
     t.equal(res.headers['ratelimit-limit'], 1)
     t.equal(res.headers['ratelimit-remaining'], 0)
-
-    setTimeout(retry.bind(null, 9), 500)
-    setTimeout(retry.bind(null, 8), 1500)
-  })
-
-  function retry (timeLeft) {
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 429)
-      t.equal(res.headers['ratelimit-limit'], 1)
-      t.equal(res.headers['ratelimit-remaining'], 0)
-      t.equal(res.headers['ratelimit-reset'], timeLeft)
-      t.equal(res.headers['ratelimit-reset'], res.headers['retry-after'])
-    })
+    t.equal(res.headers['ratelimit-reset'], timeLeft)
+    t.equal(res.headers['ratelimit-reset'], res.headers['retry-after'])
   }
 })
 
