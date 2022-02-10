@@ -479,14 +479,16 @@ test('onExceeding and onExceeded events', async t => {
   t.equal(onExceededCounter, 1)
 })
 
-test('custom error response', t => {
-  t.plan(15)
+test('custom error response', async t => {
+  t.plan(12)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     global: false,
-    errorResponseBuilder: function (req, context) {
-      return { code: 429, timeWindow: context.after, limit: context.max }
-    }
+    errorResponseBuilder: (req, context) => ({
+      code: 429,
+      timeWindow: context.after,
+      limit: context.max
+    })
   })
 
   fastify.get('/', {
@@ -496,36 +498,30 @@ test('custom error response', t => {
         timeWindow: 1000
       }
     }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 2)
-    t.equal(res.headers['x-ratelimit-remaining'], 1)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['x-ratelimit-limit'], 2)
-      t.equal(res.headers['x-ratelimit-remaining'], 0)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 429)
-        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.equal(res.headers['x-ratelimit-limit'], 2)
-        t.equal(res.headers['x-ratelimit-remaining'], 0)
-        t.equal(res.headers['retry-after'], 1000)
-        t.same(JSON.parse(res.payload), {
-          code: 429,
-          timeWindow: '1 second',
-          limit: 2
-        })
-      })
-    })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['retry-after'], 1000)
+  t.same(JSON.parse(res.payload), {
+    code: 429,
+    timeWindow: '1 second',
+    limit: 2
   })
 })
 
