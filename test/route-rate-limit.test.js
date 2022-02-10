@@ -1007,8 +1007,8 @@ test('Allow multiple different rate limiter registrations', async t => {
   t.equal(res.headers['retry-after'], 1000)
 })
 
-test('With enable IETF draft spec', t => {
-  t.plan(5)
+test('With enable IETF draft spec', async t => {
+  t.plan(4)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     global: false,
@@ -1017,17 +1017,13 @@ test('With enable IETF draft spec', t => {
 
   fastify.get('/', {
     config: defaultRouteConfig
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, res) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['ratelimit-limit'], 2)
-    t.equal(res.headers['ratelimit-remaining'], 1)
-    t.equal(res.headers['ratelimit-reset'], 1)
-  })
+  const res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['ratelimit-limit'], 2)
+  t.equal(res.headers['ratelimit-remaining'], 1)
+  t.equal(res.headers['ratelimit-reset'], 1)
 })
 
 test('per route rate limit', async t => {
