@@ -1148,9 +1148,7 @@ test('When continue exceeding is on (Local)', async t => {
         continueExceeding: true
       }
     }
-  }, async (req, reply) => {
-    return 'hello!'
-  })
+  }, async (req, reply) => 'hello!')
 
   const first = await fastify.inject({
     url: '/',
@@ -1187,9 +1185,7 @@ test('When continue exceeding is on (Redis)', async t => {
         continueExceeding: true
       }
     }
-  }, async (req, reply) => {
-    return 'hello!'
-  })
+  }, async (req, reply) => 'hello!')
 
   const first = await fastify.inject({
     url: '/',
