@@ -6,6 +6,7 @@ const Redis = require('ioredis')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 const noop = () => { }
 
 const REDIS_HOST = '127.0.0.1'
@@ -20,16 +21,14 @@ const defaultRouteConfig = {
   }
 }
 
-test('Basic', t => {
-  t.plan(25)
+test('Basic', async t => {
+  t.plan(21)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
     config: defaultRouteConfig
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
   fastify.setErrorHandler(function (error, request, reply) {
     t.pass('Error handler has been called')
@@ -38,48 +37,41 @@ test('Basic', t => {
     reply.send(error)
   })
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 2)
-    t.equal(res.headers['x-ratelimit-remaining'], 1)
-    t.equal(res.headers['x-ratelimit-reset'], 1)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['x-ratelimit-limit'], 2)
-      t.equal(res.headers['x-ratelimit-remaining'], 0)
-      t.equal(res.headers['x-ratelimit-reset'], 0)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
+  t.equal(res.headers['x-ratelimit-reset'], 1)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 429)
-        t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-        t.equal(res.headers['x-ratelimit-limit'], 2)
-        t.equal(res.headers['x-ratelimit-remaining'], 0)
-        t.equal(res.headers['retry-after'], 1000)
-        t.equal(res.headers['x-ratelimit-reset'], 0)
-        t.same({
-          statusCode: 429,
-          error: 'Too Many Requests',
-          message: 'Rate limit exceeded, retry in 1 second from error handler'
-        }, JSON.parse(res.payload))
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['x-ratelimit-reset'], 0)
 
-        setTimeout(retry, 1100)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['retry-after'], 1000)
+  t.equal(res.headers['x-ratelimit-reset'], 0)
+  t.same({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 1 second from error handler'
+  }, JSON.parse(res.payload))
 
-  function retry () {
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
-      t.equal(res.headers['x-ratelimit-limit'], 2)
-      t.equal(res.headers['x-ratelimit-remaining'], 1)
-      t.equal(res.headers['x-ratelimit-reset'], 1)
-    })
-  }
+  // TODO - use sinom timers
+  await sleep(1100)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
+  t.equal(res.headers['x-ratelimit-reset'], 1)
 })
 
 test('With text timeWindow', t => {
