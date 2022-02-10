@@ -413,8 +413,8 @@ test('route can disable the global limit', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], undefined)
 })
 
-test('does not override onRequest', t => {
-  t.plan(5)
+test('does not override onRequest', async t => {
+  t.plan(4)
   const fastify = Fastify()
   fastify.register(rateLimit, { global: false })
 
@@ -424,16 +424,12 @@ test('does not override onRequest', t => {
       next()
     },
     config: defaultRouteConfig
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  }, async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 2)
-    t.equal(res.headers['x-ratelimit-remaining'], 1)
-  })
+  const res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
 })
 
 test('onExceeding and onExceeded events', t => {
