@@ -626,32 +626,26 @@ test('hide rate limit headers at all times', async t => {
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 })
 
-test('With ban', t => {
-  t.plan(6)
+test('With ban', async t => {
+  t.plan(3)
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 1,
     ban: 1
   })
 
-  fastify.get('/', (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get('/', async (req, reply) => 'hello!')
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  let res
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 429)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 403)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 403)
 })
 
 test('stops fastify lifecycle after onRequest and before preValidation', t => {
