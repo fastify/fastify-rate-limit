@@ -5,6 +5,7 @@ const test = t.test
 const Redis = require('ioredis')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
+const FakeTimers = require('@sinonjs/fake-timers')
 const noop = () => { }
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -96,6 +97,48 @@ test('With text timeWindow', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
+})
+
+test('When passing NaN to the timeWindow property then the timeWindow should be the default value - 60 seconds', async t => {
+  t.plan(5)
+
+  t.context.clock = FakeTimers.install()
+
+  const defaultTimeWindowInSeconds = 60
+
+  const fastify = Fastify()
+  fastify.register(rateLimit, { max: 1, timeWindow: NaN })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-reset'], defaultTimeWindowInSeconds)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 429)
+
+  // Wait for almost 60s to make sure the time limit is right
+  t.context.clock.tick(55 * 1000)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 429)
+
+  // Wait for the seconds that left until the time limit reset
+  t.context.clock.tick(5 * 1000)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('With ips allowList', async t => {
@@ -477,6 +520,54 @@ test('variable max contenders', async t => {
     const res = await fastify.inject({ url: item.url, headers: item.headers })
     t.equal(res.statusCode, item.status)
   }
+})
+
+test('when passing NaN to max variable then it should use the default max - 1000', async t => {
+  t.plan(2002)
+
+  const defaultMax = 1000
+
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: NaN,
+    timeWindow: 1000
+  })
+
+  fastify.get('/', async (req, res) => 'hello')
+
+  for (let i = 0; i < defaultMax; i++) {
+    const res = await fastify.inject('/')
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 1000)
+  }
+
+  const res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['x-ratelimit-limit'], 1000)
+})
+
+test('when passing NaN to max variable then it should use the default max - 1000', async t => {
+  t.plan(2002)
+
+  const defaultMax = 1000
+
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    max: NaN,
+    timeWindow: 1000
+  })
+
+  fastify.get('/', async (req, res) => 'hello')
+
+  for (let i = 0; i < defaultMax; i++) {
+    const res = await fastify.inject('/')
+    t.equal(res.statusCode, 200)
+    t.equal(res.headers['x-ratelimit-limit'], 1000)
+  }
+
+  const res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['x-ratelimit-limit'], 1000)
 })
 
 test('hide rate limit headers', async t => {
