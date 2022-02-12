@@ -1402,3 +1402,32 @@ test('When continue exceeding is on (Redis)', async t => {
     redis.quit(noop)
   })
 })
+
+test('should consider routes allow list', t => {
+  t.plan(6)
+  const fastify = Fastify()
+  fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.get('/', {
+    config: { rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  fastify.inject('/', (err, res) => {
+    t.error(err)
+    t.equal(res.statusCode, 200)
+
+    fastify.inject('/', (err, res) => {
+      t.error(err)
+      t.equal(res.statusCode, 200)
+
+      fastify.inject('/', (err, res) => {
+        t.error(err)
+        t.equal(res.statusCode, 200)
+      })
+    })
+  })
+})
