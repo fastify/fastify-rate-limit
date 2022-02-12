@@ -14,7 +14,7 @@ t.afterEach(t => {
   t.context.clock.uninstall()
 })
 
-test('issue #215 - when using local store, 2nd user is not being rate limited when time window is passed for the 1at user', async t => {
+test('issue #215 - when using local store, 2nd user is not being rate limited when time window is passed for the 1st user', async t => {
   t.plan(5)
   const fastify = Fastify()
 
@@ -67,7 +67,8 @@ test('issue #215 - when using local store, 2nd user is not being rate limited wh
 
   const user2OkResponseAfterRateLimitCompleted = await fastify.inject({
     url: '/',
-    method: 'GET'
+    method: 'GET',
+    remoteAddress: '2.2.2.2'
   })
 
   t.equal(user1FirstRequest.statusCode, 200)
