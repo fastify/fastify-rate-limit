@@ -10,7 +10,8 @@ function LocalStore (timeWindow, cache, app, continueExceeding) {
 }
 
 LocalStore.prototype.incr = function (ip, cb) {
-  const current = this.lru.get(ip) || { count: 0, iterationStartMs: Date.now() }
+  const nowInMs = Date.now()
+  const current = this.lru.get(ip) || { count: 0, iterationStartMs: nowInMs }
   const isNewItem = current.count === 0
 
   current.count++
@@ -23,7 +24,7 @@ LocalStore.prototype.incr = function (ip, cb) {
   if (this.continueExceeding) {
     cb(null, { current: current.count, ttl: this.timeWindow })
   } else {
-    cb(null, { current: current.count, ttl: this.timeWindow - (Date.now() - current.iterationStartMs) })
+    cb(null, { current: current.count, ttl: this.timeWindow - (nowInMs - current.iterationStartMs) })
   }
 }
 
