@@ -29,7 +29,7 @@ LocalStore.prototype.incr = function (ip, cb) {
     cb(null, { current, ttl: this.timeWindow })
   } else {
     // start counting from the first request/increment
-    if (!this.msLastBeat) {
+    if (this.msLastBeat === undefined || this.msLastBeat === null) {
       this.msLastBeat = Date.now()
     }
 

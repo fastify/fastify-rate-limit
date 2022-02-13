@@ -13,6 +13,7 @@ const REDIS_HOST = '127.0.0.1'
 
 test('Basic', async t => {
   t.plan(15)
+  t.context.clock = FakeTimers.install()
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
@@ -45,18 +46,22 @@ test('Basic', async t => {
     message: 'Rate limit exceeded, retry in 1 second'
   }, JSON.parse(res.payload))
 
-  // TODO - use sinom timers
-  await sleep(1100)
+  t.context.clock.tick(1100)
 
   res = await fastify.inject('/')
 
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('With text timeWindow', async t => {
   t.plan(15)
+  t.context.clock = FakeTimers.install()
   const fastify = Fastify()
   fastify.register(rateLimit, { max: 2, timeWindow: '1s' })
 
@@ -89,14 +94,17 @@ test('With text timeWindow', async t => {
     message: 'Rate limit exceeded, retry in 1 second'
   }, JSON.parse(res.payload))
 
-  // TODO - use sinom timers
-  await sleep(1100)
+  t.context.clock.tick(1100)
 
   res = await fastify.inject('/')
 
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('When passing NaN to the timeWindow property then the timeWindow should be the default value - 60 seconds', async t => {
@@ -271,7 +279,7 @@ test('With redis store', async t => {
     message: 'Rate limit exceeded, retry in 1 second'
   }, JSON.parse(res.payload))
 
-  // TODO - use sinom timers
+  // Not using fake timers here as we use an external Redis which wouldn't be effected by this
   await sleep(1100)
 
   res = await fastify.inject('/')
@@ -320,6 +328,7 @@ test('Skip on redis error', async t => {
 
 test('With keyGenerator', async t => {
   t.plan(19)
+  t.context.clock = FakeTimers.install()
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 2,
@@ -364,13 +373,16 @@ test('With keyGenerator', async t => {
     message: 'Rate limit exceeded, retry in 1 second'
   }, JSON.parse(res.payload))
 
-  // TODO - use sinom timers
-  await sleep(1100)
+  t.context.clock.tick(1100)
 
   res = await fastify.inject(payload)
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('With CustomStore', async t => {
@@ -572,6 +584,7 @@ test('when passing NaN to max variable then it should use the default max - 1000
 
 test('hide rate limit headers', async t => {
   t.plan(14)
+  t.context.clock = FakeTimers.install()
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 1,
@@ -604,18 +617,22 @@ test('hide rate limit headers', async t => {
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
   t.notOk(res.headers['retry-after'], 'the header must be missing')
 
-  // TODO - use sinom timers
-  await sleep(1100)
+  t.context.clock.tick(1100)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 1)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
   t.equal(res.headers['x-ratelimit-reset'], 1)
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('hide rate limit headers on exceeding', async t => {
   t.plan(14)
+  t.context.clock = FakeTimers.install()
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 1,
@@ -647,8 +664,7 @@ test('hide rate limit headers on exceeding', async t => {
   t.not(res.headers['x-ratelimit-reset'], undefined)
   t.equal(res.headers['retry-after'], 1000)
 
-  // TODO - use sinom timers
-  await sleep(1100)
+  t.context.clock.tick(1100)
 
   res = await fastify.inject('/')
 
@@ -656,10 +672,15 @@ test('hide rate limit headers on exceeding', async t => {
   t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
   t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('hide rate limit headers at all times', async t => {
   t.plan(14)
+  t.context.clock = FakeTimers.install()
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 1,
@@ -697,8 +718,7 @@ test('hide rate limit headers at all times', async t => {
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
   t.notOk(res.headers['retry-after'], 'the header must be missing')
 
-  // TODO - use sinom timers
-  await sleep(1100)
+  t.context.clock.tick(1100)
 
   res = await fastify.inject('/')
 
@@ -706,6 +726,10 @@ test('hide rate limit headers at all times', async t => {
   t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
   t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('With ban', async t => {
@@ -758,6 +782,7 @@ test('stops fastify lifecycle after onRequest and before preValidation', async t
 
 test('With enabled IETF Draft Spec', async t => {
   t.plan(16)
+  t.context.clock = FakeTimers.install()
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 2,
@@ -802,18 +827,22 @@ test('With enabled IETF Draft Spec', async t => {
     message: 'Rate limit exceeded, retry in 1 second'
   }, payload)
 
-  // TODO - use sinom timers
-  await sleep(1100)
+  t.context.clock.tick(1100)
 
   res = await fastify.inject('/')
 
   t.equal(res.statusCode, 200)
   t.equal(res.headers['ratelimit-limit'], 2)
   t.equal(res.headers['ratelimit-remaining'], 1)
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('hide IETF draft spec headers', async t => {
   t.plan(14)
+  t.context.clock = FakeTimers.install()
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 1,
@@ -847,8 +876,7 @@ test('hide IETF draft spec headers', async t => {
   t.notOk(res.headers['ratelimit-reset'], 'the header must be missing')
   t.notOk(res.headers['retry-after'], 'the header must be missing')
 
-  // TODO - use sinom timers
-  await sleep(1100)
+  t.context.clock.tick(1100)
 
   res = await fastify.inject('/')
 
@@ -856,10 +884,15 @@ test('hide IETF draft spec headers', async t => {
   t.equal(res.headers['ratelimit-limit'], 1)
   t.equal(res.headers['ratelimit-remaining'], 0)
   t.equal(res.headers['ratelimit-reset'], 1)
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled', async t => {
   t.plan(13)
+  t.context.clock = FakeTimers.install()
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: 1,
@@ -875,10 +908,11 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
   t.equal(res.headers['ratelimit-limit'], 1)
   t.equal(res.headers['ratelimit-remaining'], 0)
 
-  await Promise.all([
-    sleep(500).then(retry.bind(null, 9)),
-    sleep(1500).then(retry.bind(null, 8))
-  ])
+  t.context.clock.tick(500)
+  await retry(9)
+
+  t.context.clock.tick(1000)
+  await retry(8)
 
   async function retry (timeLeft) {
     const res = await fastify.inject('/')
@@ -889,6 +923,10 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
     t.equal(res.headers['ratelimit-reset'], timeLeft)
     t.equal(res.headers['ratelimit-reset'], res.headers['retry-after'])
   }
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('Before async in "max"', async t => {
