@@ -15,10 +15,10 @@ LocalStore.prototype.incr = function (ip, cb) {
 
   current.count++
 
-  // We want to update the TTL only if it's a new item (because it doesn't have any TTL) or `continueExceeding` is true
+  // We want to update the TTL only if it's a new item (because it doesn't have any TTL)
   // Passing false to the 3rd parameter = update the TTL AND I don't know if the item with that key already exist
   // Passing true means don't update the TTL AND I'm sure there is an item with that key
-  this.lru.set(ip, current, !(isNewItem || this.continueExceeding))
+  this.lru.set(ip, current, !isNewItem)
 
   if (this.continueExceeding) {
     cb(null, { current: current.count, ttl: this.timeWindow })
