@@ -279,7 +279,7 @@ test('With redis store', async t => {
     message: 'Rate limit exceeded, retry in 1 second'
   }, JSON.parse(res.payload))
 
-  // Not using fake timers here as we use an external Redis which wouldn't be effected by this
+  // Not using fake timers here as we use an external Redis that would not be effected by this
   await sleep(1100)
 
   res = await fastify.inject('/')
