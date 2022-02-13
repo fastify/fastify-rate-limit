@@ -3,37 +3,27 @@
 const lru = require('tiny-lru')
 
 function LocalStore (timeWindow, cache, app, continueExceeding) {
-  this.lru = lru(cache || 5000)
-  this.interval = setInterval(beat.bind(this), timeWindow).unref()
+  this.lru = lru(cache || 5000, timeWindow)
   this.app = app
   this.timeWindow = timeWindow
   this.continueExceeding = continueExceeding
-
-  app.addHook('onClose', (instance, done) => {
-    clearInterval(this.interval)
-    done()
-  })
-
-  function beat () {
-    this.lru.clear()
-    this.msLastBeat = null
-  }
 }
 
 LocalStore.prototype.incr = function (ip, cb) {
-  let current = this.lru.get(ip) || 0
-  this.lru.set(ip, ++current)
+  const current = this.lru.get(ip) || { count: 0, iterationStartMs: Date.now() }
+  const isNewItem = current.count === 0
+
+  current.count++
+
+  // We want to update the TTL only if it's a new item (because it doesn't have any TTL) or `continueExceeding` is true
+  // Passing false to the 3rd parameter = update the TTL AND I don't know if the item with that key already exist
+  // Passing true means don't update the TTL AND I'm sure there is an item with that key
+  this.lru.set(ip, current, !(isNewItem || this.continueExceeding))
 
   if (this.continueExceeding) {
-    this.msLastBeat = Date.now()
-    cb(null, { current, ttl: this.timeWindow })
+    cb(null, { current: current.count, ttl: this.timeWindow })
   } else {
-    // start counting from the first request/increment
-    if (!this.msLastBeat) {
-      this.msLastBeat = Date.now()
-    }
-
-    cb(null, { current, ttl: this.timeWindow - (Date.now() - this.msLastBeat) })
+    cb(null, { current: current.count, ttl: this.timeWindow - (Date.now() - current.iterationStartMs) })
   }
 }
 
