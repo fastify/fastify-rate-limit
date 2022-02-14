@@ -173,12 +173,12 @@ function rateLimitRequestHandler (params, pluginComponent) {
     const key = params.keyGenerator(req)
 
     // allowList doesn't apply any rate limit
-    if (pluginComponent.allowList) {
+    if (params.allowList) {
       if (typeof pluginComponent.allowList === 'function') {
-        if (pluginComponent.allowList(req, key)) {
+        if (params.allowList(req, key)) {
           return
         }
-      } else if (pluginComponent.allowList.indexOf(key) > -1) {
+      } else if (params.allowList.indexOf(key) > -1) {
         return
       }
     }
