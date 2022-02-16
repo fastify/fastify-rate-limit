@@ -9,17 +9,22 @@ function LocalStore (timeWindow, cache, app, continueExceeding) {
   this.continueExceeding = continueExceeding
 }
 
-LocalStore.prototype.incr = function (ip, cb) {
+LocalStore.prototype.incr = function (ip, cb, max) {
   const nowInMs = Date.now()
   const current = this.lru.get(ip) || { count: 0, iterationStartMs: nowInMs }
 
   current.count++
 
-  this.lru.set(ip, current)
-
   if (this.continueExceeding) {
+    if (current.count > max) {
+      this.lru.delete(ip)
+    }
+
+    // It will recalculate the TTL if the item is missing - count exceeded the maximum
+    this.lru.set(ip, current)
     cb(null, { current: current.count, ttl: this.timeWindow })
   } else {
+    this.lru.set(ip, current)
     cb(null, { current: current.count, ttl: this.timeWindow - (nowInMs - current.iterationStartMs) })
   }
 }

@@ -186,6 +186,14 @@ function rateLimitRequestHandler (params, pluginComponent) {
     let current = 0
     let ttl = 0
 
+    let maximum
+
+    if (typeof params.max === 'number' && !isNaN(params.max)) {
+      maximum = params.max
+    } else {
+      maximum = await params.max(req, key)
+    }
+
     // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request
     try {
       const res = await new Promise(function (resolve, reject) {
@@ -195,7 +203,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
             return
           }
           resolve(res)
-        })
+        }, maximum)
       })
 
       current = res.current
@@ -204,14 +212,6 @@ function rateLimitRequestHandler (params, pluginComponent) {
       if (!params.skipOnError) {
         throw err
       }
-    }
-
-    let maximum
-
-    if (typeof params.max === 'number' && !isNaN(params.max)) {
-      maximum = params.max
-    } else {
-      maximum = await params.max(req, key)
     }
 
     const timeLeft = Math.floor(ttl / 1000)
