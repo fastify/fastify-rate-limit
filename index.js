@@ -48,14 +48,14 @@ async function rateLimitPlugin (fastify, settings) {
   globalParams.labels = labels
 
   // define the global maximum of request allowed
-  globalParams.max = (typeof settings.max === 'number' || typeof settings.max === 'function')
+  globalParams.max = ((typeof settings.max === 'number' && !isNaN(settings.max)) || typeof settings.max === 'function')
     ? settings.max
     : 1000
 
   // define the global Time Window
   globalParams.timeWindow = typeof settings.timeWindow === 'string'
     ? ms(settings.timeWindow)
-    : typeof settings.timeWindow === 'number'
+    : typeof settings.timeWindow === 'number' && !isNaN(settings.timeWindow)
       ? settings.timeWindow
       : 1000 * 60
 
@@ -173,12 +173,12 @@ function rateLimitRequestHandler (params, pluginComponent) {
     const key = params.keyGenerator(req)
 
     // allowList doesn't apply any rate limit
-    if (pluginComponent.allowList) {
+    if (params.allowList) {
       if (typeof pluginComponent.allowList === 'function') {
-        if (pluginComponent.allowList(req, key)) {
+        if (params.allowList(req, key)) {
           return
         }
-      } else if (pluginComponent.allowList.indexOf(key) > -1) {
+      } else if (params.allowList.indexOf(key) > -1) {
         return
       }
     }
@@ -186,7 +186,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
     let current = 0
     let ttl = 0
 
-    // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request and we call the function "onIncr"
+    // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request
     try {
       const res = await new Promise(function (resolve, reject) {
         theStore.incr(key, function (err, res) {
@@ -208,7 +208,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
 
     let maximum
 
-    if (typeof params.max === 'number') {
+    if (typeof params.max === 'number' && !isNaN(params.max)) {
       maximum = params.max
     } else {
       maximum = await params.max(req, key)

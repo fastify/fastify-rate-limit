@@ -1,13 +1,13 @@
 {
   "name": "fastify-rate-limit",
-  "version": "5.7.0",
+  "version": "5.7.2",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "scripts": {
     "lint": "standard",
     "lint:fix": "standard --fix",
     "redis": "docker run -p 6379:6379 --rm redis",
-    "test": "standard && tap test/*.test.js test/**/*.test.js && npm run typescript",
+    "test": "standard && tap \"test/**/*.test.js\" && npm run typescript",
     "typescript": "tsd"
   },
   "repository": {
@@ -40,7 +40,7 @@
   "dependencies": {
     "fastify-plugin": "^3.0.0",
     "ms": "^2.1.1",
-    "tiny-lru": "^7.0.0"
+    "tiny-lru": "^8.0.1"
   },
   "tsd": {
     "directory": "test/types"
