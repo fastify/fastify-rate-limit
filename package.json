@@ -3,6 +3,7 @@
   "version": "5.7.2",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "lint": "standard",
     "lint:fix": "standard --fix",
