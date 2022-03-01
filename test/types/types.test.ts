@@ -1,12 +1,29 @@
+import fastify, {
+  FastifyInstance,
+  FastifyRequest,
+  preHandlerAsyncHookHandler,
+  RequestGenericInterface,
+  RouteOptions
+} from 'fastify'
 import * as http2 from 'http2'
-import fastify, { RouteOptions, FastifyRequest, FastifyInstance, RequestGenericInterface, FastifyReply, preHandlerAsyncHookHandler } from 'fastify';
-import * as ioredis from 'ioredis';
-import fastifyRateLimit, { FastifyRateLimitStore, FastifyRateLimitOptions, errorResponseBuilderContext, RateLimitPluginOptions } from '../../';
+import { default as ioredis } from 'ioredis'
+import fastifyRateLimit, {
+  errorResponseBuilderContext,
+  FastifyRateLimitOptions,
+  FastifyRateLimitStore,
+  RateLimitPluginOptions
+} from '../..'
 
 class CustomStore implements FastifyRateLimitStore {
   constructor(options: FastifyRateLimitOptions) {}
-  incr(key: string, callback: ( error: Error|null, result?: { current: number, ttl: number } ) => void) {}
-  child(routeOptions: RouteOptions & { path: string, prefix: string }) {
+  incr(
+    key: string,
+    callback: (
+      error: Error | null,
+      result?: { current: number; ttl: number }
+    ) => void
+  ) {}
+  child(routeOptions: RouteOptions & { path: string; prefix: string }) {
     return <CustomStore>(<FastifyRateLimitOptions>{})
   }
 }
@@ -23,7 +40,10 @@ const options1: RateLimitPluginOptions = {
   ban: 10,
   continueExceeding: false,
   keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
-  errorResponseBuilder: (req: FastifyRequest<RequestGenericInterface>, context: errorResponseBuilderContext) => ({ code: 429, timeWindow: context.after, limit: context.max }),
+  errorResponseBuilder: (
+    req: FastifyRequest<RequestGenericInterface>,
+    context: errorResponseBuilderContext
+  ) => ({ code: 429, timeWindow: context.after, limit: context.max }),
   addHeadersOnExceeding: {
     'x-ratelimit-limit': false,
     'x-ratelimit-remaining': false,
@@ -39,14 +59,14 @@ const options1: RateLimitPluginOptions = {
 
 const options2 = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => (42),
-  allowList: (req: FastifyRequest<RequestGenericInterface>, key: string) => (false),
+  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
+  allowList: (req: FastifyRequest<RequestGenericInterface>, key: string) => false,
   timeWindow: 5000
 }
 
 const options3 = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => (42),
+  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
   timeWindow: 5000,
   store: CustomStore
 }
@@ -62,11 +82,11 @@ appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
-  const preHandler1:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
-  const preHandler2:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options1)
-  const preHandler3:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options2)
-  const preHandler4:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options3)
-  const preHandler5:preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options4);
+  const preHandler1: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
+  const preHandler2: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options1)
+  const preHandler3: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options2)
+  const preHandler4: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options3)
+  const preHandler5: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options4)
   // The following test is dependent on https://github.com/fastify/fastify/pull/2929
   // appWithImplicitHttp.setNotFoundHandler({
   //   preHandler: appWithImplicitHttp.rateLimit()
@@ -74,7 +94,6 @@ appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   //   reply.status(404).send(new Error('Not found'))
   // })
 })
-
 
 const appWithHttp2: FastifyInstance<
   http2.Http2Server,
