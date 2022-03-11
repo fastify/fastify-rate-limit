@@ -75,12 +75,19 @@ interface DraftSpecAddHeadersOnExceeding {
   'ratelimit-reset'?: boolean;
 }
 
+export type RateLimitHook =
+  | 'onRequest'
+  | 'preParsing'
+  | 'preValidation'
+  | 'preHandler'
+
 export interface RateLimitOptions {
   max?:
     | number
     | ((req: FastifyRequest, key: string) => number)
     | ((req: FastifyRequest, key: string) => Promise<number>);
   timeWindow?: number | string;
+  hook?: RateLimitHook;
   cache?: number;
   store?: FastifyRateLimitStoreCtor;
   /**

@@ -6,6 +6,8 @@ const ms = require('ms')
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
 
+const defaultHook = 'onRequest'
+
 async function rateLimitPlugin (fastify, settings) {
   let labels = {
     rateLimit: 'x-ratelimit-limit',
@@ -59,6 +61,7 @@ async function rateLimitPlugin (fastify, settings) {
       ? settings.timeWindow
       : 1000 * 60
 
+  globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = settings.ban || null
 
@@ -115,7 +118,7 @@ async function rateLimitPlugin (fastify, settings) {
     })
   }
 
-  // onRoute add the onRequest rate-limit function if needed
+  // onRoute add the hook rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
       if (typeof routeOptions.config.rateLimit === 'object') {
@@ -148,13 +151,14 @@ async function rateLimitPlugin (fastify, settings) {
 }
 
 async function buildRouteRate (pluginComponent, params, routeOptions) {
-  const onRequest = rateLimitRequestHandler(params, pluginComponent)
-  if (Array.isArray(routeOptions.onRequest)) {
-    routeOptions.onRequest.push(onRequest)
-  } else if (typeof routeOptions.onRequest === 'function') {
-    routeOptions.onRequest = [routeOptions.onRequest, onRequest]
+  const hook = params.hook || defaultHook
+  const hookHandler = rateLimitRequestHandler(params, pluginComponent)
+  if (Array.isArray(routeOptions[hook])) {
+    routeOptions[hook].push(hookHandler)
+  } else if (typeof routeOptions[hook] === 'function') {
+    routeOptions[hook] = [routeOptions[hook], hookHandler]
   } else {
-    routeOptions.onRequest = [onRequest]
+    routeOptions[hook] = [hookHandler]
   }
 }
 
