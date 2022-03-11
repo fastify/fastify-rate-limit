@@ -11,6 +11,7 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 const noop = () => { }
 
 const REDIS_HOST = '127.0.0.1'
+const isSkipRedis = process.env.SKIP_REDIS
 
 const defaultRouteConfig = {
   rateLimit: {
@@ -200,6 +201,11 @@ test('With function allowList', async t => {
 })
 
 test('With redis store', async t => {
+  if (isSkipRedis) {
+    t.pass('Redis is not available')
+    return
+  }
+
   t.plan(19)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
@@ -252,6 +258,11 @@ test('With redis store', async t => {
 })
 
 test('Skip on redis error', async t => {
+  if (isSkipRedis) {
+    t.pass('Redis is not available')
+    return
+  }
+
   t.plan(9)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
@@ -1199,7 +1210,7 @@ test('When continue exceeding is on (Local)', async t => {
 test('When continue exceeding is on (Redis)', async t => {
   const fastify = Fastify()
 
-  const redis = await new Redis({ host: REDIS_HOST })
+  const redis = isSkipRedis ? undefined : await new Redis({ host: REDIS_HOST })
 
   fastify.register(rateLimit, {
     global: false,
@@ -1233,8 +1244,8 @@ test('When continue exceeding is on (Redis)', async t => {
   t.equal(second.headers['x-ratelimit-reset'], 5)
 
   t.teardown(() => {
-    redis.flushall(noop)
-    redis.quit(noop)
+    redis?.flushall(noop)
+    redis?.quit(noop)
   })
 })
 
@@ -1265,4 +1276,56 @@ test('should consider routes allow list', t => {
       })
     })
   })
+})
+
+test('on preValidation hook', async t => {
+  const fastify = Fastify()
+
+  fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.get('/quero', {
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 10000,
+        hook: 'preValidation',
+        keyGenerator (req) {
+          return req.userId || req.ip
+        }
+      }
+    }
+  }, async (req, reply) => 'pão de queijo com café!')
+
+  fastify.decorateRequest('userId', '')
+  fastify.addHook('preParsing', async req => {
+    const { userId } = req.query
+    if (userId) {
+      req.userId = userId
+    }
+  })
+
+  const send = userId => {
+    let query
+    if (userId) {
+      query = { userId }
+    }
+    return fastify.inject({
+      url: '/quero',
+      method: 'GET',
+      query
+    })
+  }
+  const first = await send()
+  const second = await send()
+  const third = await send('123')
+  const fourth = await send('123')
+  const fifth = await send('234')
+
+  t.equal(first.statusCode, 200)
+  t.equal(second.statusCode, 429)
+  t.equal(third.statusCode, 200)
+  t.equal(fourth.statusCode, 429)
+  t.equal(fifth.statusCode, 200)
 })

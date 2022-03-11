@@ -35,7 +35,7 @@ const options1: RateLimitPluginOptions = {
   timeWindow: 5000,
   cache: 10000,
   allowList: ['127.0.0.1'],
-  redis: new ioredis({ host: '127.0.0.1' }),
+  redis: process.env.SKIP_REDIS ? undefined : new ioredis({ host: '127.0.0.1' }),
   skipOnError: true,
   ban: 10,
   continueExceeding: false,

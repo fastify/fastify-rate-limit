@@ -10,6 +10,7 @@ const noop = () => { }
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 const REDIS_HOST = '127.0.0.1'
+const isSkipRedis = process.env.SKIP_REDIS
 
 test('Basic', async t => {
   t.plan(15)
@@ -241,6 +242,11 @@ test('With function allowList', async t => {
 })
 
 test('With redis store', async t => {
+  if (isSkipRedis) {
+    t.pass('Redis is not available')
+    return
+  }
+
   t.plan(19)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
@@ -293,6 +299,11 @@ test('With redis store', async t => {
 })
 
 test('Skip on redis error', async t => {
+  if (isSkipRedis) {
+    t.pass('Redis is not available')
+    return
+  }
+
   t.plan(9)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
@@ -542,31 +553,7 @@ test('when passing NaN to max variable then it should use the default max - 1000
   const fastify = Fastify()
   fastify.register(rateLimit, {
     max: NaN,
-    timeWindow: 1000
-  })
-
-  fastify.get('/', async (req, res) => 'hello')
-
-  for (let i = 0; i < defaultMax; i++) {
-    const res = await fastify.inject('/')
-    t.equal(res.statusCode, 200)
-    t.equal(res.headers['x-ratelimit-limit'], 1000)
-  }
-
-  const res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['x-ratelimit-limit'], 1000)
-})
-
-test('when passing NaN to max variable then it should use the default max - 1000', async t => {
-  t.plan(2002)
-
-  const defaultMax = 1000
-
-  const fastify = Fastify()
-  fastify.register(rateLimit, {
-    max: NaN,
-    timeWindow: 1000
+    timeWindow: 10000
   })
 
   fastify.get('/', async (req, res) => 'hello')
@@ -1002,7 +989,7 @@ test('When continue exceeding is on (Local)', async t => {
 test('When continue exceeding is on (Redis)', async t => {
   const fastify = Fastify()
 
-  const redis = new Redis({ host: REDIS_HOST })
+  const redis = isSkipRedis ? undefined : new Redis({ host: REDIS_HOST })
 
   fastify.register(rateLimit, {
     redis: redis,
@@ -1030,7 +1017,53 @@ test('When continue exceeding is on (Redis)', async t => {
   t.equal(second.headers['x-ratelimit-reset'], 5)
 
   t.teardown(() => {
-    redis.flushall(noop)
-    redis.quit(noop)
+    redis?.flushall(noop)
+    redis?.quit(noop)
   })
+})
+
+test('on preHandler hook', async t => {
+  const fastify = Fastify()
+
+  fastify.register(rateLimit, {
+    max: 1,
+    timeWindow: 10000,
+    hook: 'preHandler',
+    keyGenerator (req) {
+      return req.userId || req.ip
+    }
+  })
+
+  fastify.decorateRequest('userId', '')
+  fastify.addHook('preHandler', async req => {
+    const { userId } = req.query
+    if (userId) {
+      req.userId = userId
+    }
+  })
+
+  fastify.get('/', async (req, reply) => 'pão de queijo com café!')
+
+  const send = userId => {
+    let query
+    if (userId) {
+      query = { userId }
+    }
+    return fastify.inject({
+      url: '/',
+      method: 'GET',
+      query
+    })
+  }
+  const first = await send()
+  const second = await send()
+  const third = await send('123')
+  const fourth = await send('123')
+  const fifth = await send('234')
+
+  t.equal(first.statusCode, 200)
+  t.equal(second.statusCode, 429)
+  t.equal(third.statusCode, 200)
+  t.equal(fourth.statusCode, 429)
+  t.equal(fifth.statusCode, 200)
 })
