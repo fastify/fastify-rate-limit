@@ -103,6 +103,7 @@ fastify.register(require('fastify-rate-limit'), {
   max: 3, // default 1000
   ban: 2, // default null
   timeWindow: 5000, // default 1000 * 60
+  hook: 'preHandler', // default 'onRequest'
   cache: 10000, // default 5000
   allowList: ['127.0.0.1'], // default []
   redis: new Redis({ host: '127.0.0.1' }), // default null
@@ -189,6 +190,24 @@ fastify.register(require('fastify-rate-limit'), {
   /* ... */
   allowList: function(req, key) {
     return req.headers['x-app-client-id'] === 'internal-usage'
+  }
+})
+```
+
+Custom `hook` example usage (after authentication):
+```js
+fastify.register(require('fastify-rate-limit'), {
+  hook: 'preHandler',
+  keyGenerator: function(req) {
+    return return req.userId || req.ip
+  }
+})
+
+fastify.decorateRequest('userId', '')
+fastify.addHook('preHandler', async req => {
+  const { userId } = req.query
+  if (userId) {
+    req.userId = userId
   }
 })
 ```
