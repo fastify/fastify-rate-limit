@@ -310,6 +310,42 @@ In the route creation you can override the same settings of the plugin registrat
 - `onExceeding` : callback that will be executed each time a request is made to a route that is rate limited
 - `onExceeded` : callback that will be executed when a user reached the maximum number of tries. Can be useful to blacklist clients
 
+You may also want to set a global rate limiter and then disable on some routes:
+
+```js
+const fastify = require('fastify')()
+
+fastify.register(require('fastify-rate-limit'), {
+  max: 100,
+  timeWindow: '1 minute'
+})
+
+// add a limited route with global config
+fastify.get('/', (req, reply) => {
+  reply.send({ hello: 'from ... rate limited root' })
+})
+
+// this route doesn't have any rate limit
+fastify.get('/public', {
+  config: {
+    rateLimit: false
+  }
+}, (req, reply) => {
+  reply.send({ hello: 'from ... public' })
+})
+
+// add a limited route with global config and different max
+fastify.get('/private', {
+  config: {
+    rateLimit: {
+      max: 9
+    }
+  }
+}, (req, reply) => {
+  reply.send({ hello: 'from ... private and more limited' })
+})
+```
+
 ### Examples of Custom Store
 
 These examples show an overview of the `store` feature and you should take inspiration from it and tweak as you need:
