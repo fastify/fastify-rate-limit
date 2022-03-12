@@ -987,9 +987,13 @@ test('When continue exceeding is on (Local)', async t => {
 })
 
 test('When continue exceeding is on (Redis)', async t => {
-  const fastify = Fastify()
+  if (isSkipRedis) {
+    t.pass('Redis is not available')
+    return
+  }
 
-  const redis = isSkipRedis ? undefined : new Redis({ host: REDIS_HOST })
+  const fastify = Fastify()
+  const redis = new Redis({ host: REDIS_HOST })
 
   fastify.register(rateLimit, {
     redis: redis,
@@ -1017,8 +1021,8 @@ test('When continue exceeding is on (Redis)', async t => {
   t.equal(second.headers['x-ratelimit-reset'], 5)
 
   t.teardown(() => {
-    redis?.flushall(noop)
-    redis?.quit(noop)
+    redis.flushall(noop)
+    redis.quit(noop)
   })
 })
 
