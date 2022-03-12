@@ -10,7 +10,6 @@ const noop = () => { }
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 const REDIS_HOST = '127.0.0.1'
-const isSkipRedis = Boolean(process.env.SKIP_REDIS)
 
 test('Basic', async t => {
   t.plan(15)
@@ -241,7 +240,7 @@ test('With function allowList', async t => {
   t.equal(res.statusCode, 429)
 })
 
-test('With redis store', { skip: isSkipRedis }, async t => {
+test('With redis store', async t => {
   t.plan(19)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
@@ -293,7 +292,7 @@ test('With redis store', { skip: isSkipRedis }, async t => {
   t.equal(res.headers['x-ratelimit-reset'], 1)
 })
 
-test('Skip on redis error', { skip: isSkipRedis }, async t => {
+test('Skip on redis error', async t => {
   t.plan(9)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
@@ -976,7 +975,7 @@ test('When continue exceeding is on (Local)', async t => {
   t.equal(second.headers['x-ratelimit-reset'], 5)
 })
 
-test('When continue exceeding is on (Redis)', { skip: isSkipRedis }, async t => {
+test('When continue exceeding is on (Redis)', async t => {
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
 
