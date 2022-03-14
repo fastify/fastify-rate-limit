@@ -1284,7 +1284,7 @@ test('on preValidation hook', async t => {
         }
       }
     }
-  }, async (req, reply) => 'pão de queijo com café!')
+  }, async (req, reply) => 'fastify is awesome !')
 
   fastify.decorateRequest('userId', '')
   fastify.addHook('preParsing', async req => {
