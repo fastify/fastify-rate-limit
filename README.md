@@ -198,16 +198,16 @@ Custom `hook` example usage (after authentication):
 ```js
 fastify.register(require('fastify-rate-limit'), {
   hook: 'preHandler',
-  keyGenerator: function(req) {
-    return return req.userId || req.ip
+  keyGenerator: function (request) {
+    return request.userId || request.ip
   }
 })
 
 fastify.decorateRequest('userId', '')
-fastify.addHook('preHandler', async req => {
-  const { userId } = req.query
+fastify.addHook('preHandler', async function (request) {
+  const { userId } = request.query
   if (userId) {
-    req.userId = userId
+    request.userId = userId
   }
 })
 ```
