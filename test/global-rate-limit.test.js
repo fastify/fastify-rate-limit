@@ -1030,7 +1030,7 @@ test('on preHandler hook', async t => {
     }
   })
 
-  fastify.get('/', async (req, reply) => 'pão de queijo com café!')
+  fastify.get('/', async (req, reply) => 'fastify is awesome !')
 
   const send = userId => {
     let query
