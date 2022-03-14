@@ -11,7 +11,6 @@ import fastifyRateLimit, {
   errorResponseBuilderContext,
   FastifyRateLimitOptions,
   FastifyRateLimitStore,
-  RateLimitHook,
   RateLimitPluginOptions
 } from '../..'
 
@@ -57,32 +56,28 @@ const options1: RateLimitPluginOptions = {
     'retry-after': false
   }
 }
-
-let hook: RateLimitHook = 'preParsing'
-const options2 = {
+const options2: RateLimitPluginOptions = {
   global: true,
   max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
   allowList: (req: FastifyRequest<RequestGenericInterface>, key: string) => false,
   timeWindow: 5000,
-  hook
+  hook: 'preParsing'
 }
 
-hook = 'preValidation'
-const options3 = {
+const options3: RateLimitPluginOptions = {
   global: true,
   max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
   timeWindow: 5000,
   store: CustomStore,
-  hook
+  hook: 'preValidation'
 }
 
-hook = 'preHandler'
-const options4 = {
+const options4: RateLimitPluginOptions = {
   global: true,
   max: (req: FastifyRequest<RequestGenericInterface>, key: string) => Promise.resolve(42),
   timeWindow: 5000,
   store: CustomStore,
-  hook
+  hook: 'preHandler'
 }
 
 appWithImplicitHttp.register(fastifyRateLimit, options1)
