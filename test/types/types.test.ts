@@ -58,28 +58,31 @@ const options1: RateLimitPluginOptions = {
   }
 }
 
+let hook: RateLimitHook = 'preParsing'
 const options2 = {
   global: true,
   max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
   allowList: (req: FastifyRequest<RequestGenericInterface>, key: string) => false,
   timeWindow: 5000,
-  hook: 'preParsing' as RateLimitHook
+  hook
 }
 
+hook = 'preValidation'
 const options3 = {
   global: true,
   max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
   timeWindow: 5000,
   store: CustomStore,
-  hook: 'preValidation' as RateLimitHook
+  hook
 }
 
+hook = 'preHandler'
 const options4 = {
   global: true,
   max: (req: FastifyRequest<RequestGenericInterface>, key: string) => Promise.resolve(42),
   timeWindow: 5000,
   store: CustomStore,
-  hook: 'preHandler' as RateLimitHook
+  hook
 }
 
 appWithImplicitHttp.register(fastifyRateLimit, options1)
