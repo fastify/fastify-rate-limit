@@ -108,8 +108,8 @@ fastify.register(require('fastify-rate-limit'), {
   redis: new Redis({ host: '127.0.0.1' }), // default null
   continueExceeding: true, // default false
   skipOnError: true, // default false
-  keyGenerator: function(request) { /* ... */ }, // default (request) => request.raw.ip
-  errorResponseBuilder: function(request, context) { /* ... */},
+  keyGenerator: function (request) { /* ... */ }, // default (request) => request.raw.ip
+  errorResponseBuilder: function (request, context) { /* ... */},
   enableDraftSpec: true, // default false. Uses IEFT draft header standard
   addHeadersOnExceeding: { // default show all the response headers when rate limit is not reached
     'x-ratelimit-limit': true,
@@ -146,7 +146,7 @@ You can pass a Redis client here and magically the issue is solved. To achieve t
 ```js
 fastify.register(require('fastify-rate-limit'), {
   /* ... */
-  keyGenerator: function(request) {
+  keyGenerator: function (request) {
     return request.headers['x-real-ip'] // nginx
     || request.headers['x-client-ip'] // apache
     || request.headers['x-forwarded-for'] // use this only if you trust the header
@@ -171,7 +171,7 @@ fastify.register(rateLimit, {
 ```js
 fastify.register(require('fastify-rate-limit'), {
   /* ... */
-  errorResponseBuilder: function(request, context) {
+  errorResponseBuilder: function (request, context) {
     return {
       code: 429,
       error: 'Too Many Requests',
@@ -187,7 +187,7 @@ Dynamic `allowList` example usage:
 ```js
 fastify.register(require('fastify-rate-limit'), {
   /* ... */
-  allowList: function(request, key) {
+  allowList: function (request, key) {
     return request.headers['x-app-client-id'] === 'internal-usage'
   }
 })
