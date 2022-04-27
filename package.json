@@ -1,6 +1,6 @@
 {
-  "name": "fastify-rate-limit",
-  "version": "5.8.0",
+  "name": "@fastify/rate-limit",
+  "version": "6.0.0",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "types": "index.d.ts",
@@ -45,5 +45,8 @@
   },
   "tsd": {
     "directory": "test/types"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
