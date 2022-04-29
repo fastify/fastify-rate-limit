@@ -1,7 +1,7 @@
-# fastify-rate-limit
+# @fastify/rate-limit
 
 ![CI](https://github.com/fastify/fastify-rate-limit/workflows/CI/badge.svg)
-[![NPM version](https://img.shields.io/npm/v/fastify-rate-limit.svg?style=flat)](https://www.npmjs.com/package/fastify-rate-limit)
+[![NPM version](https://img.shields.io/npm/v/@fastify/rate-limit.svg?style=flat)](https://www.npmjs.com/package/@fastify/rate-limit)
 [![Known Vulnerabilities](https://snyk.io/test/github/fastify/fastify-rate-limit/badge.svg)](https://snyk.io/test/github/fastify/fastify-rate-limit)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://standardjs.com/)
 
@@ -11,7 +11,7 @@ Please refer to [this branch](https://github.com/fastify/fastify-rate-limit/tree
 
 ## Install
 ```
-npm i fastify-rate-limit
+npm i @fastify/rate-limit
 ```
 
 ## Usage
@@ -20,7 +20,7 @@ This plugin will add an `onRequest` hook to check if a client (based on their IP
 ```js
 const fastify = require('fastify')()
 
-fastify.register(require('fastify-rate-limit'), {
+fastify.register(require('@fastify/rate-limit'), {
   max: 100,
   timeWindow: '1 minute'
 })
@@ -98,7 +98,7 @@ fastify.setNotFoundHandler({
 
 You can pass the following options during the plugin registration:
 ```js
-fastify.register(require('fastify-rate-limit'), {
+fastify.register(require('@fastify/rate-limit'), {
   global : false, // default true
   max: 3, // default 1000
   ban: 2, // default null
@@ -145,7 +145,7 @@ You can pass a Redis client here and magically the issue is solved. To achieve t
 
 `keyGenerator` example usage:
 ```js
-fastify.register(require('fastify-rate-limit'), {
+fastify.register(require('@fastify/rate-limit'), {
   /* ... */
   keyGenerator: function (request) {
     return request.headers['x-real-ip'] // nginx
@@ -170,7 +170,7 @@ fastify.register(rateLimit, {
 
 `errorResponseBuilder` example usage:
 ```js
-fastify.register(require('fastify-rate-limit'), {
+fastify.register(require('@fastify/rate-limit'), {
   /* ... */
   errorResponseBuilder: function (request, context) {
     return {
@@ -186,7 +186,7 @@ fastify.register(require('fastify-rate-limit'), {
 
 Dynamic `allowList` example usage:
 ```js
-fastify.register(require('fastify-rate-limit'), {
+fastify.register(require('@fastify/rate-limit'), {
   /* ... */
   allowList: function (request, key) {
     return request.headers['x-app-client-id'] === 'internal-usage'
@@ -196,7 +196,7 @@ fastify.register(require('fastify-rate-limit'), {
 
 Custom `hook` example usage (after authentication):
 ```js
-fastify.register(require('fastify-rate-limit'), {
+fastify.register(require('@fastify/rate-limit'), {
   hook: 'preHandler',
   keyGenerator: function (request) {
     return request.userId || request.ip
@@ -239,7 +239,7 @@ CustomStore.prototype.child = function (routeOptions) {
   return store
 }
 
-fastify.register(require('fastify-rate-limit'), {
+fastify.register(require('@fastify/rate-limit'), {
   /* ... */
   store: CustomStore
 })
@@ -268,7 +268,7 @@ In this example we are checking the IP address, but it could be an allowlist of 
 ```js
 const fastify = require('fastify')()
 
-fastify.register(require('fastify-rate-limit'),
+fastify.register(require('@fastify/rate-limit'),
   {
     global : false, // don't apply these settings to all the routes of the context
     max: 3000, // default global max rate limit
@@ -334,7 +334,7 @@ You may also want to set a global rate limiter and then disable on some routes:
 ```js
 const fastify = require('fastify')()
 
-fastify.register(require('fastify-rate-limit'), {
+fastify.register(require('@fastify/rate-limit'), {
   max: 100,
   timeWindow: '1 minute'
 })
