@@ -205,7 +205,7 @@ test('With redis store', async t => {
   const redis = new Redis({ host: REDIS_HOST })
   fastify.register(rateLimit, {
     global: false,
-    redis: redis
+    redis
   })
 
   fastify.get('/', {
@@ -256,7 +256,7 @@ test('Skip on redis error', async t => {
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
   fastify.register(rateLimit, {
-    redis: redis,
+    redis,
     global: false
   })
 
@@ -1202,7 +1202,7 @@ test('When continue exceeding is on (Redis)', async t => {
 
   fastify.register(rateLimit, {
     global: false,
-    redis: redis
+    redis
   })
 
   fastify.get('/', {

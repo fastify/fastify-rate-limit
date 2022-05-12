@@ -18,7 +18,7 @@ fastify.register(require('../../fastify-rate-limit'),
     // timeWindow: 1000*60,
     // cache: 10000,
     allowList: ['127.0.0.2'], // global allowList access ( ACL based on the key from the keyGenerator)
-    redis: redis, // connection to redis
+    redis, // connection to redis
     skipOnError: false // default false
     // keyGenerator: function(req) { /* ... */ }, // default (req) => req.raw.ip
   })
