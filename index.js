@@ -266,6 +266,6 @@ function defaultErrorResponse (req, context) {
 }
 
 module.exports = fp(rateLimitPlugin, {
-  fastify: '2.x - 3.x',
-  name: 'fastify-rate-limit'
+  fastify: '4.x',
+  name: '@fastify/rate-limit'
 })
