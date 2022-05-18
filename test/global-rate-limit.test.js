@@ -15,7 +15,7 @@ test('Basic', async t => {
   t.plan(15)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+  await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', async (req, reply) => 'hello!')
 
@@ -63,7 +63,7 @@ test('With text timeWindow', async t => {
   t.plan(15)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 2, timeWindow: '1s' })
+  await fastify.register(rateLimit, { max: 2, timeWindow: '1s' })
 
   fastify.get('/', async (req, reply) => 'hello!')
 
@@ -115,7 +115,7 @@ test('When passing NaN to the timeWindow property then the timeWindow should be 
   const defaultTimeWindowInSeconds = 60
 
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 1, timeWindow: NaN })
+  await fastify.register(rateLimit, { max: 1, timeWindow: NaN })
 
   fastify.get('/', async (req, reply) => 'hello!')
 
@@ -152,7 +152,7 @@ test('When passing NaN to the timeWindow property then the timeWindow should be 
 test('With ips allowList', async t => {
   t.plan(3)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: '2s',
     allowList: ['127.0.0.1']
@@ -175,7 +175,7 @@ test('With ips allowList', async t => {
 test('With ips whitelist', async t => {
   t.plan(3)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: '2s',
     whitelist: ['127.0.0.1']
@@ -198,7 +198,7 @@ test('With ips whitelist', async t => {
 test('With function allowList', async t => {
   t.plan(18)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: '2s',
     keyGenerator () { return 42 },
@@ -244,7 +244,7 @@ test('With redis store', async t => {
   t.plan(19)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000,
     redis
@@ -296,7 +296,7 @@ test('Skip on redis error', async t => {
   t.plan(9)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000,
     redis,
@@ -330,7 +330,7 @@ test('With keyGenerator', async t => {
   t.plan(19)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000,
     keyGenerator (req) {
@@ -405,7 +405,7 @@ test('With CustomStore', async t => {
   }
 
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: 10000,
     store: CustomStore
@@ -447,7 +447,7 @@ test('With CustomStore', async t => {
 test('does not override the onRequest', async t => {
   t.plan(4)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000
   })
@@ -468,7 +468,7 @@ test('does not override the onRequest', async t => {
 test('does not override the onRequest as an array', async t => {
   t.plan(4)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000
   })
@@ -490,7 +490,7 @@ test('does not override the onRequest as an array', async t => {
 test('variable max', async t => {
   t.plan(4)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: (req, key) => {
       t.pass()
       return +req.headers['secret-max']
@@ -510,7 +510,7 @@ test('variable max', async t => {
 test('variable max contenders', async t => {
   t.plan(7)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     keyGenerator: (req) => req.headers['api-key'],
     max: (req, key) => key === 'pro' ? 3 : 2,
     timeWindow: 10000
@@ -540,7 +540,7 @@ test('when passing NaN to max variable then it should use the default max - 1000
   const defaultMax = 1000
 
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: NaN,
     timeWindow: 10000
   })
@@ -562,7 +562,7 @@ test('hide rate limit headers', async t => {
   t.plan(14)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
     addHeaders: {
@@ -610,7 +610,7 @@ test('hide rate limit headers on exceeding', async t => {
   t.plan(14)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
     addHeadersOnExceeding: {
@@ -658,7 +658,7 @@ test('hide rate limit headers at all times', async t => {
   t.plan(14)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
     addHeaders: {
@@ -711,7 +711,7 @@ test('hide rate limit headers at all times', async t => {
 test('With ban', async t => {
   t.plan(3)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     ban: 1
   })
@@ -733,7 +733,7 @@ test('With ban', async t => {
 test('stops fastify lifecycle after onRequest and before preValidation', async t => {
   t.plan(4)
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 1, timeWindow: 1000 })
+  await fastify.register(rateLimit, { max: 1, timeWindow: 1000 })
 
   let preValidationCallCount = 0
 
@@ -760,7 +760,7 @@ test('With enabled IETF Draft Spec', async t => {
   t.plan(16)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 2,
     timeWindow: '1s',
     enableDraftSpec: true,
@@ -820,7 +820,7 @@ test('hide IETF draft spec headers', async t => {
   t.plan(14)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
     enableDraftSpec: true,
@@ -870,7 +870,7 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
   t.plan(13)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: '10s',
     enableDraftSpec: true
@@ -907,7 +907,7 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
 
 test('Before async in "max"', async t => {
   const fastify = Fastify()
-  await fastify.register(rateLimit, {
+  await await fastify.register(rateLimit, {
     keyGenerator: (req) => req.headers['api-key'],
     max: async (req, key) => requestSequence(key),
     timeWindow: 10000
@@ -922,7 +922,7 @@ test('exposeHeadRoutes', async t => {
   const fastify = Fastify({
     exposeHeadRoutes: true
   })
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 10,
     timeWindow: 1000
   })
@@ -950,7 +950,7 @@ test('exposeHeadRoutes', async t => {
 test('When continue exceeding is on (Local)', async t => {
   const fastify = Fastify()
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 5000,
     continueExceeding: true
@@ -979,7 +979,7 @@ test('When continue exceeding is on (Redis)', async t => {
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     redis,
     max: 1,
     timeWindow: 5000,
@@ -1013,7 +1013,7 @@ test('When continue exceeding is on (Redis)', async t => {
 test('on preHandler hook', async t => {
   const fastify = Fastify()
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 10000,
     hook: 'preHandler',
