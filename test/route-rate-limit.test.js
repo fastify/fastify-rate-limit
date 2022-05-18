@@ -363,7 +363,7 @@ test('no rate limit without settings', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], undefined)
 })
 
-test('no rate limit with bad rate-limit parameters', t => {
+test('no rate limit with bad rate-limit parameters', async t => {
   t.plan(1)
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
@@ -582,7 +582,7 @@ test('variable max contenders', async t => {
 
 // TODO this test gets extremely flaky because of setTimeout
 // rewrite using https://www.npmjs.com/package/@sinonjs/fake-timers
-test('limit reset per Local storage', { skip: true }, t => {
+test('limit reset per Local storage', { skip: true }, async t => {
   t.plan(12)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
@@ -1237,7 +1237,7 @@ test('When continue exceeding is on (Redis)', async t => {
   })
 })
 
-test('should consider routes allow list', t => {
+test('should consider routes allow list', async t => {
   t.plan(6)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
