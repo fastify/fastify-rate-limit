@@ -368,13 +368,15 @@ test('no rate limit with bad rate-limit parameters', async t => {
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
-  fastify.get('/', {
-    config: Object.assign({}, defaultRouteConfig, { rateLimit: () => { } })
-  }, async (req, reply) => 'hello!')
+  try {
+    fastify.get('/', {
+      config: Object.assign({}, defaultRouteConfig, { rateLimit: () => { } })
+    }, async (req, reply) => 'hello!')
 
-  fastify.ready((err) => {
+    t.fail('should throw')
+  } catch (err) {
     t.equal(err.message, 'Unknown value for route rate-limit configuration')
-  })
+  }
 })
 
 test('works with existing route config', async t => {
@@ -965,7 +967,7 @@ test('avoid double onRequest', async t => {
   let keyGeneratorCallCount = 0
 
   const subroute = async (childServer) => {
-    childServer.register(rateLimit, {
+    await childServer.register(rateLimit, {
       max: 1,
       timeWindow: 1000,
       keyGenerator: (req) => {
@@ -1056,12 +1058,12 @@ test('With enable IETF draft spec', async t => {
 })
 
 test('per route rate limit', async t => {
-  const fastifyR = Fastify({
+  const fastify = Fastify({
     exposeHeadRoutes: true
   })
-  fastifyR.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
 
-  fastifyR.get('/', {
+  fastify.get('/', {
     config: {
       rateLimit: {
         max: 10,
@@ -1070,12 +1072,12 @@ test('per route rate limit', async t => {
     }
   }, async (req, reply) => 'hello!')
 
-  const res = await fastifyR.inject({
+  const res = await fastify.inject({
     url: '/',
     method: 'GET'
   })
 
-  const resHead = await fastifyR.inject({
+  const resHead = await fastify.inject({
     url: '/',
     method: 'HEAD'
   })
@@ -1238,7 +1240,6 @@ test('When continue exceeding is on (Redis)', async t => {
 })
 
 test('should consider routes allow list', async t => {
-  t.plan(6)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false
@@ -1250,20 +1251,14 @@ test('should consider routes allow list', async t => {
     reply.send('hello!')
   })
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  let res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 200)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 })
 
 test('on preValidation hook', async t => {
