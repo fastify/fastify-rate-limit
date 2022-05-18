@@ -76,7 +76,7 @@ test('Set not found handler can be rate limited with specific options', async t 
   t.equal(res.statusCode, 404)
   t.equal(res.headers['x-ratelimit-limit'], 4)
   t.equal(res.headers['x-ratelimit-remaining'], 2)
-  t.equal(res.headers['x-ratelimit-reset'], 2)
+  t.ok(res.headers['x-ratelimit-reset'] <= 2)
 
   res = await fastify.inject('/not-found')
   t.equal(res.statusCode, 404)
