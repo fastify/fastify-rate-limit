@@ -17,7 +17,7 @@ t.afterEach(t => {
 test('issue #207 - when continueExceeding is true and the store is local then it should reset the rate-limit', async t => {
   const fastify = Fastify()
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false
   })
 

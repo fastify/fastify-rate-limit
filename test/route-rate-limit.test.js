@@ -26,7 +26,7 @@ test('Basic', async t => {
   t.plan(21)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
     config: defaultRouteConfig
@@ -87,7 +87,7 @@ test('With text timeWindow', async t => {
   t.plan(15)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
     config: defaultRouteConfig
@@ -132,7 +132,7 @@ test('With text timeWindow', async t => {
 test('With ips allowList', async t => {
   t.plan(3)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
     allowList: ['127.0.0.1']
   })
@@ -156,7 +156,7 @@ test('With ips allowList', async t => {
 test('With function allowList', async t => {
   t.plan(18)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
     keyGenerator: () => 42,
     allowList: (req, key) => {
@@ -203,9 +203,9 @@ test('With redis store', async t => {
   t.plan(19)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
-    redis: redis
+    redis
   })
 
   fastify.get('/', {
@@ -255,8 +255,8 @@ test('Skip on redis error', async t => {
   t.plan(9)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
-  fastify.register(rateLimit, {
-    redis: redis,
+  await fastify.register(rateLimit, {
+    redis,
     global: false
   })
 
@@ -295,7 +295,7 @@ test('With keyGenerator', async t => {
   t.plan(19)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
     keyGenerator: (req) => {
       t.equal(req.headers['my-custom-header'], 'random-value')
@@ -353,7 +353,7 @@ test('With keyGenerator', async t => {
 test('no rate limit without settings', async t => {
   t.plan(3)
   const fastify = Fastify()
-  fastify.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
 
   fastify.get('/', async (req, reply) => 'hello!')
 
@@ -363,24 +363,26 @@ test('no rate limit without settings', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], undefined)
 })
 
-test('no rate limit with bad rate-limit parameters', t => {
+test('no rate limit with bad rate-limit parameters', async t => {
   t.plan(1)
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+  await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
-  fastify.get('/', {
-    config: Object.assign({}, defaultRouteConfig, { rateLimit: () => { } })
-  }, async (req, reply) => 'hello!')
+  try {
+    fastify.get('/', {
+      config: Object.assign({}, defaultRouteConfig, { rateLimit: () => { } })
+    }, async (req, reply) => 'hello!')
 
-  fastify.ready((err) => {
+    t.fail('should throw')
+  } catch (err) {
     t.equal(err.message, 'Unknown value for route rate-limit configuration')
-  })
+  }
 })
 
 test('works with existing route config', async t => {
   t.plan(2)
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+  await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
     config: defaultRouteConfig
@@ -395,7 +397,7 @@ test('works with existing route config', async t => {
 test('With ban', async t => {
   t.plan(3)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false
   })
 
@@ -418,7 +420,7 @@ test('With ban', async t => {
 test('route can disable the global limit', async t => {
   t.plan(3)
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+  await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   fastify.get('/', {
     config: Object.assign({}, defaultRouteConfig, { rateLimit: false })
@@ -433,7 +435,7 @@ test('route can disable the global limit', async t => {
 test('does not override onRequest', async t => {
   t.plan(4)
   const fastify = Fastify()
-  fastify.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
     onRequest: function (req, reply, next) {
@@ -455,7 +457,7 @@ test('onExceeding and onExceeded events', async t => {
   let onExceedingCounter = 0
   let onExceededCounter = 0
   const fastify = Fastify()
-  fastify.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
     config: Object.assign({}, defaultRouteConfig, {
@@ -499,7 +501,7 @@ test('onExceeding and onExceeded events', async t => {
 test('custom error response', async t => {
   t.plan(12)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
     errorResponseBuilder: (req, context) => ({
       code: 429,
@@ -545,7 +547,7 @@ test('custom error response', async t => {
 test('variable max contenders', async t => {
   t.plan(9)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
     max: 1,
     timeWindow: 10000
@@ -582,10 +584,10 @@ test('variable max contenders', async t => {
 
 // TODO this test gets extremely flaky because of setTimeout
 // rewrite using https://www.npmjs.com/package/@sinonjs/fake-timers
-test('limit reset per Local storage', { skip: true }, t => {
+test('limit reset per Local storage', { skip: true }, async t => {
   t.plan(12)
   const fastify = Fastify()
-  fastify.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
     config: {
@@ -617,7 +619,7 @@ test('hide rate limit headers', async t => {
   t.plan(14)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
     addHeaders: {
@@ -675,7 +677,7 @@ test('hide rate limit headers on exceeding', async t => {
   t.plan(14)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
     addHeadersOnExceeding: {
@@ -731,7 +733,7 @@ test('hide rate limit headers at all times', async t => {
   t.plan(14)
   t.context.clock = FakeTimers.install()
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
     addHeaders: {
@@ -798,7 +800,7 @@ test('hide rate limit headers at all times', async t => {
 test('global timeWindow when not set in routes', async t => {
   t.plan(4)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
     timeWindow: 6000
   })
@@ -841,7 +843,7 @@ test('timeWindow specified as a string', async t => {
   }
 
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
     store: CustomStore
   })
@@ -887,7 +889,7 @@ test('With CustomStore', async t => {
   }
 
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
     max: 1,
     timeWindow: 10000,
@@ -929,7 +931,7 @@ test('With CustomStore', async t => {
 test('stops fastify lifecycle after onRequest and before preValidation', async t => {
   t.plan(4)
   const fastify = Fastify()
-  fastify.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
 
   let preValidationCallCount = 0
 
@@ -965,7 +967,7 @@ test('avoid double onRequest', async t => {
   let keyGeneratorCallCount = 0
 
   const subroute = async (childServer) => {
-    childServer.register(rateLimit, {
+    await childServer.register(rateLimit, {
       max: 1,
       timeWindow: 1000,
       keyGenerator: (req) => {
@@ -993,13 +995,13 @@ test('Allow multiple different rate limiter registrations', async t => {
   t.plan(16)
   const fastify = Fastify()
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
     whitelist: (req) => req.url !== '/test'
   })
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
     whitelist: (req) => req.url === '/test'
@@ -1039,7 +1041,7 @@ test('Allow multiple different rate limiter registrations', async t => {
 test('With enable IETF draft spec', async t => {
   t.plan(4)
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
     enableDraftSpec: true
   })
@@ -1056,12 +1058,12 @@ test('With enable IETF draft spec', async t => {
 })
 
 test('per route rate limit', async t => {
-  const fastifyR = Fastify({
+  const fastify = Fastify({
     exposeHeadRoutes: true
   })
-  fastifyR.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
 
-  fastifyR.get('/', {
+  fastify.get('/', {
     config: {
       rateLimit: {
         max: 10,
@@ -1070,12 +1072,12 @@ test('per route rate limit', async t => {
     }
   }, async (req, reply) => 'hello!')
 
-  const res = await fastifyR.inject({
+  const res = await fastify.inject({
     url: '/',
     method: 'GET'
   })
 
-  const resHead = await fastifyR.inject({
+  const resHead = await fastify.inject({
     url: '/',
     method: 'HEAD'
   })
@@ -1092,7 +1094,7 @@ test('per route rate limit', async t => {
 test('Allow custom timeWindow in preHandler', async t => {
   t.plan(21)
   const fastify = Fastify()
-  fastify.register(rateLimit, { global: false })
+  await fastify.register(rateLimit, { global: false })
   fastify.register((fastify, options, done) => {
     fastify.get('/default', {
       config: { rateLimit: { max: 1, timeWindow: '10 seconds' } }
@@ -1165,7 +1167,7 @@ test('Allow custom timeWindow in preHandler', async t => {
 test('When continue exceeding is on (Local)', async t => {
   const fastify = Fastify()
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false
   })
 
@@ -1200,9 +1202,9 @@ test('When continue exceeding is on (Redis)', async t => {
   const fastify = Fastify()
   const redis = await new Redis({ host: REDIS_HOST })
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false,
-    redis: redis
+    redis
   })
 
   fastify.get('/', {
@@ -1237,10 +1239,9 @@ test('When continue exceeding is on (Redis)', async t => {
   })
 })
 
-test('should consider routes allow list', t => {
-  t.plan(6)
+test('should consider routes allow list', async t => {
   const fastify = Fastify()
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false
   })
 
@@ -1250,26 +1251,20 @@ test('should consider routes allow list', t => {
     reply.send('hello!')
   })
 
-  fastify.inject('/', (err, res) => {
-    t.error(err)
-    t.equal(res.statusCode, 200)
+  let res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.equal(res.statusCode, 200)
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 
-      fastify.inject('/', (err, res) => {
-        t.error(err)
-        t.equal(res.statusCode, 200)
-      })
-    })
-  })
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
 })
 
 test('on preValidation hook', async t => {
   const fastify = Fastify()
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false
   })
 

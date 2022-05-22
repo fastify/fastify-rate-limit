@@ -8,7 +8,7 @@ const rateLimit = require('../index')
 test('Fastify close on local store', async t => {
   t.plan(1)
   const fastify = Fastify()
-  fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+  await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
   let counter = 1
   fastify.addHook('onClose', (instance, done) => {
     counter++

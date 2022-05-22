@@ -18,7 +18,7 @@ test('issue #215 - when using local store, 2nd user should not be rate limited w
   t.plan(5)
   const fastify = Fastify()
 
-  fastify.register(rateLimit, {
+  await fastify.register(rateLimit, {
     global: false
   })
 

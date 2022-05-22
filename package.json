@@ -7,7 +7,7 @@
   "scripts": {
     "lint": "standard",
     "lint:fix": "standard --fix",
-    "redis": "docker run -p 6379:6379 --rm redis",
+    "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
     "test": "standard && tap \"test/**/*.test.js\" && npm run typescript",
     "typescript": "tsd"
   },
@@ -30,7 +30,7 @@
     "@sinonjs/fake-timers": "^9.1.0",
     "@types/ioredis": "^4.28.8",
     "@types/node": "^17.0.21",
-    "fastify": "^3.27.2",
+    "fastify": "^4.0.0-rc.2",
     "ioredis": "^4.28.5",
     "knex": "^2.0.0",
     "sqlite3": "^5.0.2",
