@@ -2,7 +2,6 @@
 
 ![CI](https://github.com/fastify/fastify-rate-limit/workflows/CI/badge.svg)
 [![NPM version](https://img.shields.io/npm/v/@fastify/rate-limit.svg?style=flat)](https://www.npmjs.com/package/@fastify/rate-limit)
-[![Known Vulnerabilities](https://snyk.io/test/github/fastify/fastify-rate-limit/badge.svg)](https://snyk.io/test/github/fastify/fastify-rate-limit)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://standardjs.com/)
 
 A low overhead rate limiter for your routes. Supports Fastify `2.x - 3.x` semver range.
