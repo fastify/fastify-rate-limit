@@ -1,22 +1,38 @@
 name: CI
-'on':
+
+on:
   push:
     paths-ignore:
-      - docs/**
+      - 'docs/**'
       - '*.md'
   pull_request:
     paths-ignore:
-      - docs/**
+      - 'docs/**'
       - '*.md'
+
 jobs:
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v1
+
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
-        node-version:
-          - 14
-          - 16
-          - 18
+        node-version: [14, 16, 18]
     services:
       redis:
         image: redis
@@ -24,24 +40,34 @@ jobs:
           - '6379:6379'
         options: '--entrypoint redis-server'
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Setup Node ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Install Dependencies
-        run: |
-          npm install --ignore-scripts
-      - name: Run Tests
-        run: |
-          npm test
+
+      - name: Install dependencies
+        run: npm i --ignore-scripts
+
+      - name: Run tests
+        run: npm test
+
   automerge:
+    name: Automerge Dependabot PRs
+    if: >
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.user.login == 'dependabot[bot]'
     needs: test
-    runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: write
+    runs-on: ubuntu-latest
     steps:
       - uses: fastify/github-action-merge-dependabot@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          target: major
