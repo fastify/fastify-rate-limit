@@ -39,7 +39,7 @@
     "tsd": "^0.21.0"
   },
   "dependencies": {
-    "fastify-plugin": "^3.0.1",
+    "fastify-plugin": "^4.0.0",
     "ms": "^2.1.3",
     "tiny-lru": "^8.0.1"
   },
