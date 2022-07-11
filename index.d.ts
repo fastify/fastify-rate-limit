@@ -104,6 +104,8 @@ export interface RateLimitOptions {
     context: errorResponseBuilderContext
   ) => object;
   enableDraftSpec?: boolean;
+  onExceeding?: (req: FastifyRequest) => void;
+  onExceeded?: (req: FastifyRequest) => void;
 }
 
 export interface RateLimitPluginOptions extends RateLimitOptions {

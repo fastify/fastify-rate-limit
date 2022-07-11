@@ -266,7 +266,7 @@ test('With onExceeding option', async t => {
 })
 
 test('With onExceeded option', async t => {
-  t.plan(5)
+  t.plan(4)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     max: 2,
