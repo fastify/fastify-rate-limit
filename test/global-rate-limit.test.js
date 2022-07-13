@@ -240,6 +240,56 @@ test('With function allowList', async t => {
   t.equal(res.statusCode, 429)
 })
 
+test('With onExceeding option', async t => {
+  t.plan(5)
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: '2s',
+    onExceeding: function (req) {
+      t.pass('onExceeding called')
+    }
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+})
+
+test('With onExceeded option', async t => {
+  t.plan(4)
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: '2s',
+    onExceeded: function (req) {
+      t.pass('onExceeded called')
+    }
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+})
+
 test('With redis store', async t => {
   t.plan(19)
   const fastify = Fastify()

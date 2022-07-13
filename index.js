@@ -90,6 +90,9 @@ async function rateLimitPlugin (fastify, settings) {
   globalParams.errorResponseBuilder = defaultErrorResponse
   globalParams.isCustomErrorMessage = false
 
+  globalParams.onExceeded = settings.onExceeded
+  globalParams.onExceeding = settings.onExceeding
+
   // define if error message was overwritten with a custom error response callback
   if (typeof settings.errorResponseBuilder === 'function') {
     globalParams.errorResponseBuilder = settings.errorResponseBuilder
