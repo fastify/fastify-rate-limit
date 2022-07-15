@@ -77,7 +77,7 @@ async function rateLimitPlugin (fastify, settings) {
     pluginComponent.store = new Store(globalParams)
   } else {
     if (settings.redis) {
-      pluginComponent.store = new RedisStore(settings.redis, 'fastify-rate-limit-', globalParams.timeWindow, settings.continueExceeding)
+      pluginComponent.store = new RedisStore(settings.redis, settings.nameSpace || 'fastify-rate-limit-', globalParams.timeWindow, settings.continueExceeding)
     } else {
       pluginComponent.store = new LocalStore(globalParams.timeWindow, settings.cache, fastify, settings.continueExceeding)
     }
