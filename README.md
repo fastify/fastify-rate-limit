@@ -107,6 +107,7 @@ await fastify.register(import('@fastify/rate-limit'), {
   cache: 10000, // default 5000
   allowList: ['127.0.0.1'], // default []
   redis: new Redis({ host: '127.0.0.1' }), // default null
+  nameSpace: 'teste-ratelimit-', // default is 'fastify-rate-limit-'
   continueExceeding: true, // default false
   skipOnError: true, // default false
   keyGenerator: function (request) { /* ... */ }, // default (request) => request.raw.ip
