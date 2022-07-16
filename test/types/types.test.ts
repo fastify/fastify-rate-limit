@@ -82,8 +82,17 @@ const options4: RateLimitPluginOptions = {
   hook: 'preHandler'
 }
 
+const options5: RateLimitPluginOptions = {
+  max: 3,
+  timeWindow: 5000,
+  cache: 10000,
+  redis: new ioredis({ host: '127.0.0.1' }),
+  nameSpace: 'my-namespace'
+}
+
 appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
+appWithImplicitHttp.register(fastifyRateLimit, options5)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   const preHandler1: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
@@ -108,3 +117,4 @@ const appWithHttp2: FastifyInstance<
 appWithHttp2.register(fastifyRateLimit, options1)
 appWithHttp2.register(fastifyRateLimit, options2)
 appWithHttp2.register(fastifyRateLimit, options3)
+appWithHttp2.register(fastifyRateLimit, options5)
