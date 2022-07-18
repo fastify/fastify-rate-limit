@@ -112,6 +112,7 @@ export interface RateLimitPluginOptions extends RateLimitOptions {
   global?: boolean;
   cache?: number;
   redis?: any;
+  nameSpace?: string;
   addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
   addHeadersOnExceeding?:
     | DefaultAddHeadersOnExceeding

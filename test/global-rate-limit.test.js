@@ -1060,6 +1060,59 @@ test('When continue exceeding is on (Redis)', async t => {
   })
 })
 
+test('When use a custom nameSpace', async t => {
+  const fastify = Fastify()
+  const redis = new Redis({ host: REDIS_HOST })
+
+  await fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 1000,
+    redis,
+    nameSpace: 'my-namespace'
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
+  t.equal(res.headers['x-ratelimit-reset'], 1)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['x-ratelimit-reset'], 0)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['x-ratelimit-reset'], 0)
+  t.equal(res.headers['retry-after'], 1000)
+  t.same({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 1 second'
+  }, JSON.parse(res.payload))
+
+  // Not using fake timers here as we use an external Redis that would not be effected by this
+  await sleep(1100)
+
+  res = await fastify.inject('/')
+  redis.flushall(noop)
+  redis.quit(noop)
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
+  t.equal(res.headers['x-ratelimit-reset'], 1)
+})
+
 test('on preHandler hook', async t => {
   const fastify = Fastify()
 
