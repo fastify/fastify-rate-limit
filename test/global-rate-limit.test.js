@@ -1118,7 +1118,7 @@ test('When use a custom nameSpace', async t => {
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
   t.equal(res.headers['x-ratelimit-reset'], 0)
-  t.equal(res.headers['retry-after'], 1000)
+  t.equal(res.headers['retry-after'], 10000)
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -1126,7 +1126,7 @@ test('When use a custom nameSpace', async t => {
   }, JSON.parse(res.payload))
 
   // Not using fake timers here as we use an external Redis that would not be effected by this
-  await sleep(1100)
+  await sleep(11000)
 
   res = await fastify.inject('/')
   redis.flushall(noop)
