@@ -318,7 +318,7 @@ test('With onBanReach option', async t => {
 test('With redis store', async t => {
   t.plan(19)
   const fastify = Fastify()
-  const redis = new Redis({ host: REDIS_HOST }) 
+  const redis = new Redis({ host: REDIS_HOST })
   await fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000,
@@ -370,7 +370,7 @@ test('With redis store', async t => {
 test('Skip on redis error', async t => {
   t.plan(9)
   const fastify = Fastify()
-  const redis = new Redis({ host: REDIS_HOST }) 
+  const redis = new Redis({ host: REDIS_HOST })
   await fastify.register(rateLimit, {
     max: 2,
     timeWindow: 1000,
@@ -1052,7 +1052,7 @@ test('When continue exceeding is on (Local)', async t => {
 
 test('When continue exceeding is on (Redis)', async t => {
   const fastify = Fastify()
-  const redis = new Redis({ host: REDIS_HOST }) 
+  const redis = new Redis({ host: REDIS_HOST })
 
   await fastify.register(rateLimit, {
     redis,
@@ -1087,7 +1087,7 @@ test('When continue exceeding is on (Redis)', async t => {
 
 test('When use a custom nameSpace', async t => {
   const fastify = Fastify()
-  const redis = new Redis({ host: REDIS_HOST }) 
+  const redis = new Redis({ host: REDIS_HOST })
 
   await fastify.register(rateLimit, {
     max: 2,
