@@ -145,7 +145,8 @@ You can pass a Redis client here and magically the issue is solved. To achieve t
 - `addHeaders`: define which headers should be added in the response when the limit is reached. Defaults all the headers will be shown
 - `enableDraftSpec`: if `true` it will change the HTTP rate limit headers following the IEFT draft document. More information at [draft-ietf-httpapi-ratelimit-headers.md](https://github.com/ietf-wg-httpapi/ratelimit-headers/blob/f6a7bc7560a776ea96d800cf5ed3752d6d397b06/draft-ietf-httpapi-ratelimit-headers.md).
 - `onExceeding`: callback that will be executed before request limit has been reached. 
-- `onExceeded`: callback that will be executed after request limit has been reached. 
+- `onExceeded`: callback that will be executed after request limit has been reached.
+- `onBanReach`: callback that will be executed when the ban limit has been reached.
 
 `keyGenerator` example usage:
 ```js
@@ -272,6 +273,18 @@ await fastify.register(import('@fastify/rate-limit'), {
   }
 })
 ```
+
+Custom `onBanReach` example usage:
+```js
+await fastify.register(import('@fastify/rate-limit'), {
+  /* */
+  ban: 10,
+  onBanReach: function (req, key) {
+    console.log('callback on exceeded ban limit')
+  }
+})
+```
+
 ### Options on the endpoint itself
 
 Rate limiting can be also can be configured at the route level, applying the configuration independently.

@@ -64,6 +64,11 @@ async function rateLimitPlugin (fastify, settings) {
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = settings.ban || null
+  globalParams.onBanReach = defaultOnBanReach
+
+  if (typeof settings.onBanReach === 'function') {
+    globalParams.onBanReach = settings.onBanReach
+  }
 
   globalParams.continueExceeding = settings.continueExceeding || false
 
@@ -257,6 +262,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
 
     if (code === 403) {
       respCtx.ban = true
+      params.onBanReach(req, res, key)
     }
     return res.send(params.errorResponseBuilder(req, respCtx))
   }
@@ -267,6 +273,8 @@ function defaultErrorResponse (req, context) {
   err.statusCode = context.statusCode
   return err
 }
+
+function defaultOnBanReach (req, key) {}
 
 module.exports = fp(rateLimitPlugin, {
   fastify: '4.x',

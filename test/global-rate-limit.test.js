@@ -290,6 +290,31 @@ test('With onExceeded option', async t => {
   t.equal(res.statusCode, 429)
 })
 
+test('With onBanReach option', async t => {
+  t.plan(4)
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    max: 1,
+    ban: 1,
+    onBanReach: function (req) {
+      t.pass('onBanReach called')
+    }
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 403)
+})
+
 test('With redis store', async t => {
   t.plan(19)
   const fastify = Fastify()
