@@ -262,7 +262,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
 
     if (code === 403) {
       respCtx.ban = true
-      params.onBanReach(req, res, key)
+      params.onBanReach(req, key)
     }
     return res.send(params.errorResponseBuilder(req, respCtx))
   }
