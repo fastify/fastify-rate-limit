@@ -1091,9 +1091,9 @@ test('When use a custom nameSpace', async t => {
 
   await fastify.register(rateLimit, {
     max: 2,
-    timeWindow: 1000,
+    timeWindow: 10000,
     redis,
-    nameSpace: 'my-namespace'
+    nameSpace: 'my-namespace:'
   })
 
   fastify.get('/', async (req, reply) => 'hello!')
