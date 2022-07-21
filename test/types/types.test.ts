@@ -56,7 +56,8 @@ const options1: RateLimitPluginOptions = {
     'retry-after': false
   },
   onExceeding: (req: FastifyRequest<RequestGenericInterface>) => ({}),
-  onExceeded: (req: FastifyRequest<RequestGenericInterface>) => ({}) 
+  onExceeded: (req: FastifyRequest<RequestGenericInterface>) => ({}),
+  onBanReach: (req: FastifyRequest<RequestGenericInterface>, key: string) => ({})
 }
 const options2: RateLimitPluginOptions = {
   global: true,

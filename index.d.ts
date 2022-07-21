@@ -98,6 +98,7 @@ export interface RateLimitOptions {
   continueExceeding?: boolean;
   skipOnError?: boolean;
   ban?: number;
+  onBanReach?: (req: FastifyRequest, key: string) => void;
   keyGenerator?: (req: FastifyRequest) => string | number;
   errorResponseBuilder?: (
     req: FastifyRequest,
