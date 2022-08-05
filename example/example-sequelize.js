@@ -179,7 +179,7 @@ fastify.get('/public', (req, reply) => {
   reply.send({ hello: 'from ... public' })
 })
 
-fastify.listen(3000, err => {
+fastify.listen({ port: 3000 }, err => {
   if (err) throw err
   console.log('Server listening at http://localhost:3000')
 })
