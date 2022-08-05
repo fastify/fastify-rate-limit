@@ -29,7 +29,7 @@ fastify.get('/', (request, reply) => {
   reply.send({ hello: 'world' })
 })
 
-fastify.listen(3000, err => {
+fastify.listen({ port: 3000 }, err => {
   if (err) throw err
   console.log('Server listening at http://localhost:3000')
 })
