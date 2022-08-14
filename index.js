@@ -160,7 +160,7 @@ async function rateLimitPlugin (fastify, settings) {
 
 async function buildRouteRate (pluginComponent, params, routeOptions) {
   const hook = params.hook || defaultHook
-  const hookHandler = rateLimitRequestHandler(params, pluginComponent)
+  const hookHandler = await rateLimitRequestHandler(params, pluginComponent)
   if (Array.isArray(routeOptions[hook])) {
     routeOptions[hook].push(hookHandler)
   } else if (typeof routeOptions[hook] === 'function') {
@@ -170,7 +170,7 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
   }
 }
 
-function rateLimitRequestHandler (params, pluginComponent) {
+async function rateLimitRequestHandler (params, pluginComponent) {
   const theStore = pluginComponent.store
   return async function onRequestRateLimiter (req, res) {
     const run = pluginComponent.run
@@ -182,12 +182,12 @@ function rateLimitRequestHandler (params, pluginComponent) {
     req[run] = true
 
     // We retrieve the key from the generator. (can be the global one, or the one define in the endpoint)
-    const key = params.keyGenerator(req)
+    const key = await params.keyGenerator(req)
 
     // allowList doesn't apply any rate limit
     if (params.allowList) {
       if (typeof pluginComponent.allowList === 'function') {
-        if (params.allowList(req, key)) {
+        if (await params.allowList(req, key)) {
           return
         }
       } else if (params.allowList.indexOf(key) > -1) {
@@ -274,7 +274,7 @@ function defaultErrorResponse (req, context) {
   return err
 }
 
-function defaultOnBanReach (req, key) {}
+function defaultOnBanReach (req, key) { }
 
 module.exports = fp(rateLimitPlugin, {
   fastify: '4.x',
