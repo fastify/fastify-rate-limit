@@ -274,7 +274,7 @@ function defaultErrorResponse (req, context) {
   return err
 }
 
-function defaultOnBanReach (req, key) { }
+function defaultOnBanReach (req, key) {}
 
 module.exports = fp(rateLimitPlugin, {
   fastify: '4.x',
