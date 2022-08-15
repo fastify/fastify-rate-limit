@@ -160,7 +160,7 @@ async function rateLimitPlugin (fastify, settings) {
 
 async function buildRouteRate (pluginComponent, params, routeOptions) {
   const hook = params.hook || defaultHook
-  const hookHandler = await rateLimitRequestHandler(params, pluginComponent)
+  const hookHandler = rateLimitRequestHandler(params, pluginComponent)
   if (Array.isArray(routeOptions[hook])) {
     routeOptions[hook].push(hookHandler)
   } else if (typeof routeOptions[hook] === 'function') {
@@ -170,7 +170,7 @@ async function buildRouteRate (pluginComponent, params, routeOptions) {
   }
 }
 
-async function rateLimitRequestHandler (params, pluginComponent) {
+function rateLimitRequestHandler (params, pluginComponent) {
   const theStore = pluginComponent.store
   return async function onRequestRateLimiter (req, res) {
     const run = pluginComponent.run
