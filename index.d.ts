@@ -94,7 +94,7 @@ export interface RateLimitOptions {
    * @deprecated Use `allowList` property
    */
   whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
-  allowList?: string[] | ((req: FastifyRequest, key: string) => Promise<boolean>);
+  allowList?: string[] | ((req: FastifyRequest, key: string) => boolean | Promise<boolean>);
   continueExceeding?: boolean;
   skipOnError?: boolean;
   ban?: number;
