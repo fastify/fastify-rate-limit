@@ -240,6 +240,53 @@ test('With function allowList', async t => {
   t.equal(res.statusCode, 429)
 })
 
+test('With async/await function allowList', async t => {
+  t.plan(18)
+  const fastify = Fastify()
+
+  await fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: '2s',
+    keyGenerator () { return 42 },
+    allowList: async function (req, key) {
+      await sleep(1)
+      t.ok(req.headers)
+      t.equal(key, 42)
+      return req.headers['x-my-header'] !== undefined
+    }
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  const allowListHeader = {
+    method: 'GET',
+    url: '/',
+    headers: {
+      'x-my-header': 'FOO BAR'
+    }
+  }
+
+  let res
+
+  res = await fastify.inject(allowListHeader)
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject(allowListHeader)
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject(allowListHeader)
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+})
+
 test('With onExceeding option', async t => {
   t.plan(5)
   const fastify = Fastify()
@@ -458,6 +505,55 @@ test('With keyGenerator', async t => {
   t.teardown(() => {
     t.context.clock.uninstall()
   })
+})
+
+test('With async/await keyGenerator', async t => {
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    max: 1,
+    timeWindow: 1000,
+    keyGenerator: async function (req) {
+      await sleep(1)
+      t.equal(req.headers['my-custom-header'], 'random-value')
+      return req.headers['my-custom-header']
+    }
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  const payload = {
+    method: 'GET',
+    url: '/',
+    headers: {
+      'my-custom-header': 'random-value'
+    }
+  }
+
+  let res
+
+  res = await fastify.inject(payload)
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 1)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+
+  res = await fastify.inject(payload)
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], 1)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['retry-after'], 1000)
+  t.same({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 1 second'
+  }, JSON.parse(res.payload))
+
+  await sleep(1100)
+
+  res = await fastify.inject(payload)
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 1)
+  t.equal(res.headers['x-ratelimit-remaining'], 0)
 })
 
 test('With CustomStore', async t => {
