@@ -1189,26 +1189,35 @@ test('When use a custom nameSpace', async t => {
     max: 2,
     timeWindow: 1000,
     redis,
-    nameSpace: 'my-namespace:'
+    nameSpace: 'my-namespace:',
+    keyGenerator: (req) => req.headers['x-my-header']
   })
 
   fastify.get('/', async (req, reply) => 'hello!')
 
+  const allowListHeader = {
+    method: 'GET',
+    url: '/',
+    headers: {
+      'x-my-header': 'custom name space'
+    }
+  }
+
   let res
 
-  res = await fastify.inject('/')
+  res = await fastify.inject(allowListHeader)
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
   t.equal(res.headers['x-ratelimit-reset'], 1)
 
-  res = await fastify.inject('/')
+  res = await fastify.inject(allowListHeader)
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
   t.equal(res.headers['x-ratelimit-reset'], 0)
 
-  res = await fastify.inject('/')
+  res = await fastify.inject(allowListHeader)
   t.equal(res.statusCode, 429)
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], 2)
@@ -1224,7 +1233,7 @@ test('When use a custom nameSpace', async t => {
   // Not using fake timers here as we use an external Redis that would not be effected by this
   await sleep(1100)
 
-  res = await fastify.inject('/')
+  res = await fastify.inject(allowListHeader)
   redis.flushall(noop)
   redis.quit(noop)
 
