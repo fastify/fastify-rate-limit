@@ -258,7 +258,7 @@ Custom `onExceeding` example usage:
 ```js
 await fastify.register(import('@fastify/rate-limit'), {
   /* */
-  onExceeding: function (req) {
+  onExceeding: function (req, key) {
     console.log('callback on exceeding ... executed before response to client')
   }
 })
@@ -268,7 +268,7 @@ Custom `onExceeded` example usage:
 ```js
 await fastify.register(import('@fastify/rate-limit'), {
   /* */
-  onExceeded: function (req) {
+  onExceeded: function (req, key) {
     console.log('callback on exceeded ... executed before response to client')
   }
 })
@@ -348,10 +348,10 @@ fastify.get('/public/sub-rated-1', {
     rateLimit: {
       timeWindow: '1 minute',
       allowList: ['127.0.0.1'],
-      onExceeding: function (request) {
+      onExceeding: function (request, key) {
         console.log('callback on exceededing ... executed before response to client')
       },
-      onExceeded: function (request) {
+      onExceeded: function (request, key) {
         console.log('callback on exceeded ... to black ip in security group for example, request is give as argument')
       }
     }
