@@ -234,12 +234,12 @@ function rateLimitRequestHandler (params, pluginComponent) {
       if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
 
       if (typeof params.onExceeding === 'function') {
-        params.onExceeding(req)
+        params.onExceeding(req, key)
       }
       return
     }
     if (typeof params.onExceeded === 'function') {
-      params.onExceeded(req)
+      params.onExceeded(req, key)
     }
 
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
