@@ -246,8 +246,8 @@ test('With onExceeding option', async t => {
   await fastify.register(rateLimit, {
     max: 2,
     timeWindow: '2s',
-    onExceeding: function (req) {
-      t.pass('onExceeding called')
+    onExceeding: function (req, key) {
+      if (req && key) t.pass('onExceeding called')
     }
   })
 
@@ -271,8 +271,8 @@ test('With onExceeded option', async t => {
   await fastify.register(rateLimit, {
     max: 2,
     timeWindow: '2s',
-    onExceeded: function (req) {
-      t.pass('onExceeded called')
+    onExceeded: function (req, key) {
+      if (req && key) t.pass('onExceeded called')
     }
   })
 
