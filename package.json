@@ -1,6 +1,6 @@
 {
   "name": "@fastify/rate-limit",
-  "version": "7.2.0",
+  "version": "7.3.0",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "types": "index.d.ts",
@@ -36,7 +36,7 @@
     "sqlite3": "^5.0.2",
     "standard": "^17.0.0",
     "tap": "^16.0.0",
-    "tsd": "^0.22.0"
+    "tsd": "^0.23.0"
   },
   "dependencies": {
     "fastify-plugin": "^4.0.0",

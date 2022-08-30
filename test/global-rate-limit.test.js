@@ -246,8 +246,8 @@ test('With onExceeding option', async t => {
   await fastify.register(rateLimit, {
     max: 2,
     timeWindow: '2s',
-    onExceeding: function (req) {
-      t.pass('onExceeding called')
+    onExceeding: function (req, key) {
+      if (req && key) t.pass('onExceeding called')
     }
   })
 
@@ -271,8 +271,8 @@ test('With onExceeded option', async t => {
   await fastify.register(rateLimit, {
     max: 2,
     timeWindow: '2s',
-    onExceeded: function (req) {
-      t.pass('onExceeded called')
+    onExceeded: function (req, key) {
+      if (req && key) t.pass('onExceeded called')
     }
   })
 
@@ -288,6 +288,31 @@ test('With onExceeded option', async t => {
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)
+})
+
+test('With onBanReach option', async t => {
+  t.plan(4)
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    max: 1,
+    ban: 1,
+    onBanReach: function (req) {
+      t.pass('onBanReach called')
+    }
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 403)
 })
 
 test('With redis store', async t => {
@@ -1068,7 +1093,7 @@ test('When use a custom nameSpace', async t => {
     max: 2,
     timeWindow: 1000,
     redis,
-    nameSpace: 'my-namespace'
+    nameSpace: 'my-namespace:'
   })
 
   fastify.get('/', async (req, reply) => 'hello!')

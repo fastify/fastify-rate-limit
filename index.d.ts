@@ -98,14 +98,15 @@ export interface RateLimitOptions {
   continueExceeding?: boolean;
   skipOnError?: boolean;
   ban?: number;
+  onBanReach?: (req: FastifyRequest, key: string) => void;
   keyGenerator?: (req: FastifyRequest) => string | number;
   errorResponseBuilder?: (
     req: FastifyRequest,
     context: errorResponseBuilderContext
   ) => object;
   enableDraftSpec?: boolean;
-  onExceeding?: (req: FastifyRequest) => void;
-  onExceeded?: (req: FastifyRequest) => void;
+  onExceeding?: (req: FastifyRequest, key: string) => void;
+  onExceeded?: (req: FastifyRequest, key: string) => void;
 }
 
 export interface RateLimitPluginOptions extends RateLimitOptions {
