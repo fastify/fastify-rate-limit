@@ -1,6 +1,6 @@
 {
   "name": "@fastify/rate-limit",
-  "version": "7.3.0",
+  "version": "7.4.0",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "types": "index.d.ts",
@@ -8,8 +8,9 @@
     "lint": "standard",
     "lint:fix": "standard --fix",
     "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
-    "test": "standard && tap \"test/**/*.test.js\" && npm run typescript",
-    "typescript": "tsd"
+    "test": "npm run test:unit && npm run test:typescript",
+    "test:unit": "tap",
+    "test:typescript": "tsd"
   },
   "repository": {
     "type": "git",
@@ -27,8 +28,8 @@
   },
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
   "devDependencies": {
+    "@fastify/pre-commit": "^2.0.2",
     "@sinonjs/fake-timers": "^9.1.0",
-    "@types/ioredis": "^4.28.8",
     "@types/node": "^18.0.0",
     "fastify": "^4.0.0-rc.2",
     "ioredis": "^5.0.5",
@@ -36,7 +37,7 @@
     "sqlite3": "^5.0.2",
     "standard": "^17.0.0",
     "tap": "^16.0.0",
-    "tsd": "^0.22.0"
+    "tsd": "^0.23.0"
   },
   "dependencies": {
     "fastify-plugin": "^4.0.0",
@@ -48,5 +49,9 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "pre-commit": [
+    "lint",
+    "test"
+  ]
 }
