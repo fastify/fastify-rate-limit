@@ -149,7 +149,7 @@ test('When passing NaN to the timeWindow property then the timeWindow should be 
   })
 })
 
-test('With ips allowList, allowed ips should not result in rate limitting', async t => {
+test('With ips allowList, allowed ips should not result in rate limiting', async t => {
   t.plan(3)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
@@ -172,7 +172,7 @@ test('With ips allowList, allowed ips should not result in rate limitting', asyn
   t.equal(res.statusCode, 200)
 })
 
-test('With ips allowList, not allowed ips should result in rate limitting', async t => {
+test('With ips allowList, not allowed ips should result in rate limiting', async t => {
   t.plan(3)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
