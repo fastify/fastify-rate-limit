@@ -1406,6 +1406,7 @@ test('on preValidation hook', async t => {
 })
 
 test('on undefined hook should use onRequest-hook', async t => {
+  t.plan(2)
   const fastify = Fastify()
 
   await fastify.register(rateLimit, {
