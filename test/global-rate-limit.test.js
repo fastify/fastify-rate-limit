@@ -332,13 +332,13 @@ test('With redis store', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
-  t.equal(res.headers['x-ratelimit-reset'], 1)
+  t.ok(res.headers['x-ratelimit-reset'] < 2)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
-  t.equal(res.headers['x-ratelimit-reset'], 0)
+  t.ok(res.headers['x-ratelimit-reset'] < 2)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)
@@ -389,20 +389,18 @@ test('Skip on redis error', async t => {
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 
+  await redis.flushall()
+  await redis.quit()
+
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
-  t.equal(res.headers['x-ratelimit-remaining'], 0)
+  t.equal(res.headers['x-ratelimit-remaining'], 2)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
+  t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
-  t.equal(res.headers['x-ratelimit-remaining'], 0)
-
-  t.teardown(async () => {
-    await redis.flushall()
-    await redis.quit()
-  })
+  t.equal(res.headers['x-ratelimit-remaining'], 2)
 })
 
 test('With keyGenerator', async t => {
