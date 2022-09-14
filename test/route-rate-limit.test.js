@@ -1404,3 +1404,27 @@ test('on preValidation hook', async t => {
   t.equal(fourth.statusCode, 429)
   t.equal(fifth.statusCode, 200)
 })
+
+test('on undefined hook should use onRequest-hook', async t => {
+  const fastify = Fastify()
+
+  await fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.addHook('onRoute', function (routeOptions) {
+    t.equal(routeOptions.preHandler, undefined)
+    t.equal(routeOptions.onRequest.length, 1)
+  })
+
+  fastify.get('/', {
+    exposeHeadRoute: false,
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 10000,
+        hook: 'onRequest'
+      }
+    }
+  }, async (req, reply) => 'fastify is awesome !')
+})
