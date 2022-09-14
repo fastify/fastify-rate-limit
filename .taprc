@@ -3,7 +3,7 @@ jsx: false
 flow: false
 jobs: 1
 
-branches: 97
+branches: 96
 functions: 100
 lines: 100
 statements: 98
