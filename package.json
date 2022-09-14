@@ -28,7 +28,6 @@
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
   "devDependencies": {
     "@sinonjs/fake-timers": "^9.1.0",
-    "@types/ioredis": "^4.28.8",
     "@types/node": "^18.0.0",
     "fastify": "^4.0.0-rc.2",
     "ioredis": "^5.0.5",
