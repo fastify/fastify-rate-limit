@@ -6,7 +6,6 @@ const Redis = require('ioredis')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
 const FakeTimers = require('@sinonjs/fake-timers')
-const noop = () => { }
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 const REDIS_HOST = '127.0.0.1'
@@ -333,13 +332,13 @@ test('With redis store', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
-  t.equal(res.headers['x-ratelimit-reset'], 1)
+  t.ok(res.headers['x-ratelimit-reset'] < 2)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
-  t.equal(res.headers['x-ratelimit-reset'], 0)
+  t.ok(res.headers['x-ratelimit-reset'] < 2)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)
@@ -358,13 +357,16 @@ test('With redis store', async t => {
   await sleep(1100)
 
   res = await fastify.inject('/')
-  redis.flushall(noop)
-  redis.quit(noop)
 
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
   t.equal(res.headers['x-ratelimit-reset'], 1)
+
+  t.teardown(async () => {
+    await redis.flushall()
+    await redis.quit()
+  })
 })
 
 test('Skip on redis error', async t => {
@@ -387,7 +389,7 @@ test('Skip on redis error', async t => {
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
 
-  redis.flushall(noop)
+  await redis.flushall()
   await redis.quit()
 
   res = await fastify.inject('/')
@@ -1079,9 +1081,9 @@ test('When continue exceeding is on (Redis)', async t => {
   t.equal(second.headers['x-ratelimit-remaining'], 0)
   t.equal(second.headers['x-ratelimit-reset'], 5)
 
-  t.teardown(() => {
-    redis.flushall(noop)
-    redis.quit(noop)
+  t.teardown(async () => {
+    await redis.flushall()
+    await redis.quit()
   })
 })
 
@@ -1110,14 +1112,14 @@ test('When use a custom nameSpace', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
-  t.equal(res.headers['x-ratelimit-reset'], 0)
+  t.ok(res.headers['x-ratelimit-reset'] < 2)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
-  t.equal(res.headers['x-ratelimit-reset'], 0)
+  t.ok(res.headers['x-ratelimit-reset'] < 2)
   t.equal(res.headers['retry-after'], 1000)
   t.same({
     statusCode: 429,
@@ -1129,13 +1131,16 @@ test('When use a custom nameSpace', async t => {
   await sleep(1100)
 
   res = await fastify.inject('/')
-  redis.flushall(noop)
-  redis.quit(noop)
 
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 1)
   t.equal(res.headers['x-ratelimit-reset'], 1)
+
+  t.teardown(async () => {
+    await redis.flushall()
+    await redis.quit()
+  })
 })
 
 test('on preHandler hook', async t => {
