@@ -128,12 +128,6 @@ async function rateLimitPlugin (fastify, settings) {
 
   // onRoute add the hook rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
-    if (
-      routeOptions.method === 'HEAD' &&
-      routeOptions.exposeHeadRoute === true
-    ) {
-      return
-    }
     if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
       if (typeof routeOptions.config.rateLimit === 'object') {
         const current = Object.create(pluginComponent)
