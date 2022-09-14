@@ -5,3 +5,6 @@ jobs: 1
 coverage: true
 
 check-coverage: false
+
+files:
+  - test/**/*.test.js

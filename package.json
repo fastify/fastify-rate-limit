@@ -8,7 +8,9 @@
     "lint": "standard",
     "lint:fix": "standard --fix",
     "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
-    "test": "standard && tap \"test/**/*.test.js\" && npm run typescript",
+    "test": "npm run test:unit && npm run test:typescript",
+    "test:unit": "tap",
+    "test:typescript": "tsd",
     "typescript": "tsd"
   },
   "repository": {
@@ -27,6 +29,7 @@
   },
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
   "devDependencies": {
+    "@fastify/pre-commit": "^2.0.2",
     "@sinonjs/fake-timers": "^9.1.0",
     "@types/node": "^18.0.0",
     "fastify": "^4.0.0-rc.2",
@@ -47,5 +50,9 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "pre-commit": [
+    "lint",
+    "test"
+  ]
 }
