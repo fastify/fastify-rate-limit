@@ -1114,14 +1114,14 @@ test('When use a custom nameSpace', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
-  t.equal(res.headers['x-ratelimit-reset'], 0)
+  t.ok(res.headers['x-ratelimit-reset'] < 2)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
-  t.equal(res.headers['x-ratelimit-reset'], 0)
+  t.ok(res.headers['x-ratelimit-reset'] < 2)
   t.equal(res.headers['retry-after'], 1000)
   t.same({
     statusCode: 429,
