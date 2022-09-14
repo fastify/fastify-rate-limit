@@ -1372,3 +1372,49 @@ test('on preValidation hook', async t => {
   t.equal(fourth.statusCode, 429)
   t.equal(fifth.statusCode, 200)
 })
+
+test('on rateLimitHook should not be set twice on HEAD', async t => {
+  const fastify = Fastify()
+
+  await fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.addHook('onRoute', function (routeOptions) {
+    t.equal(routeOptions.preHandler, undefined)
+    t.equal(routeOptions.onRequest.length, 1)
+  })
+
+  fastify.get('/', {
+    exposeHeadRoute: true,
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 10000,
+        hook: 'onRequest'
+      }
+    }
+  }, async (req, reply) => 'fastify is awesome !')
+
+  fastify.head('/explicit-head', {
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 10000,
+        hook: 'onRequest'
+      }
+    }
+  }, async (req, reply) => 'fastify is awesome !')
+
+  // would fail
+  // fastify.head('/explicit-head-2', {
+  //   exposeHeadRoute: true,
+  //   config: {
+  //     rateLimit: {
+  //       max: 1,
+  //       timeWindow: 10000,
+  //       hook: 'onRequest'
+  //     }
+  //   }
+  // }, async (req, reply) => 'fastify is awesome !')
+})
