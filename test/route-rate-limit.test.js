@@ -311,6 +311,40 @@ test('With redis store', async t => {
   })
 })
 
+test('Throw on redis error', async t => {
+  t.plan(5)
+  const fastify = Fastify()
+  const redis = new Redis({ host: REDIS_HOST })
+  await fastify.register(rateLimit, {
+    redis,
+    global: false
+  })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000,
+        skipOnError: false
+      }
+    }
+  }, async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
+
+  await redis.flushall()
+  await redis.quit()
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 500)
+  t.equal(res.body, '{"statusCode":500,"error":"Internal Server Error","message":"Connection is closed."}')
+})
+
 test('Skip on redis error', async t => {
   t.plan(9)
   const fastify = Fastify()
@@ -1371,4 +1405,29 @@ test('on preValidation hook', async t => {
   t.equal(third.statusCode, 200)
   t.equal(fourth.statusCode, 429)
   t.equal(fifth.statusCode, 200)
+})
+
+test('on undefined hook should use onRequest-hook', async t => {
+  t.plan(2)
+  const fastify = Fastify()
+
+  await fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.addHook('onRoute', function (routeOptions) {
+    t.equal(routeOptions.preHandler, undefined)
+    t.equal(routeOptions.onRequest.length, 1)
+  })
+
+  fastify.get('/', {
+    exposeHeadRoute: false,
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 10000,
+        hook: 'onRequest'
+      }
+    }
+  }, async (req, reply) => 'fastify is awesome !')
 })
