@@ -10,8 +10,7 @@
     "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
     "test": "npm run test:unit && npm run test:typescript",
     "test:unit": "tap",
-    "test:typescript": "tsd",
-    "typescript": "tsd"
+    "test:typescript": "tsd"
   },
   "repository": {
     "type": "git",
