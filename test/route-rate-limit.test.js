@@ -281,7 +281,7 @@ test('With redis store', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 0)
-  t.equal(res.headers['x-ratelimit-reset'], 0)
+  t.ok(res.headers['x-ratelimit-reset'] < 2)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)
@@ -1182,7 +1182,7 @@ test('per route rate limit', async t => {
 
   t.equal(resHead.statusCode, 200, 'HEAD: Response status code')
   t.equal(resHead.headers['x-ratelimit-limit'], 10, 'HEAD: x-ratelimit-limit header (per route limit)')
-  t.equal(resHead.headers['x-ratelimit-remaining'], 8, 'HEAD: x-ratelimit-remaining header (per route limit)')
+  t.equal(resHead.headers['x-ratelimit-remaining'], 9, 'HEAD: x-ratelimit-remaining header (per route limit)')
 })
 
 test('Allow custom timeWindow in preHandler', async t => {
@@ -1422,6 +1422,51 @@ test('on undefined hook should use onRequest-hook', async t => {
 
   fastify.get('/', {
     exposeHeadRoute: false,
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 10000,
+        hook: 'onRequest'
+      }
+    }
+  }, async (req, reply) => 'fastify is awesome !')
+})
+
+test('on rateLimitHook should not be set twice on HEAD', async t => {
+  const fastify = Fastify()
+
+  await fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.addHook('onRoute', function (routeOptions) {
+    t.equal(routeOptions.preHandler, undefined)
+    t.equal(routeOptions.onRequest.length, 1)
+  })
+
+  fastify.get('/', {
+    exposeHeadRoute: true,
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 10000,
+        hook: 'onRequest'
+      }
+    }
+  }, async (req, reply) => 'fastify is awesome !')
+
+  fastify.head('/explicit-head', {
+    config: {
+      rateLimit: {
+        max: 1,
+        timeWindow: 10000,
+        hook: 'onRequest'
+      }
+    }
+  }, async (req, reply) => 'fastify is awesome !')
+
+  fastify.head('/explicit-head-2', {
+    exposeHeadRoute: true,
     config: {
       rateLimit: {
         max: 1,
