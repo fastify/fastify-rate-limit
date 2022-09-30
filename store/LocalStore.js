@@ -1,6 +1,6 @@
 'use strict'
 
-const lru = require('tiny-lru')
+const lru = require('tiny-lru').lru
 
 function LocalStore (timeWindow, cache, app, continueExceeding) {
   this.lru = lru(cache || 5000, timeWindow)
