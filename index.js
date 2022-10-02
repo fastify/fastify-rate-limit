@@ -135,7 +135,7 @@ async function rateLimitPlugin (fastify, settings) {
         mergedRateLimitParams.routeInfo = routeOptions
         current.store = pluginComponent.store.child(mergedRateLimitParams)
         // if the current endpoint have a custom rateLimit configuration ...
-        buildRouteRate(current, mergedRateLimitParams, routeOptions)
+        addRouteRateHook(current, mergedRateLimitParams, routeOptions)
       } else if (routeOptions.config.rateLimit === false) {
         // don't apply any rate-limit
       } else {
@@ -144,7 +144,7 @@ async function rateLimitPlugin (fastify, settings) {
     } else if (globalParams.global) {
       // if the plugin is set globally ( meaning that all the route will be 'rate limited' )
       // As the endpoint, does not have a custom rateLimit configuration, use the global one.
-      buildRouteRate(pluginComponent, globalParams, routeOptions)
+      addRouteRateHook(pluginComponent, globalParams, routeOptions)
     }
   })
 
@@ -158,7 +158,7 @@ async function rateLimitPlugin (fastify, settings) {
   }
 }
 
-async function buildRouteRate (pluginComponent, params, routeOptions) {
+async function addRouteRateHook (pluginComponent, params, routeOptions) {
   const hook = params.hook || defaultHook
   const hookHandler = rateLimitRequestHandler(params, pluginComponent)
   if (Array.isArray(routeOptions[hook])) {

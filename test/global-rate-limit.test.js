@@ -148,7 +148,7 @@ test('When passing NaN to the timeWindow property then the timeWindow should be 
   })
 })
 
-test('With ips allowList', async t => {
+test('With ips allowList, allowed ips should not result in rate limiting', async t => {
   t.plan(3)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
@@ -169,6 +169,29 @@ test('With ips allowList', async t => {
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
+})
+
+test('With ips allowList, not allowed ips should result in rate limiting', async t => {
+  t.plan(3)
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: '2s',
+    allowList: ['1.1.1.1']
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
 })
 
 test('With ips whitelist', async t => {
@@ -448,6 +471,34 @@ test('Skip on redis error', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], 2)
   t.equal(res.headers['x-ratelimit-remaining'], 2)
+})
+
+test('Throw on redis error', async t => {
+  t.plan(5)
+  const fastify = Fastify()
+  const redis = new Redis({ host: REDIS_HOST })
+  await fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 1000,
+    redis,
+    skipOnError: false
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], 2)
+  t.equal(res.headers['x-ratelimit-remaining'], 1)
+
+  await redis.flushall()
+  await redis.quit()
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 500)
+  t.equal(res.body, '{"statusCode":500,"error":"Internal Server Error","message":"Connection is closed."}')
 })
 
 test('With keyGenerator', async t => {
