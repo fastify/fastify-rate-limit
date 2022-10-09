@@ -182,12 +182,12 @@ function rateLimitRequestHandler (params, pluginComponent) {
     req[run] = true
 
     // We retrieve the key from the generator. (can be the global one, or the one define in the endpoint)
-    const key = params.keyGenerator(req)
+    const key = await params.keyGenerator(req)
 
     // allowList doesn't apply any rate limit
     if (params.allowList) {
       if (typeof pluginComponent.allowList === 'function') {
-        if (params.allowList(req, key)) {
+        if (await params.allowList(req, key)) {
           return
         }
       } else if (params.allowList.indexOf(key) > -1) {

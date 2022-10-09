@@ -91,6 +91,15 @@ const options5: RateLimitPluginOptions = {
   nameSpace: 'my-namespace'
 }
 
+const options6: RateLimitPluginOptions = {
+  global: true,
+  allowList: async (req, key) => true,
+  keyGenerator: async (req) => '',
+  timeWindow: 5000,
+  store: CustomStore,
+  hook: 'preHandler'
+}
+
 appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
 appWithImplicitHttp.register(fastifyRateLimit, options5)
