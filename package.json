@@ -42,7 +42,7 @@
   "dependencies": {
     "fastify-plugin": "^4.0.0",
     "ms": "^2.1.3",
-    "tiny-lru": "^9.0.2"
+    "tiny-lru": "^10.0.0"
   },
   "tsd": {
     "directory": "test/types"
