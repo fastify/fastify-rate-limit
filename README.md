@@ -4,14 +4,26 @@
 [![NPM version](https://img.shields.io/npm/v/@fastify/rate-limit.svg?style=flat)](https://www.npmjs.com/package/@fastify/rate-limit)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat)](https://standardjs.com/)
 
-A low overhead rate limiter for your routes. Supports Fastify `2.x - 4.x` semver range.
+A low overhead rate limiter for your routes.
 
-Please refer to [this branch](https://github.com/fastify/fastify-rate-limit/tree/1.x) and related versions for Fastify 1.x compatibility.
 
 ## Install
 ```
 npm i @fastify/rate-limit
 ```
+
+### Compatibility
+
+| Plugin version | Fastify version |
+| ------------- |:---------------:|
+| `^1.x` | `^1.x` |
+| `^2.x` | `^2.x` |
+| `^3.x` | `^2.x` and `^3.x` |
+| `^4.x` | `^2.x` and `^3.x` |
+| `^5.x` | `^2.x` and `^3.x` |
+| `^6.x` | `^2.x` and `^3.x` |
+| `^7.x` | `^4.x` |
+
 
 ## Usage
 Register the plugin and, if required, pass some custom options.<br>
