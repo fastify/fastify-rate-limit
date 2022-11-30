@@ -3,7 +3,7 @@
   "version": "7.4.0",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
-  "types": "index.d.ts",
+  "types": "types/index.d.ts",
   "scripts": {
     "lint": "standard",
     "lint:fix": "standard --fix",
@@ -43,9 +43,6 @@
     "fastify-plugin": "^4.0.0",
     "ms": "^2.1.3",
     "tiny-lru": "^9.0.2"
-  },
-  "tsd": {
-    "directory": "test/types"
   },
   "publishConfig": {
     "access": "public"

@@ -12,7 +12,7 @@ import fastifyRateLimit, {
   FastifyRateLimitOptions,
   FastifyRateLimitStore,
   RateLimitPluginOptions
-} from '../..'
+} from '..'
 
 class CustomStore implements FastifyRateLimitStore {
   constructor(options: FastifyRateLimitOptions) {}
