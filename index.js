@@ -8,7 +8,7 @@ const RedisStore = require('./store/RedisStore')
 
 const defaultHook = 'onRequest'
 
-async function rateLimitPlugin (fastify, settings) {
+async function fastifyRateLimit (fastify, settings) {
   let labels = {
     rateLimit: 'x-ratelimit-limit',
     rateRemaining: 'x-ratelimit-remaining',
@@ -276,7 +276,9 @@ function defaultErrorResponse (req, context) {
 
 function defaultOnBanReach (req, key) {}
 
-module.exports = fp(rateLimitPlugin, {
+module.exports = fp(fastifyRateLimit, {
   fastify: '4.x',
   name: '@fastify/rate-limit'
 })
+module.exports.default = fastifyRateLimit
+module.exports.fastifyRateLimit = fastifyRateLimit
