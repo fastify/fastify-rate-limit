@@ -14,7 +14,7 @@ t.afterEach(t => {
   t.context.clock.uninstall()
 })
 
-test('issue #207 - when continueExceeding is true and the store is local then it should reset the rate-limit', async t => {
+test("issue #284 - don't set the reply code automatically", async t => {
   const fastify = Fastify()
 
   await fastify.register(rateLimit, {
