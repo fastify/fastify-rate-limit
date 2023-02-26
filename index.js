@@ -263,11 +263,11 @@ function rateLimitRequestHandler (params, pluginComponent) {
       params.onBanReach(req, key)
     }
 
-    throw params.errorResponseBuilder(respCtx)
+    throw params.errorResponseBuilder(req, respCtx)
   }
 }
 
-function defaultErrorResponse (context) {
+function defaultErrorResponse (req, context) {
   const err = new Error(`Rate limit exceeded, retry in ${context.after}`)
   err.statusCode = context.statusCode
   return err
