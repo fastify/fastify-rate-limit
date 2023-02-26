@@ -22,7 +22,10 @@ test('issue #207 - when continueExceeding is true and the store is local then it
   })
 
   fastify.setErrorHandler((err, req, res) => {
-    res.redirect("/")
+    t.equal(res.statusCode, 200)
+    t.equal(err.statusCode, 429)
+
+    res.redirect('/')
   })
 
   fastify.get('/', {
