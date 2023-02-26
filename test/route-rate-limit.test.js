@@ -33,7 +33,8 @@ test('Basic', async t => {
 
   fastify.setErrorHandler(function (error, request, reply) {
     t.pass('Error handler has been called')
-    t.equal(reply.statusCode, 429)
+    t.equal(error.statusCode, 429)
+    reply.code(429)
     error.message += ' from error handler'
     reply.send(error)
   })
