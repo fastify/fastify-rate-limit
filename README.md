@@ -59,7 +59,8 @@ You can change the response by providing a callback to `errorResponseBuilder` or
 
 ```js
 fastify.setErrorHandler(function (error, request, reply) {
-  if (reply.statusCode === 429) {
+  if (error.statusCode === 429) {
+    reply.code(429)
     error.message = 'You hit the rate limit! Slow down please!'
   }
   reply.send(error)

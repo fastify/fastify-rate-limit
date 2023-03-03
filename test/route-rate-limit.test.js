@@ -33,7 +33,8 @@ test('Basic', async t => {
 
   fastify.setErrorHandler(function (error, request, reply) {
     t.pass('Error handler has been called')
-    t.equal(reply.statusCode, 429)
+    t.equal(error.statusCode, 429)
+    reply.code(429)
     error.message += ' from error handler'
     reply.send(error)
   })
@@ -598,7 +599,7 @@ test('custom error response', async t => {
   await fastify.register(rateLimit, {
     global: false,
     errorResponseBuilder: (req, context) => ({
-      code: 429,
+      statusCode: 429,
       timeWindow: context.after,
       limit: context.max
     })
@@ -632,7 +633,7 @@ test('custom error response', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], 0)
   t.equal(res.headers['retry-after'], 1000)
   t.same(JSON.parse(res.payload), {
-    code: 429,
+    statusCode: 429,
     timeWindow: '1 second',
     limit: 2
   })

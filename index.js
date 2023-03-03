@@ -251,8 +251,6 @@ function rateLimitRequestHandler (params, pluginComponent) {
     }
 
     const code = params.ban && current - maximum > params.ban ? 403 : 429
-    res.code(code)
-
     const respCtx = {
       statusCode: code,
       after,
@@ -264,7 +262,8 @@ function rateLimitRequestHandler (params, pluginComponent) {
       respCtx.ban = true
       params.onBanReach(req, key)
     }
-    return res.send(params.errorResponseBuilder(req, respCtx))
+
+    throw params.errorResponseBuilder(req, respCtx)
   }
 }
 
