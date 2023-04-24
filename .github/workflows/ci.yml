@@ -54,7 +54,7 @@ jobs:
       contents: read
     strategy:
       matrix:
-        node-version: [14, 16, 18]
+        node-version: [14, 16, 18, 20]
     services:
       redis:
         image: redis
