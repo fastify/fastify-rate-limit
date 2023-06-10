@@ -60,9 +60,9 @@ test("issue #284 - don't set the reply code automatically", async t => {
   t.equal(firstOkResponse.statusCode, 200)
 
   t.equal(firstRateLimitResponse.statusCode, 302)
-  t.equal(firstRateLimitResponse.headers['x-ratelimit-limit'], 1)
-  t.equal(firstRateLimitResponse.headers['x-ratelimit-remaining'], 0)
-  t.equal(firstRateLimitResponse.headers['x-ratelimit-reset'], 5)
+  t.equal(firstRateLimitResponse.headers['x-ratelimit-limit'], '1')
+  t.equal(firstRateLimitResponse.headers['x-ratelimit-remaining'], '0')
+  t.equal(firstRateLimitResponse.headers['x-ratelimit-reset'], '5')
 
   t.equal(okResponseAfterRateLimitCompleted.statusCode, 200)
 })
