@@ -27,6 +27,7 @@ declare module 'fastify' {
 export interface FastifyRateLimitOptions {}
 
 export interface errorResponseBuilderContext {
+  ban: boolean;
   after: string;
   max: number;
   ttl: number;
