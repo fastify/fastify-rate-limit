@@ -68,19 +68,19 @@ test('issue #207 - when continueExceeding is true and the store is local then it
   t.equal(firstOkResponse.statusCode, 200)
 
   t.equal(firstRateLimitResponse.statusCode, 429)
-  t.equal(firstRateLimitResponse.headers['x-ratelimit-limit'], 1)
-  t.equal(firstRateLimitResponse.headers['x-ratelimit-remaining'], 0)
-  t.equal(firstRateLimitResponse.headers['x-ratelimit-reset'], 5)
+  t.equal(firstRateLimitResponse.headers['x-ratelimit-limit'], '1')
+  t.equal(firstRateLimitResponse.headers['x-ratelimit-remaining'], '0')
+  t.equal(firstRateLimitResponse.headers['x-ratelimit-reset'], '5')
 
   t.equal(secondRateLimitWithResettingTheRateLimitTimer.statusCode, 429)
-  t.equal(secondRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-limit'], 1)
-  t.equal(secondRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-remaining'], 0)
-  t.equal(secondRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-reset'], 5)
+  t.equal(secondRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-limit'], '1')
+  t.equal(secondRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-remaining'], '0')
+  t.equal(secondRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-reset'], '5')
 
   t.equal(thirdRateLimitWithResettingTheRateLimitTimer.statusCode, 429)
-  t.equal(thirdRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-limit'], 1)
-  t.equal(thirdRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-remaining'], 0)
-  t.equal(thirdRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-reset'], 5)
+  t.equal(thirdRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-limit'], '1')
+  t.equal(thirdRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-remaining'], '0')
+  t.equal(thirdRateLimitWithResettingTheRateLimitTimer.headers['x-ratelimit-reset'], '5')
 
   t.equal(okResponseAfterRateLimitCompleted.statusCode, 200)
 })
