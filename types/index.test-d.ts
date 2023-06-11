@@ -48,7 +48,7 @@ const options1: RateLimitPluginOptions = {
       return {
         statusCode: 403,
         error: "Forbidden",
-        message: `You can not access this service as you have sent too many requests that exceed your rate limit. Your IP: ${request.ip}`,
+        message: `You can not access this service as you have sent too many requests that exceed your rate limit. Your IP: ${req.ip}`,
       }
     } else {
       return {
