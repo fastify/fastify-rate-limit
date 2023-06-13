@@ -43,7 +43,21 @@ const options1: RateLimitPluginOptions = {
   errorResponseBuilder: (
     req: FastifyRequest<RequestGenericInterface>,
     context: errorResponseBuilderContext
-  ) => ({ code: 429, timeWindow: context.after, limit: context.max }),
+  ) => {
+    if (context.ban) {
+      return {
+        statusCode: 403,
+        error: "Forbidden",
+        message: `You can not access this service as you have sent too many requests that exceed your rate limit. Your IP: ${req.ip} and Limit: ${context.max}`,
+      }
+    } else {
+      return {
+        statusCode: 429,
+        error: "Too Many Requests",
+        message: `You hit the rate limit, please slow down! You can retry in ${context.after}`,
+      }
+    }
+  },
   addHeadersOnExceeding: {
     'x-ratelimit-limit': false,
     'x-ratelimit-remaining': false,
