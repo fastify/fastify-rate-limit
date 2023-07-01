@@ -121,5 +121,11 @@ export interface RateLimitPluginOptions extends RateLimitOptions {
     | DraftSpecAddHeadersOnExceeding;
 }
 
-declare const fastifyRateLimit: FastifyPluginCallback<RateLimitPluginOptions>;
-export default fastifyRateLimit;
+type FastifyRateLimitPlugin = FastifyPluginCallback<RateLimitPluginOptions>;
+
+declare function fastifyRateLimit(
+  ...params: Parameters<FastifyRateLimitPlugin>
+): ReturnType<FastifyRateLimitPlugin>;
+
+export = fastifyRateLimit;
+
