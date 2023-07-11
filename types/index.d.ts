@@ -11,6 +11,9 @@ declare module 'fastify' {
   interface FastifyInstance {
     rateLimit: (options?: fastifyRateLimit.RateLimitOptions) => preHandlerAsyncHookHandler;
   }
+  interface FastifyContextConfig {
+    rateLimit?: fastifyRateLimit.RateLimitOptions;
+  }
 }
 
 type FastifyRateLimit = FastifyPluginCallback<fastifyRateLimit.RateLimitPluginOptions>;
