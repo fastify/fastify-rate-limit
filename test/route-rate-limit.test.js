@@ -62,7 +62,7 @@ test('Basic', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1000')
+  t.equal(res.headers['retry-after'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '0')
   t.same({
     statusCode: 429,
@@ -110,7 +110,7 @@ test('With text timeWindow', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1000')
+  t.equal(res.headers['retry-after'], '1')
   t.same(JSON.parse(res.payload), {
     statusCode: 429,
     error: 'Too Many Requests',
@@ -289,7 +289,7 @@ test('With redis store', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1000')
+  t.equal(res.headers['retry-after'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '0')
   t.same({
     statusCode: 429,
@@ -426,7 +426,7 @@ test('With keyGenerator', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1000')
+  t.equal(res.headers['retry-after'], '1')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -631,7 +631,7 @@ test('custom error response', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1000')
+  t.equal(res.headers['retry-after'], '1')
   t.same(JSON.parse(res.payload), {
     statusCode: 429,
     timeWindow: '1 second',
@@ -809,7 +809,7 @@ test('hide rate limit headers on exceeding', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.not(res.headers['x-ratelimit-reset'], undefined)
-  t.equal(res.headers['retry-after'], '1000')
+  t.equal(res.headers['retry-after'], '1')
 
   t.context.clock.tick(1100)
 
@@ -1015,7 +1015,7 @@ test('With CustomStore', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '7')
-  t.equal(res.headers['retry-after'], '10000')
+  t.equal(res.headers['retry-after'], '10')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -1118,7 +1118,7 @@ test('Allow multiple different rate limiter registrations', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1000')
+  t.equal(res.headers['retry-after'], '1')
 
   res = await fastify.inject('/test')
   t.equal(res.statusCode, 200)
@@ -1130,7 +1130,7 @@ test('Allow multiple different rate limiter registrations', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1000')
+  t.equal(res.headers['retry-after'], '1')
 })
 
 test('With enable IETF draft spec', async t => {
@@ -1235,7 +1235,7 @@ test('Allow custom timeWindow in preHandler', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '120000')
+  t.equal(res.headers['retry-after'], '120')
 
   res = await fastify.inject('/3')
   t.equal(res.statusCode, 200)
@@ -1247,7 +1247,7 @@ test('Allow custom timeWindow in preHandler', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '180000')
+  t.equal(res.headers['retry-after'], '180')
 
   res = await fastify.inject('/default')
   t.equal(res.statusCode, 200)
@@ -1255,7 +1255,7 @@ test('Allow custom timeWindow in preHandler', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/default')
-  t.equal(res.headers['retry-after'], '10000')
+  t.equal(res.headers['retry-after'], '10')
   t.equal(res.statusCode, 429)
 })
 
