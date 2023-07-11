@@ -132,6 +132,8 @@ appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   // })
 })
 
+appWithImplicitHttp.get('/', { config: { rateLimit: { max: 10, timeWindow: "60s" } } }, () => { return "limited" })
+
 const appWithHttp2: FastifyInstance<
   http2.Http2Server,
   http2.Http2ServerRequest,
