@@ -61,6 +61,8 @@ async function fastifyRateLimit (fastify, settings) {
       ? settings.timeWindow
       : 1000 * 60
 
+  globalParams.timeWindowInSeconds = (globalParams.timeWindow / 1000) | 0
+
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = settings.ban || null
@@ -154,6 +156,9 @@ async function fastifyRateLimit (fastify, settings) {
     if (typeof result.timeWindow === 'string') {
       result.timeWindow = ms(result.timeWindow)
     }
+    if (typeof result.timeWindow === 'number') {
+      result.timeWindowInSeconds = (result.timeWindow / 1000) | 0
+    }
     return result
   }
 }
@@ -246,7 +251,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
     if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
     if (params.addHeaders[params.labels.retryAfter]) {
-      const resetAfterTime = (params.enableDraftSpec ? timeLeft : params.timeWindow / 1000 | 0)
+      const resetAfterTime = (params.enableDraftSpec ? timeLeft : params.timeWindowInSeconds)
       res.header(params.labels.retryAfter, resetAfterTime)
     }
 
