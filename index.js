@@ -5,6 +5,8 @@ const ms = require('ms')
 
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
+const { ThrottleStream } = require('./lib/throttle-stream')
+const { Readable } = require('stream')
 
 const defaultHook = 'onRequest'
 
@@ -106,6 +108,8 @@ async function fastifyRateLimit (fastify, settings) {
 
   globalParams.skipOnError = settings.skipOnError || false
 
+  globalParams.throttle = settings.throttle || false
+
   const run = Symbol('rate-limit-did-run')
   pluginComponent.run = run
   fastify.decorateRequest(run, false)
@@ -145,6 +149,14 @@ async function fastifyRateLimit (fastify, settings) {
       // if the plugin is set globally ( meaning that all the route will be 'rate limited' )
       // As the endpoint, does not have a custom rateLimit configuration, use the global one.
       addRouteRateHook(pluginComponent, globalParams, routeOptions)
+
+      if (globalParams.throttle) {
+        addRouteThrottleHook(pluginComponent, globalParams, routeOptions)
+      }
+    }
+
+    if (routeOptions.config?.rateLimit?.throttle?.bps) {
+      addRouteThrottleHook(pluginComponent, globalParams, routeOptions)
     }
   })
 
@@ -155,6 +167,41 @@ async function fastifyRateLimit (fastify, settings) {
       result.timeWindow = ms(result.timeWindow)
     }
     return result
+  }
+}
+
+async function addRouteThrottleHook (pluginComponent, params, routeOptions) {
+  const hook = 'onSend'
+  const hookHandler = throttleOnSendHandler(params.throttle || routeOptions?.config?.rateLimit?.throttle)
+  if (Array.isArray(routeOptions[hook])) {
+    routeOptions[hook].push(hookHandler)
+  } else if (typeof routeOptions[hook] === 'function') {
+    routeOptions[hook] = [routeOptions[hook], hookHandler]
+  } else {
+    routeOptions[hook] = [hookHandler]
+  }
+}
+
+function throttleOnSendHandler (throttleOpts) {
+  const bps = throttleOpts.bps
+  return function (request, reply, payload, done) {
+    if (payload && payload.pipe) {
+      const throttleStream = new ThrottleStream({ bps })
+      payload.pipe(throttleStream)
+      done(null, throttleStream)
+      return
+    } else if (Buffer.isBuffer(payload)) {
+      const throttleStream = new ThrottleStream({ bps })
+      Readable.from(payload).pipe(throttleStream)
+      done(null, throttleStream)
+      return
+    } else if (typeof payload === 'string') {
+      const throttleStream = new ThrottleStream({ bps })
+      Readable.from(Buffer.from(payload)).pipe(throttleStream)
+      done(null, throttleStream)
+      return
+    }
+    done(null, payload)
   }
 }
 

@@ -13,16 +13,17 @@ import fastifyRateLimit, {
   FastifyRateLimitStore,
   RateLimitPluginOptions
 } from '..'
+import { expectType } from 'tsd';
 
 class CustomStore implements FastifyRateLimitStore {
-  constructor(options: FastifyRateLimitOptions) {}
+  constructor(options: FastifyRateLimitOptions) { }
   incr(
     key: string,
     callback: (
       error: Error | null,
       result?: { current: number; ttl: number }
     ) => void
-  ) {}
+  ) { }
   child(routeOptions: RouteOptions & { path: string; prefix: string }) {
     return <CustomStore>(<FastifyRateLimitOptions>{})
   }
@@ -144,3 +145,24 @@ appWithHttp2.register(fastifyRateLimit, options1)
 appWithHttp2.register(fastifyRateLimit, options2)
 appWithHttp2.register(fastifyRateLimit, options3)
 appWithHttp2.register(fastifyRateLimit, options5)
+
+appWithImplicitHttp.register(fastifyRateLimit, { throttle: { bps: 1000 } })
+appWithImplicitHttp.register(fastifyRateLimit, {
+  throttle: {
+    bps: (elapsedTime, bytes) => {
+      expectType<number>(elapsedTime)
+      expectType<number>(bytes)
+      return 200
+    }
+  }
+})
+
+appWithImplicitHttp.get('/', {
+  config: {
+    rateLimit: {
+      throttle: {
+        bps: 1000
+      }
+    }
+  }
+}, (request, reply) => { })
