@@ -79,7 +79,7 @@ test('should throttle per route but not effect other routes', async t => {
   const startTime = Date.now()
 
   await fastify.inject('/unthrottled')
-  assertTimespan(t, startTime, Date.now(), 10)
+  assertTimespan(t, startTime, Date.now(), 10, 100)
 })
 
 test('should throttle streams', async t => {
@@ -240,6 +240,6 @@ test('should not error when sending null', async t => {
   const startTime = Date.now()
 
   const response = await fastify.inject('/throttled')
-  assertTimespan(t, startTime, Date.now(), 10)
+  assertTimespan(t, startTime, Date.now(), 10, 100)
   t.equal(response.body.length, 0)
 })

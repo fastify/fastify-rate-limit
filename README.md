@@ -136,6 +136,9 @@ await fastify.register(import('@fastify/rate-limit'), {
     'x-ratelimit-remaining': true,
     'x-ratelimit-reset': true,
     'retry-after': true
+  },
+  throttle: { // throttle the download speed
+    bps: 1000
   }
 })
 ```
@@ -160,6 +163,7 @@ You can pass a Redis client here and magically the issue is solved. To achieve t
 - `onExceeding`: callback that will be executed before request limit has been reached. 
 - `onExceeded`: callback that will be executed after request limit has been reached.
 - `onBanReach`: callback that will be executed when the ban limit has been reached.
+- `throttle`: option to activate throttling the download speed. See the paragraph regarding "Throttling the download speed".
 
 `keyGenerator` example usage:
 ```js
@@ -435,6 +439,104 @@ The response will have the following headers if `enableDraftSpec` is `true`:
 |`ratelimit-remaining`   | how many requests remain to the client in the timewindow
 |`ratelimit-reset`       | how many seconds must pass before the rate limit resets
 |`retry-after`           | contains the same value in time as `ratelimit-reset`
+
+### Throttling the download speed
+
+@fastify/rate-limit supports throttling the download speed. 
+
+You can define the throttling globally or per route. The throttle options supports following options:
+
+| Header | Description |
+|--------|-------------|
+|`bps`     | The allowed bytes per second, number or a function |
+
+Example for setting throttling globally.
+
+```js
+  'use strict'
+
+  const fastify = require('fastify')()
+
+  await fastify.register(require('../index'),
+    {
+      global: true,
+      throttle: {
+        bps: 1000
+      }
+    })
+
+  fastify.get('/', (req, reply) => {
+    reply.send(createReadStream(resolve(__dirname, __filename)))
+  })
+
+  fastify.listen({ port: 3000 })
+```
+
+Example for setting the throttling per route:
+
+```js
+  'use strict'
+
+  const fastify = require('fastify')()
+
+  await fastify.register(require('../index'))
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        throttle: {
+          bps: 1000
+        }
+      }
+    }
+  }, (req, reply) => {
+    reply.send(createReadStream(resolve(__dirname, __filename)))
+  })
+
+  fastify.listen({ port: 3000 })
+```
+
+The `bps` option can be a number or a function. The function for `bps` has the following types: 
+
+```typescript
+function bpsFn (elapsedTime: number, bytes: number): number {
+  return 1000
+}
+```
+
+`elapsedTime` is the time since the streaming started in seconds.
+`bytes` are the bytes already sent.
+
+You could for example delay the output by sending 0 the first 2 seconds by defining
+the `bps` like this:
+
+```js
+  'use strict'
+
+  const fastify = require('fastify')()
+
+  await fastify.register(require('../index'))
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        throttle: {
+          bps: function (elapsedTime, bytes) {
+            if (elapsedTime < 2) {
+              return 0
+            } else {
+              return Infinity
+            }
+          }
+        }
+      }
+    }
+  }, (req, reply) => {
+    reply.send(createReadStream(resolve(__dirname, __filename)))
+  })
+
+  fastify.listen({ port: 3000 })
+```
 
 <a name="license"></a>
 ## License

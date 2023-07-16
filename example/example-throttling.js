@@ -26,6 +26,24 @@ async function main () {
     reply.send(createReadStream(resolve(__dirname, '../test/fixtures/random-30kb.file')))
   })
 
+  fastify.get('/delayed', {
+    config: {
+      rateLimit: {
+        throttle: {
+          bps: function (elapsedTime, bytes) {
+            if (elapsedTime < 2) {
+              return 0
+            } else {
+              return Infinity
+            }
+          }
+        }
+      }
+    }
+  }, (req, reply) => {
+    reply.send(createReadStream(resolve(__dirname, __filename)))
+  })
+
   fastify.get('/pojo', (req, reply) => {
     const payload = Array(1000).fill(0).map(v => (Math.random() * 1e6).toString(36))
     reply.send({ payload })

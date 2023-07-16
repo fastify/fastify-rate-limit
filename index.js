@@ -151,12 +151,12 @@ async function fastifyRateLimit (fastify, settings) {
       addRouteRateHook(pluginComponent, globalParams, routeOptions)
 
       if (globalParams.throttle) {
-        addRouteThrottleHook(pluginComponent, globalParams, routeOptions)
+        addRouteThrottleHook(routeOptions, globalParams.throttle)
       }
     }
 
-    if (routeOptions.config?.rateLimit?.throttle?.bps) {
-      addRouteThrottleHook(pluginComponent, globalParams, routeOptions)
+    if (routeOptions.config?.rateLimit?.throttle) {
+      addRouteThrottleHook(routeOptions, routeOptions.config.rateLimit.throttle)
     }
   })
 
@@ -170,9 +170,9 @@ async function fastifyRateLimit (fastify, settings) {
   }
 }
 
-async function addRouteThrottleHook (pluginComponent, params, routeOptions) {
+async function addRouteThrottleHook (routeOptions, throttleOptions) {
   const hook = 'onSend'
-  const hookHandler = throttleOnSendHandler(params.throttle || routeOptions?.config?.rateLimit?.throttle)
+  const hookHandler = throttleOnSendHandler(throttleOptions)
   if (Array.isArray(routeOptions[hook])) {
     routeOptions[hook].push(hookHandler)
   } else if (typeof routeOptions[hook] === 'function') {

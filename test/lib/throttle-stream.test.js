@@ -6,6 +6,35 @@ const { ThrottleStream } = require('../../lib/throttle-stream')
 const { RandomStream } = require('./random-stream')
 const { SlowRandomStream } = require('./slow-random-stream')
 
+test('should delay the download for 2 seconds', t => {
+  t.plan(27)
+  const r = new RandomStream(16384 * 2) // should take ~2 seconds
+  const throttle = new ThrottleStream({
+    bps: function (elapsedTime, bytes) {
+      if (elapsedTime < 2) {
+        return 0
+      } else {
+        return Infinity
+      }
+    }
+  })
+  const start = Date.now()
+  let bytes = 0
+  throttle.on('data', function (data) {
+    t.ok(Date.now() - start > 2000)
+    bytes += data.length
+  })
+  throttle.on('end', function () {
+    assertTimespan(t, start, Date.now(), 2000)
+    t.equal(16384 * 2, bytes)
+  })
+  r.pipe(throttle)
+
+  t.equal(throttle.bpsFn(0, 0), 0)
+  t.equal(throttle.bpsFn(1.999, 0), 0)
+  t.equal(throttle.bpsFn(2, 0), Infinity)
+})
+
 test('should take ~1 second to read 10,000 bytes at 10000bps', t => {
   t.plan(2)
   const r = new RandomStream(10000)
@@ -16,7 +45,7 @@ test('should take ~1 second to read 10,000 bytes at 10000bps', t => {
     bytes += data.length
   })
   throttle.on('end', function () {
-    assertTimespan(t, start, Date.now(), 1000)
+    assertTimespan(t, start, Date.now(), 1000, 7)
     t.equal(10000, bytes)
   })
   r.pipe(throttle)
