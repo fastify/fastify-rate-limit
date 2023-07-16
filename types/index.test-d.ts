@@ -144,3 +144,11 @@ appWithHttp2.register(fastifyRateLimit, options1)
 appWithHttp2.register(fastifyRateLimit, options2)
 appWithHttp2.register(fastifyRateLimit, options3)
 appWithHttp2.register(fastifyRateLimit, options5)
+
+appWithHttp2.get('/public', {
+  config: {
+    rateLimit: false
+  }
+}, (request, reply) => {
+  reply.send({ hello: 'from ... public' })
+})
