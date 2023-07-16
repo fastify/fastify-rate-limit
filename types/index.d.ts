@@ -12,7 +12,7 @@ declare module 'fastify' {
     rateLimit: (options?: fastifyRateLimit.RateLimitOptions) => preHandlerAsyncHookHandler;
   }
   interface FastifyContextConfig {
-    rateLimit?: fastifyRateLimit.RateLimitOptions;
+    rateLimit?: fastifyRateLimit.RateLimitOptions | false;
   }
 }
 
