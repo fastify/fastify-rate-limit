@@ -1,7 +1,7 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const ms = require('ms')
+const ms = require('@lukeed/ms')
 
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
@@ -56,7 +56,7 @@ async function fastifyRateLimit (fastify, settings) {
 
   // define the global Time Window
   globalParams.timeWindow = typeof settings.timeWindow === 'string'
-    ? ms(settings.timeWindow)
+    ? ms.parse(settings.timeWindow)
     : typeof settings.timeWindow === 'number' && !isNaN(settings.timeWindow)
       ? settings.timeWindow
       : 1000 * 60
@@ -154,7 +154,7 @@ async function fastifyRateLimit (fastify, settings) {
   function makeParams (routeParams) {
     const result = Object.assign({}, globalParams, routeParams)
     if (typeof result.timeWindow === 'string') {
-      result.timeWindow = ms(result.timeWindow)
+      result.timeWindow = ms.parse(result.timeWindow)
     }
     if (typeof result.timeWindow === 'number') {
       result.timeWindowInSeconds = (result.timeWindow / 1000) | 0
@@ -179,7 +179,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
   const theStore = pluginComponent.store
   return async function onRequestRateLimiter (req, res) {
     const run = pluginComponent.run
-    const after = ms(params.timeWindow, { long: true })
+    const after = ms.format(params.timeWindow, true)
 
     if (req[run]) {
       return

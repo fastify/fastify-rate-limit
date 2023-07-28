@@ -40,8 +40,8 @@
     "tsd": "^0.28.0"
   },
   "dependencies": {
+    "@lukeed/ms": "^2.0.1",
     "fastify-plugin": "^4.0.0",
-    "ms": "^2.1.3",
     "tiny-lru": "^11.0.0"
   },
   "publishConfig": {
