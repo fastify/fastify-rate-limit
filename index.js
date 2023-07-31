@@ -69,7 +69,7 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = settings.ban || null
   globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : undefined
-  globalParams.continueExceeding = settings.continueExceeding || false
+  globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
 
   // define the name of the app component. Related to redis, it will be use as a part of the keyname define in redis.
   const pluginComponent = {
@@ -91,8 +91,8 @@ async function fastifyRateLimit (fastify, settings) {
     ? settings.keyGenerator
     : (req) => req.ip
 
-  globalParams.onExceeded = settings.onExceeded
-  globalParams.onExceeding = settings.onExceeding
+  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : undefined
+  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : undefined
 
   // define if error message was overwritten with a custom error response callback
   if (typeof settings.errorResponseBuilder === 'function') {
@@ -236,14 +236,12 @@ function rateLimitRequestHandler (params, pluginComponent) {
       if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, maximum - current) }
       if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
 
-      if (typeof params.onExceeding === 'function') {
-        params.onExceeding(req, key)
-      }
+      params.onExceeding?.(req, key)
+
       return
     }
-    if (typeof params.onExceeded === 'function') {
-      params.onExceeded(req, key)
-    }
+
+    params.onExceeded?.(req, key)
 
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
@@ -263,7 +261,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
 
     if (code === 403) {
       respCtx.ban = true
-      if (typeof params.onBanReach === 'function') params.onBanReach(req, key)
+      params.onBanReach?.(req, key)
     }
 
     throw params.errorResponseBuilder(req, respCtx)
