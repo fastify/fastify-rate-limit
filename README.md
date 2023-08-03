@@ -123,7 +123,7 @@ await fastify.register(import('@fastify/rate-limit'), {
   nameSpace: 'teste-ratelimit-', // default is 'fastify-rate-limit-'
   continueExceeding: true, // default false
   skipOnError: true, // default false
-  keyGenerator: function (request) { /* ... */ }, // default (request) => request.raw.ip
+  keyGenerator: function (request) { /* ... */ }, // default (request) => request.ip
   errorResponseBuilder: function (request, context) { /* ... */},
   enableDraftSpec: true, // default false. Uses IEFT draft header standard
   addHeadersOnExceeding: { // default show all the response headers when rate limit is not reached
