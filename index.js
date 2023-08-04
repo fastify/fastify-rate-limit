@@ -69,6 +69,8 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = settings.ban || null
   globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : undefined
+  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : undefined
+  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : undefined
   globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
 
   // define the name of the app component. Related to redis, it will be use as a part of the keyname define in redis.
@@ -90,9 +92,6 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
     ? settings.keyGenerator
     : (req) => req.ip
-
-  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : undefined
-  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : undefined
 
   // define if error message was overwritten with a custom error response callback
   if (typeof settings.errorResponseBuilder === 'function') {
