@@ -32,6 +32,8 @@ async function fastifyRateLimit (fastify, settings) {
   if (typeof settings.enableDraftSpec === 'boolean' && settings.enableDraftSpec) {
     globalParams.enableDraftSpec = true
     labels = draftSpecHeaders
+  } else {
+    globalParams.enableDraftSpec = false
   }
 
   globalParams.addHeaders = Object.assign({
@@ -66,13 +68,10 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = settings.ban || null
-  globalParams.onBanReach = defaultOnBanReach
-
-  if (typeof settings.onBanReach === 'function') {
-    globalParams.onBanReach = settings.onBanReach
-  }
-
-  globalParams.continueExceeding = settings.continueExceeding || false
+  globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : undefined
+  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : undefined
+  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : undefined
+  globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
 
   // define the name of the app component. Related to redis, it will be use as a part of the keyname define in redis.
   const pluginComponent = {
@@ -94,23 +93,21 @@ async function fastifyRateLimit (fastify, settings) {
     ? settings.keyGenerator
     : (req) => req.ip
 
-  globalParams.errorResponseBuilder = defaultErrorResponse
-  globalParams.isCustomErrorMessage = false
-
-  globalParams.onExceeded = settings.onExceeded
-  globalParams.onExceeding = settings.onExceeding
-
   // define if error message was overwritten with a custom error response callback
   if (typeof settings.errorResponseBuilder === 'function') {
     globalParams.errorResponseBuilder = settings.errorResponseBuilder
     globalParams.isCustomErrorMessage = true
+  } else {
+    globalParams.errorResponseBuilder = defaultErrorResponse
+    globalParams.isCustomErrorMessage = false
   }
 
-  globalParams.skipOnError = settings.skipOnError || false
+  globalParams.skipOnError = typeof settings.skipOnError === 'boolean' ? settings.skipOnError : false
 
   const run = Symbol('rate-limit-did-run')
   pluginComponent.run = run
   fastify.decorateRequest(run, false)
+
   if (!fastify.hasDecorator('rateLimit')) {
     // The rate limit plugin can be registered multiple times but decorate throws if called multiple times for the same field
     fastify.decorate('rateLimit', function rateLimit (options) {
@@ -238,14 +235,12 @@ function rateLimitRequestHandler (params, pluginComponent) {
       if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, maximum - current) }
       if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
 
-      if (typeof params.onExceeding === 'function') {
-        params.onExceeding(req, key)
-      }
+      params.onExceeding?.(req, key)
+
       return
     }
-    if (typeof params.onExceeded === 'function') {
-      params.onExceeded(req, key)
-    }
+
+    params.onExceeded?.(req, key)
 
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
@@ -265,7 +260,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
 
     if (code === 403) {
       respCtx.ban = true
-      params.onBanReach(req, key)
+      params.onBanReach?.(req, key)
     }
 
     throw params.errorResponseBuilder(req, respCtx)
@@ -277,8 +272,6 @@ function defaultErrorResponse (req, context) {
   err.statusCode = context.statusCode
   return err
 }
-
-function defaultOnBanReach (req, key) {}
 
 module.exports = fp(fastifyRateLimit, {
   fastify: '4.x',
