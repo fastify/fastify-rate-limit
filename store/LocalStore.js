@@ -1,26 +1,26 @@
 'use strict'
 
-const lru = require('tiny-lru').lru
+const { Lru } = require('toad-cache')
 
-function LocalStore (timeWindow, cache, app, continueExceeding) {
-  this.lru = lru(cache || 5000, timeWindow)
-  this.app = app
+function LocalStore (cache = 5000, timeWindow, continueExceeding) {
+  this.lru = new Lru(cache)
   this.timeWindow = timeWindow
   this.continueExceeding = continueExceeding
 }
 
 LocalStore.prototype.incr = function (ip, cb, max) {
   const nowInMs = Date.now()
-  const current = this.lru.get(ip) || { count: 0, iterationStartMs: nowInMs }
 
-  current.count++
+  let current = this.lru.get(ip)
+
+  if (current === undefined || (current.iterationStartMs + this.timeWindow <= nowInMs)) current = { count: 0, iterationStartMs: nowInMs }
+
+  ++current.count
 
   if (this.continueExceeding) {
     if (current.count > max) {
-      this.lru.delete(ip)
+      current.iterationStartMs = nowInMs
     }
-
-    // It will recalculate the TTL if the item is missing - count exceeded the maximum
     this.lru.set(ip, current)
     cb(null, { current: current.count, ttl: this.timeWindow })
   } else {
@@ -30,8 +30,7 @@ LocalStore.prototype.incr = function (ip, cb, max) {
 }
 
 LocalStore.prototype.child = function (routeOptions) {
-  return new LocalStore(routeOptions.timeWindow,
-    routeOptions.cache, this.app, routeOptions.continueExceeding)
+  return new LocalStore(routeOptions.cache, routeOptions.timeWindow, routeOptions.continueExceeding)
 }
 
 module.exports = LocalStore
