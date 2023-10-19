@@ -181,7 +181,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       }
     }
 
-    const maximum = typeof params.max === 'number' && !isNaN(params.max) ? params.max : await params.max(req, key)
+    const max = typeof params.max === 'number' && !isNaN(params.max) ? params.max : await params.max(req, key)
     let current = 0
     let ttl = 0
     let timeLeftInSeconds = 0
@@ -195,7 +195,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
             return
           }
           resolve(res)
-        }, maximum)
+        }, max)
       })
 
       current = res.current
@@ -208,9 +208,9 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     timeLeftInSeconds = Math.floor(ttl / 1000)
 
-    if (current <= maximum) {
-      if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
-      if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, maximum - current) }
+    if (current <= max) {
+      if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
+      if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, max - current) }
       if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
 
       params.onExceeding?.(req, key)
@@ -220,7 +220,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     params.onExceeded?.(req, key)
 
-    if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
+    if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
     if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
     if (params.addHeaders[params.labels.retryAfter]) {
@@ -228,13 +228,14 @@ function rateLimitRequestHandler (pluginComponent, params) {
       res.header(params.labels.retryAfter, resetAfterTime)
     }
 
-    const code = params.ban && current - maximum > params.ban ? 403 : 429
-    const after = ms.format(params.timeWindow, true)
+    const code = params.ban && current - max > params.ban ? 403 : 429
     const respCtx = {
       statusCode: code,
-      after,
-      max: maximum,
-      ttl
+      ban: false,
+      max,
+      ttl,
+      after: ms.format(params.timeWindow, true)
+
     }
 
     if (code === 403) {
