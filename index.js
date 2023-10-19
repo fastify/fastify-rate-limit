@@ -8,61 +8,57 @@ const RedisStore = require('./store/RedisStore')
 
 const defaultHook = 'onRequest'
 
+const defaultHeaders = {
+  rateLimit: 'x-ratelimit-limit',
+  rateRemaining: 'x-ratelimit-remaining',
+  rateReset: 'x-ratelimit-reset',
+  retryAfter: 'retry-after'
+}
+
+const draftSpecHeaders = {
+  rateLimit: 'ratelimit-limit',
+  rateRemaining: 'ratelimit-remaining',
+  rateReset: 'ratelimit-reset',
+  retryAfter: 'retry-after'
+}
+
 async function fastifyRateLimit (fastify, settings) {
-  let labels = {
-    rateLimit: 'x-ratelimit-limit',
-    rateRemaining: 'x-ratelimit-remaining',
-    rateReset: 'x-ratelimit-reset',
-    retryAfter: 'retry-after'
-  }
-
-  const draftSpecHeaders = {
-    rateLimit: 'ratelimit-limit',
-    rateRemaining: 'ratelimit-remaining',
-    rateReset: 'ratelimit-reset',
-    retryAfter: 'retry-after'
-  }
-
-  // create the object that will hold the "main" settings that can be shared during the build
-  // 'global' will define, if the rate limit should be apply by default on all route. default : true
   const globalParams = {
     global: (typeof settings.global === 'boolean') ? settings.global : true
   }
 
   if (typeof settings.enableDraftSpec === 'boolean' && settings.enableDraftSpec) {
     globalParams.enableDraftSpec = true
-    labels = draftSpecHeaders
+    globalParams.labels = draftSpecHeaders
   } else {
     globalParams.enableDraftSpec = false
+    globalParams.labels = defaultHeaders
   }
 
   globalParams.addHeaders = Object.assign({
-    [labels.rateLimit]: true,
-    [labels.rateRemaining]: true,
-    [labels.rateReset]: true,
-    [labels.retryAfter]: true
+    [globalParams.labels.rateLimit]: true,
+    [globalParams.labels.rateRemaining]: true,
+    [globalParams.labels.rateReset]: true,
+    [globalParams.labels.retryAfter]: true
   }, settings.addHeaders)
 
   globalParams.addHeadersOnExceeding = Object.assign({
-    [labels.rateLimit]: true,
-    [labels.rateRemaining]: true,
-    [labels.rateReset]: true
+    [globalParams.labels.rateLimit]: true,
+    [globalParams.labels.rateRemaining]: true,
+    [globalParams.labels.rateReset]: true
   }, settings.addHeadersOnExceeding)
 
-  globalParams.labels = labels
-
-  // define the global maximum of request allowed
+  // Global maximum allowed requests
   globalParams.max = ((typeof settings.max === 'number' && !isNaN(settings.max)) || typeof settings.max === 'function')
     ? settings.max
     : 1000
 
-  // define the global Time Window
+  // Global time window
   globalParams.timeWindow = typeof settings.timeWindow === 'string'
     ? ms.parse(settings.timeWindow)
     : typeof settings.timeWindow === 'number' && !isNaN(settings.timeWindow)
       ? settings.timeWindow
       : 1000 * 60
-
   globalParams.timeWindowInSeconds = (globalParams.timeWindow / 1000) | 0
 
   globalParams.hook = settings.hook || defaultHook
@@ -73,9 +69,11 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : undefined
   globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
 
-  // define the name of the app component. Related to redis, it will be use as a part of the keyname define in redis.
+  const rateLimitRan = Symbol('fastify.request.rateLimitRan')
   const pluginComponent = {
-    allowList: globalParams.allowList
+    allowList: globalParams.allowList,
+    store: null,
+    rateLimitRan
   }
 
   if (settings.store) {
@@ -85,15 +83,14 @@ async function fastifyRateLimit (fastify, settings) {
     if (settings.redis) {
       pluginComponent.store = new RedisStore(settings.redis, settings.nameSpace || 'fastify-rate-limit-', globalParams.timeWindow, settings.continueExceeding)
     } else {
-      pluginComponent.store = new LocalStore(globalParams.timeWindow, settings.cache, fastify, settings.continueExceeding)
+      pluginComponent.store = new LocalStore(settings.cache, globalParams.timeWindow, settings.continueExceeding)
     }
   }
 
   globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
     ? settings.keyGenerator
-    : (req) => req.ip
+    : defaultKeyGenerator
 
-  // define if error message was overwritten with a custom error response callback
   if (typeof settings.errorResponseBuilder === 'function') {
     globalParams.errorResponseBuilder = settings.errorResponseBuilder
     globalParams.isCustomErrorMessage = true
@@ -104,65 +101,53 @@ async function fastifyRateLimit (fastify, settings) {
 
   globalParams.skipOnError = typeof settings.skipOnError === 'boolean' ? settings.skipOnError : false
 
-  const run = Symbol('rate-limit-did-run')
-  pluginComponent.run = run
-  fastify.decorateRequest(run, false)
+  fastify.decorateRequest(rateLimitRan, false)
 
   if (!fastify.hasDecorator('rateLimit')) {
-    // The rate limit plugin can be registered multiple times but decorate throws if called multiple times for the same field
-    fastify.decorate('rateLimit', function rateLimit (options) {
-      let params = globalParams
-      if (options) {
-        params = makeParams(options)
-      }
+    fastify.decorate('rateLimit', (options) => {
+      const params = options ? mergeParams(globalParams, options) : globalParams
+
       if (params.timeWindow && params.timeWindow !== globalParams.timeWindow) {
         const newPluginComponent = Object.create(pluginComponent)
-        const newStore = newPluginComponent.store.child(Object.assign({}, { routeInfo: {} }, params))
-        newPluginComponent.store = newStore
-        return rateLimitRequestHandler(params, newPluginComponent)
+        newPluginComponent.store = newPluginComponent.store.child(Object.assign({}, params))
+        return rateLimitRequestHandler(newPluginComponent, params)
       }
-      return rateLimitRequestHandler(params, pluginComponent)
+
+      return rateLimitRequestHandler(pluginComponent, params)
     })
   }
 
-  // onRoute add the hook rate-limit function if needed
   fastify.addHook('onRoute', (routeOptions) => {
-    if (routeOptions.config && typeof routeOptions.config.rateLimit !== 'undefined') {
+    if (routeOptions.config?.rateLimit !== undefined) {
       if (typeof routeOptions.config.rateLimit === 'object') {
-        const current = Object.create(pluginComponent)
-        const mergedRateLimitParams = makeParams(routeOptions.config.rateLimit)
-        mergedRateLimitParams.routeInfo = routeOptions
-        current.store = pluginComponent.store.child(mergedRateLimitParams)
-        // if the current endpoint have a custom rateLimit configuration ...
-        addRouteRateHook(current, mergedRateLimitParams, routeOptions)
-      } else if (routeOptions.config.rateLimit === false) {
-        // don't apply any rate-limit
-      } else {
+        const newPluginComponent = Object.create(pluginComponent)
+        const mergedRateLimitParams = mergeParams(globalParams, routeOptions.config.rateLimit)
+        newPluginComponent.store = pluginComponent.store.child(mergedRateLimitParams)
+        addRouteRateHook(newPluginComponent, mergedRateLimitParams, routeOptions)
+      } else if (routeOptions.config.rateLimit !== false) {
         throw new Error('Unknown value for route rate-limit configuration')
       }
     } else if (globalParams.global) {
-      // if the plugin is set globally ( meaning that all the route will be 'rate limited' )
-      // As the endpoint, does not have a custom rateLimit configuration, use the global one.
+      // As the endpoint does not have a custom configuration, use the global one
       addRouteRateHook(pluginComponent, globalParams, routeOptions)
     }
   })
-
-  // Merge the parameters of a route with the global ones
-  function makeParams (routeParams) {
-    const result = Object.assign({}, globalParams, routeParams)
-    if (typeof result.timeWindow === 'string') {
-      result.timeWindow = ms.parse(result.timeWindow)
-    }
-    if (typeof result.timeWindow === 'number') {
-      result.timeWindowInSeconds = (result.timeWindow / 1000) | 0
-    }
-    return result
-  }
 }
 
-async function addRouteRateHook (pluginComponent, params, routeOptions) {
-  const hook = params.hook || defaultHook
-  const hookHandler = rateLimitRequestHandler(params, pluginComponent)
+function mergeParams (params1, params2) {
+  const result = Object.assign({}, params1, params2)
+  if (typeof result.timeWindow === 'string') {
+    result.timeWindow = ms.parse(result.timeWindow)
+  }
+  if (typeof result.timeWindow === 'number' && !isNaN(result.timeWindow)) {
+    result.timeWindowInSeconds = (result.timeWindow / 1000) | 0
+  }
+  return result
+}
+
+function addRouteRateHook (pluginComponent, globalParams, routeOptions) {
+  const hook = globalParams.hook || defaultHook
+  const hookHandler = rateLimitRequestHandler(pluginComponent, globalParams)
   if (Array.isArray(routeOptions[hook])) {
     routeOptions[hook].push(hookHandler)
   } else if (typeof routeOptions[hook] === 'function') {
@@ -172,46 +157,39 @@ async function addRouteRateHook (pluginComponent, params, routeOptions) {
   }
 }
 
-function rateLimitRequestHandler (params, pluginComponent) {
-  const theStore = pluginComponent.store
+function rateLimitRequestHandler (pluginComponent, params) {
   return async function onRequestRateLimiter (req, res) {
-    const run = pluginComponent.run
-    const after = ms.format(params.timeWindow, true)
+    const rateLimitRan = pluginComponent.rateLimitRan
 
-    if (req[run]) {
+    if (req[rateLimitRan]) {
       return
     }
-    req[run] = true
 
-    // We retrieve the key from the generator. (can be the global one, or the one define in the endpoint)
+    req[rateLimitRan] = true
+
+    // Retrieve the key from the generator (the global one or the one defined in the endpoint)
     const key = await params.keyGenerator(req)
 
-    // allowList doesn't apply any rate limit
+    // Don't apply any rate limiting if in the allow list
     if (params.allowList) {
       if (typeof pluginComponent.allowList === 'function') {
         if (await params.allowList(req, key)) {
           return
         }
-      } else if (params.allowList.indexOf(key) > -1) {
+      } else if (params.allowList.indexOf(key) !== -1) {
         return
       }
     }
 
+    const maximum = typeof params.max === 'number' && !isNaN(params.max) ? params.max : await params.max(req, key)
     let current = 0
     let ttl = 0
+    let timeLeftInSeconds = 0
 
-    let maximum
-
-    if (typeof params.max === 'number' && !isNaN(params.max)) {
-      maximum = params.max
-    } else {
-      maximum = await params.max(req, key)
-    }
-
-    // As the key is not allowList in redis/lru, then we increment the rate-limit of the current request
+    // We increment the rate limit for the current request
     try {
       const res = await new Promise(function (resolve, reject) {
-        theStore.incr(key, function (err, res) {
+        pluginComponent.store.incr(key, (err, res) => {
           if (err) {
             reject(err)
             return
@@ -228,12 +206,12 @@ function rateLimitRequestHandler (params, pluginComponent) {
       }
     }
 
-    const timeLeft = Math.floor(ttl / 1000)
+    timeLeftInSeconds = Math.floor(ttl / 1000)
 
     if (current <= maximum) {
       if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
       if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, maximum - current) }
-      if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
+      if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
 
       params.onExceeding?.(req, key)
 
@@ -244,13 +222,14 @@ function rateLimitRequestHandler (params, pluginComponent) {
 
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
-    if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
+    if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
     if (params.addHeaders[params.labels.retryAfter]) {
-      const resetAfterTime = (params.enableDraftSpec ? timeLeft : params.timeWindowInSeconds)
+      const resetAfterTime = (params.enableDraftSpec ? timeLeftInSeconds : params.timeWindowInSeconds)
       res.header(params.labels.retryAfter, resetAfterTime)
     }
 
     const code = params.ban && current - maximum > params.ban ? 403 : 429
+    const after = ms.format(params.timeWindow, true)
     const respCtx = {
       statusCode: code,
       after,
@@ -266,6 +245,8 @@ function rateLimitRequestHandler (params, pluginComponent) {
     throw params.errorResponseBuilder(req, respCtx)
   }
 }
+
+function defaultKeyGenerator (req) { return req.ip }
 
 function defaultErrorResponse (req, context) {
   const err = new Error(`Rate limit exceeded, retry in ${context.after}`)
