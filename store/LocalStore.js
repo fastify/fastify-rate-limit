@@ -21,6 +21,7 @@ LocalStore.prototype.incr = function (ip, cb, max) {
     if (current.count > max) {
       current.iterationStartMs = nowInMs
     }
+
     this.lru.set(ip, current)
     cb(null, { current: current.count, ttl: this.timeWindow })
   } else {
