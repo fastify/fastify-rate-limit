@@ -1379,6 +1379,31 @@ test("child's allowList should override parent's function", async t => {
   t.equal(res.statusCode, 200)
 })
 
+test("fastify.rateLimit should work when a property other than timeWindow is modified", async t => {
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    allowList: (req, key) => false
+  })
+
+  fastify.get('/', {
+    onRequest: fastify.rateLimit({
+      allowList: ['127.0.0.1'], max: 2
+    })
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  let res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+})
+
 test('on preValidation hook', async t => {
   const fastify = Fastify()
 
