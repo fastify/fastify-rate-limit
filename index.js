@@ -63,10 +63,10 @@ async function fastifyRateLimit (fastify, settings) {
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
-  globalParams.ban = settings.ban || null
-  globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : null
-  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : null
-  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : null
+  globalParams.ban = settings.ban || 0
+  globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : noop
+  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : noop
+  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : noop
   globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
 
   const rateLimitRan = Symbol('fastify.request.rateLimitRan')
@@ -213,12 +213,12 @@ function rateLimitRequestHandler (pluginComponent, params) {
       if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, max - current) }
       if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
 
-      params.onExceeding?.(req, key)
+      params.onExceeding(req, key)
 
       return
     }
 
-    params.onExceeded?.(req, key)
+    params.onExceeded(req, key)
 
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
@@ -240,7 +240,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     if (code === 403) {
       respCtx.ban = true
-      params.onBanReach?.(req, key)
+      params.onBanReach(req, key)
     }
 
     throw params.errorResponseBuilder(req, respCtx)
@@ -254,6 +254,8 @@ function defaultErrorResponse (req, context) {
   err.statusCode = context.statusCode
   return err
 }
+
+function noop () {}
 
 module.exports = fp(fastifyRateLimit, {
   fastify: '4.x',
