@@ -108,7 +108,7 @@ async function fastifyRateLimit (fastify, settings) {
       if (typeof options === 'object') {
         const newPluginComponent = Object.create(pluginComponent)
         const mergedRateLimitParams = mergeParams(globalParams, options)
-        newPluginComponent.store = newPluginComponent.store.child(mergedRateLimitParams)
+        newPluginComponent.store = newPluginComponent.store.child(Object.assign({ routeInfo: {} }, mergedRateLimitParams))
         return rateLimitRequestHandler(newPluginComponent, mergedRateLimitParams)
       }
 
@@ -121,7 +121,7 @@ async function fastifyRateLimit (fastify, settings) {
       if (typeof routeOptions.config.rateLimit === 'object') {
         const newPluginComponent = Object.create(pluginComponent)
         const mergedRateLimitParams = mergeParams(globalParams, routeOptions.config.rateLimit)
-        newPluginComponent.store = pluginComponent.store.child(mergedRateLimitParams)
+        newPluginComponent.store = pluginComponent.store.child(Object.assign({ routeInfo: routeOptions }, mergedRateLimitParams))
         addRouteRateHook(newPluginComponent, mergedRateLimitParams, routeOptions)
       } else if (routeOptions.config.rateLimit !== false) {
         throw new Error('Unknown value for route rate-limit configuration')
