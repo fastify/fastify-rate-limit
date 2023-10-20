@@ -1379,7 +1379,7 @@ test("child's allowList should override parent's function", async t => {
   t.equal(res.statusCode, 200)
 })
 
-test("fastify.rateLimit should work when a property other than timeWindow is modified", async t => {
+test('fastify.rateLimit should work when a property other than timeWindow is modified', async t => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false,
