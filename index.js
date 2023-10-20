@@ -69,6 +69,20 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : noop
   globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
 
+  globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
+    ? settings.keyGenerator
+    : defaultKeyGenerator
+
+  if (typeof settings.errorResponseBuilder === 'function') {
+    globalParams.errorResponseBuilder = settings.errorResponseBuilder
+    globalParams.isCustomErrorMessage = true
+  } else {
+    globalParams.errorResponseBuilder = defaultErrorResponse
+    globalParams.isCustomErrorMessage = false
+  }
+
+  globalParams.skipOnError = typeof settings.skipOnError === 'boolean' ? settings.skipOnError : false
+
   const rateLimitRan = Symbol('fastify.request.rateLimitRan')
   const pluginComponent = {
     rateLimitRan,
@@ -85,20 +99,6 @@ async function fastifyRateLimit (fastify, settings) {
       pluginComponent.store = new LocalStore(settings.cache, globalParams.timeWindow, settings.continueExceeding)
     }
   }
-
-  globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
-    ? settings.keyGenerator
-    : defaultKeyGenerator
-
-  if (typeof settings.errorResponseBuilder === 'function') {
-    globalParams.errorResponseBuilder = settings.errorResponseBuilder
-    globalParams.isCustomErrorMessage = true
-  } else {
-    globalParams.errorResponseBuilder = defaultErrorResponse
-    globalParams.isCustomErrorMessage = false
-  }
-
-  globalParams.skipOnError = typeof settings.skipOnError === 'boolean' ? settings.skipOnError : false
 
   fastify.decorateRequest(rateLimitRan, false)
 
