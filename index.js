@@ -105,15 +105,15 @@ async function fastifyRateLimit (fastify, settings) {
 
   if (!fastify.hasDecorator('rateLimit')) {
     fastify.decorate('rateLimit', (options) => {
-      const params = options ? mergeParams(globalParams, options) : globalParams
 
-      if (params.timeWindow && params.timeWindow !== globalParams.timeWindow) {
+      if (typeof options === 'object') {
         const newPluginComponent = Object.create(pluginComponent)
-        newPluginComponent.store = newPluginComponent.store.child(Object.assign({}, params))
-        return rateLimitRequestHandler(newPluginComponent, params)
+        const mergedRateLimitParams = mergeParams(globalParams, options)
+        newPluginComponent.store = newPluginComponent.store.child(mergedRateLimitParams)
+        return rateLimitRequestHandler(newPluginComponent, mergedRateLimitParams)
       }
 
-      return rateLimitRequestHandler(pluginComponent, params)
+      return rateLimitRequestHandler(pluginComponent, globalParams)
     })
   }
 
