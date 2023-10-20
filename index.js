@@ -59,7 +59,7 @@ async function fastifyRateLimit (fastify, settings) {
     : typeof settings.timeWindow === 'number' && !isNaN(settings.timeWindow)
       ? settings.timeWindow
       : 1000 * 60
-  globalParams.timeWindowInSeconds = (globalParams.timeWindow / 1000) | 0
+  globalParams.timeWindowInSeconds = Math.floor(globalParams.timeWindow / 1000)
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
@@ -140,7 +140,7 @@ function mergeParams (params1, params2) {
     result.timeWindow = ms.parse(result.timeWindow)
   }
   if (typeof result.timeWindow === 'number' && !isNaN(result.timeWindow)) {
-    result.timeWindowInSeconds = (result.timeWindow / 1000) | 0
+    result.timeWindowInSeconds = Math.floor(result.timeWindow / 1000)
   }
   return result
 }
