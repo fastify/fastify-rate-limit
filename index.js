@@ -105,7 +105,6 @@ async function fastifyRateLimit (fastify, settings) {
 
   if (!fastify.hasDecorator('rateLimit')) {
     fastify.decorate('rateLimit', (options) => {
-
       if (typeof options === 'object') {
         const newPluginComponent = Object.create(pluginComponent)
         const mergedRateLimitParams = mergeParams(globalParams, options)
