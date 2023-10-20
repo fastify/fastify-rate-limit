@@ -158,19 +158,21 @@ function addRouteRateHook (pluginComponent, params, routeOptions) {
 }
 
 function rateLimitRequestHandler (pluginComponent, params) {
+  const { rateLimitRan, store } = pluginComponent
+
   return async function onRequestRateLimiter (req, res) {
-    if (req[pluginComponent.rateLimitRan]) {
+    if (req[rateLimitRan]) {
       return
     }
 
-    req[pluginComponent.rateLimitRan] = true
+    req[rateLimitRan] = true
 
     // Retrieve the key from the generator (the global one or the one defined in the endpoint)
     const key = await params.keyGenerator(req)
 
     // Don't apply any rate limiting if in the allow list
     if (params.allowList) {
-      if (typeof pluginComponent.allowList === 'function') {
+      if (typeof params.allowList === 'function') {
         if (await params.allowList(req, key)) {
           return
         }
@@ -186,8 +188,8 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     // We increment the rate limit for the current request
     try {
-      const res = await new Promise(function (resolve, reject) {
-        pluginComponent.store.incr(key, (err, res) => {
+      const res = await new Promise((resolve, reject) => {
+        store.incr(key, (err, res) => {
           if (err) {
             reject(err)
             return
