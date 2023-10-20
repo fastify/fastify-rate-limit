@@ -72,7 +72,6 @@ async function fastifyRateLimit (fastify, settings) {
   const rateLimitRan = Symbol('fastify.request.rateLimitRan')
   const pluginComponent = {
     rateLimitRan,
-    allowList: globalParams.allowList,
     store: null
   }
 
