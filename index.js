@@ -145,9 +145,9 @@ function mergeParams (params1, params2) {
   return result
 }
 
-function addRouteRateHook (pluginComponent, globalParams, routeOptions) {
-  const hook = globalParams.hook || defaultHook
-  const hookHandler = rateLimitRequestHandler(pluginComponent, globalParams)
+function addRouteRateHook (pluginComponent, params, routeOptions) {
+  const hook = params.hook || defaultHook
+  const hookHandler = rateLimitRequestHandler(pluginComponent, params)
   if (Array.isArray(routeOptions[hook])) {
     routeOptions[hook].push(hookHandler)
   } else if (typeof routeOptions[hook] === 'function') {
