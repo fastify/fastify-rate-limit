@@ -71,9 +71,9 @@ async function fastifyRateLimit (fastify, settings) {
 
   const rateLimitRan = Symbol('fastify.request.rateLimitRan')
   const pluginComponent = {
+    rateLimitRan,
     allowList: globalParams.allowList,
-    store: null,
-    rateLimitRan
+    store: null
   }
 
   if (settings.store) {
@@ -159,13 +159,11 @@ function addRouteRateHook (pluginComponent, params, routeOptions) {
 
 function rateLimitRequestHandler (pluginComponent, params) {
   return async function onRequestRateLimiter (req, res) {
-    const rateLimitRan = pluginComponent.rateLimitRan
-
-    if (req[rateLimitRan]) {
+    if (req[pluginComponent.rateLimitRan]) {
       return
     }
 
-    req[rateLimitRan] = true
+    req[pluginComponent.rateLimitRan] = true
 
     // Retrieve the key from the generator (the global one or the one defined in the endpoint)
     const key = await params.keyGenerator(req)
