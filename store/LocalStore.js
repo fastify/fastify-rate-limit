@@ -13,7 +13,9 @@ LocalStore.prototype.incr = function (ip, cb, max) {
 
   let current = this.lru.get(ip)
 
-  if (current === undefined || (current.iterationStartMs + this.timeWindow <= nowInMs)) current = { count: 0, iterationStartMs: nowInMs }
+  if (current === undefined || (current.iterationStartMs + this.timeWindow <= nowInMs)) {
+    current = { count: 0, iterationStartMs: nowInMs }
+  }
 
   ++current.count
 
