@@ -188,15 +188,11 @@ function rateLimitRequestHandler (pluginComponent, params) {
     try {
       const res = await new Promise((resolve, reject) => {
         store.incr(key, (err, res) => {
-          if (err) {
-            reject(err)
-            return
-          }
-          resolve(res)
+          err ? reject(err) : resolve(res)
         }, max)
       })
 
-      current = res.current
+      current = res.count
       ttl = res.ttl
     } catch (err) {
       if (!params.skipOnError) {

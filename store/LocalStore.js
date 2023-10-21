@@ -12,9 +12,8 @@ LocalStore.prototype.incr = function (ip, cb, max) {
   const nowInMs = Date.now()
 
   let current = this.lru.get(ip)
-
   if (current === undefined || (current.iterationStartMs + this.timeWindow <= nowInMs)) {
-    current = { count: 0, iterationStartMs: nowInMs }
+    current = { count: 0, iterationStartMs: nowInMs, ttl: this.timeWindow }
   }
 
   ++current.count
@@ -25,10 +24,11 @@ LocalStore.prototype.incr = function (ip, cb, max) {
     }
 
     this.lru.set(ip, current)
-    cb(null, { current: current.count, ttl: this.timeWindow })
+    cb(null, current)
   } else {
     this.lru.set(ip, current)
-    cb(null, { current: current.count, ttl: this.timeWindow - (nowInMs - current.iterationStartMs) })
+    current.ttl = this.timeWindow - (nowInMs - current.iterationStartMs)
+    cb(null, current)
   }
 }
 
