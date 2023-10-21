@@ -192,7 +192,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
         }, max)
       })
 
-      current = res.count
+      current = res.current
       ttl = res.ttl
     } catch (err) {
       if (!params.skipOnError) {
