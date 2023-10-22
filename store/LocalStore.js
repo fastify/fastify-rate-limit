@@ -17,7 +17,6 @@ LocalStore.prototype.incr = function (ip, cb, max) {
   } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
     current.current = 0
     current.iterationStartMs = nowInMs
-    current.ttl = this.timeWindow
   }
 
   ++current.current
