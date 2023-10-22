@@ -22,18 +22,15 @@ LocalStore.prototype.incr = function (ip, cb, max) {
 
   ++current.current
 
-  if (this.continueExceeding) {
-    if (current.current > max) {
-      current.iterationStartMs = nowInMs
-    }
-
-    this.lru.set(ip, current)
-    cb(null, current)
+  if (this.continueExceeding && current.current > max) {
+    current.iterationStartMs = nowInMs
+    current.ttl = this.timeWindow
   } else {
-    this.lru.set(ip, current)
     current.ttl = this.timeWindow - (nowInMs - current.iterationStartMs)
-    cb(null, current)
   }
+
+  this.lru.set(ip, current)
+  cb(null, current)
 }
 
 LocalStore.prototype.child = function (routeOptions) {
