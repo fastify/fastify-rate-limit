@@ -245,10 +245,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
     if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeft) }
-    if (params.addHeaders[params.labels.retryAfter]) {
-      const resetAfterTime = (params.enableDraftSpec ? timeLeft : params.timeWindowInSeconds)
-      res.header(params.labels.retryAfter, resetAfterTime)
-    }
+    if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, timeLeft) }
 
     const code = params.ban && current - maximum > params.ban ? 403 : 429
     const respCtx = {

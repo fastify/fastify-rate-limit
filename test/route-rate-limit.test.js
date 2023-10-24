@@ -62,8 +62,8 @@ test('Basic', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
-  t.equal(res.headers['x-ratelimit-reset'], '0')
+  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
+  t.ok(['0', '1'].includes(res.headers['retry-after']))
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -289,8 +289,8 @@ test('With redis store', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '0')
+  t.equal(res.headers['retry-after'], '0')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -631,7 +631,7 @@ test('custom error response', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
+  t.ok(['0', '1'].includes(res.headers['retry-after']))
   t.same(JSON.parse(res.payload), {
     statusCode: 429,
     timeWindow: '1 second',
@@ -1015,7 +1015,7 @@ test('With CustomStore', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '7')
-  t.equal(res.headers['retry-after'], '10')
+  t.equal(res.headers['retry-after'], '7')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -1118,7 +1118,7 @@ test('Allow multiple different rate limiter registrations', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
+  t.ok(['0', '1'].includes(res.headers['retry-after']))
 
   res = await fastify.inject('/test')
   t.equal(res.statusCode, 200)
@@ -1130,7 +1130,7 @@ test('Allow multiple different rate limiter registrations', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
+  t.ok(['0', '1'].includes(res.headers['retry-after']))
 })
 
 test('With enable IETF draft spec', async t => {
@@ -1187,7 +1187,7 @@ test('per route rate limit', async t => {
 })
 
 test('Allow custom timeWindow in preHandler', async t => {
-  t.plan(21)
+  t.plan(23)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
   fastify.register((fastify, options, done) => {
@@ -1235,7 +1235,8 @@ test('Allow custom timeWindow in preHandler', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '120')
+  t.ok(['119', '120'].includes(res.headers['x-ratelimit-reset']))
+  t.ok(['119', '120'].includes(res.headers['retry-after']))
 
   res = await fastify.inject('/3')
   t.equal(res.statusCode, 200)
@@ -1247,7 +1248,8 @@ test('Allow custom timeWindow in preHandler', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '180')
+  t.ok(['179', '180'].includes(res.headers['x-ratelimit-reset']))
+  t.ok(['179', '180'].includes(res.headers['retry-after']))
 
   res = await fastify.inject('/default')
   t.equal(res.statusCode, 200)
@@ -1255,7 +1257,7 @@ test('Allow custom timeWindow in preHandler', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/default')
-  t.equal(res.headers['retry-after'], '10')
+  t.ok(['9', '10'].includes(res.headers['retry-after']))
   t.equal(res.statusCode, 429)
 })
 
@@ -1342,6 +1344,54 @@ test('should consider routes allow list', async t => {
 
   fastify.get('/', {
     config: { rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  let res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+})
+
+test("child's allowList should override parent's function", async t => {
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    allowList: (req, key) => false
+  })
+
+  fastify.get('/', {
+    config: { rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  let res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+})
+
+test('fastify.rateLimit should work when a property other than timeWindow is modified', async t => {
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    allowList: (req, key) => false
+  })
+
+  fastify.get('/', {
+    onRequest: fastify.rateLimit({
+      allowList: ['127.0.0.1'], max: 2
+    })
   }, (req, reply) => {
     reply.send('hello!')
   })
