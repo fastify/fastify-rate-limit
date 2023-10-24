@@ -228,7 +228,7 @@ function rateLimitRequestHandler (params, pluginComponent) {
       }
     }
 
-    const timeLeft = Math.floor(ttl / 1000)
+    const timeLeft = Math.ceil(ttl / 1000)
 
     if (current <= maximum) {
       if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, maximum) }

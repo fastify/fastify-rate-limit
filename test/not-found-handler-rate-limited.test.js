@@ -31,15 +31,15 @@ test('Set not found handler can be rate limited', async t => {
   t.equal(res.statusCode, 404)
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '0')
+  t.equal(res.headers['x-ratelimit-reset'], '1')
 
   res = await fastify.inject('/not-found')
   t.equal(res.statusCode, 429)
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '0')
-  t.equal(res.headers['retry-after'], '0')
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.equal(res.headers['retry-after'], '1')
   t.same(JSON.parse(res.payload), {
     statusCode: 429,
     error: 'Too Many Requests',
@@ -76,27 +76,27 @@ test('Set not found handler can be rate limited with specific options', async t 
   t.equal(res.statusCode, 404)
   t.equal(res.headers['x-ratelimit-limit'], '4')
   t.equal(res.headers['x-ratelimit-remaining'], '2')
-  t.ok(['0', '1', '2'].includes(res.headers['x-ratelimit-reset']))
+  t.equal(res.headers['x-ratelimit-reset'], '2')
 
   res = await fastify.inject('/not-found')
   t.equal(res.statusCode, 404)
   t.equal(res.headers['x-ratelimit-limit'], '4')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.ok(['0', '1', '2'].includes(res.headers['x-ratelimit-reset']))
+  t.equal(res.headers['x-ratelimit-reset'], '2')
 
   res = await fastify.inject('/not-found')
   t.equal(res.statusCode, 404)
   t.equal(res.headers['x-ratelimit-limit'], '4')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1', '2'].includes(res.headers['x-ratelimit-reset']))
+  t.equal(res.headers['x-ratelimit-reset'], '2')
 
   res = await fastify.inject('/not-found')
   t.equal(res.statusCode, 429)
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '4')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
-  t.ok(['0', '1', '2'].includes(res.headers['x-ratelimit-reset']))
+  t.equal(res.headers['retry-after'], '2')
+  t.equal(res.headers['x-ratelimit-reset'], '2')
   t.same(JSON.parse(res.payload), {
     statusCode: 429,
     error: 'Too Many Requests',
