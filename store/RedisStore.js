@@ -24,12 +24,14 @@ RedisStore.prototype.incr = function (ip, cb, max) {
       }
 
       if (result[1][1] === -1) {
+        // Item's TTL has expired or it just got created
         this.redis.pexpire(key, this.timeWindow, noop)
         cb(null, { current: 1, ttl: this.timeWindow })
         return
       }
 
       if (this.continueExceeding && result[0][1] > max) {
+        // Reset TLL if max has been exceeded and `continueExceeding` is enabled
         this.redis.pexpire(key, this.timeWindow, noop)
         cb(null, { current: result[0][1], ttl: this.timeWindow })
         return
