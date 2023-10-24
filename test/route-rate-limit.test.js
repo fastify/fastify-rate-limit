@@ -1298,7 +1298,6 @@ test('When continue exceeding is on (Local)', async t => {
   t.equal(second.headers['x-ratelimit-reset'], '5')
 })
 
-
 test('When continue exceeding is on (Redis)', async t => {
   const fastify = Fastify()
   const redis = await new Redis({ host: REDIS_HOST })
