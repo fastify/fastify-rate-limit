@@ -1,37 +1,44 @@
 'use strict'
 
-const lru = require('tiny-lru').lru
+const { Lru } = require('toad-cache')
 
-function LocalStore (timeWindow, cache, app, continueExceeding) {
-  this.lru = lru(cache || 5000, timeWindow)
-  this.app = app
+function LocalStore (cache = 5000, timeWindow, continueExceeding) {
+  this.lru = new Lru(cache)
   this.timeWindow = timeWindow
   this.continueExceeding = continueExceeding
 }
 
 LocalStore.prototype.incr = function (ip, cb, max) {
   const nowInMs = Date.now()
-  const current = this.lru.get(ip) || { count: 0, iterationStartMs: nowInMs }
+  let current = this.lru.get(ip)
 
-  current.count++
-
-  if (this.continueExceeding) {
-    if (current.count > max) {
-      this.lru.delete(ip)
-    }
-
-    // It will recalculate the TTL if the item is missing - count exceeded the maximum
-    this.lru.set(ip, current)
-    cb(null, { current: current.count, ttl: this.timeWindow })
+  if (!current) {
+    // Item doesn't exist
+    current = { current: 1, iterationStartMs: nowInMs, ttl: this.timeWindow }
+  } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
+    // Item has expired
+    current.current = 1
+    current.iterationStartMs = nowInMs
+    current.ttl = this.timeWindow
   } else {
-    this.lru.set(ip, current)
-    cb(null, { current: current.count, ttl: this.timeWindow - (nowInMs - current.iterationStartMs) })
+    // Item is alive
+    ++current.current
+
+    // Reset TLL if max has been exceeded and `continueExceeding` is enabled
+    if (this.continueExceeding && current.current > max) {
+      current.iterationStartMs = nowInMs
+      current.ttl = this.timeWindow
+    } else {
+      current.ttl = this.timeWindow - (nowInMs - current.iterationStartMs)
+    }
   }
+
+  this.lru.set(ip, current)
+  cb(null, current)
 }
 
 LocalStore.prototype.child = function (routeOptions) {
-  return new LocalStore(routeOptions.timeWindow,
-    routeOptions.cache, this.app, routeOptions.continueExceeding)
+  return new LocalStore(routeOptions.cache, routeOptions.timeWindow, routeOptions.continueExceeding)
 }
 
 module.exports = LocalStore

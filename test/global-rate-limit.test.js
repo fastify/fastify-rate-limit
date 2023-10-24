@@ -1237,6 +1237,65 @@ test('When continue exceeding is on (Redis)', async t => {
   })
 })
 
+test('Redis with continueExceeding should not always return the timeWindow as ttl', async t => {
+  t.plan(19)
+  const fastify = Fastify()
+  const redis = new Redis({ host: REDIS_HOST })
+  await fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 3000,
+    continueExceeding: true,
+    redis
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.ok(['0', '1', '2', '3'].includes(res.headers['x-ratelimit-reset']))
+
+  // After this sleep, we should not see `x-ratelimit-reset === 3` anymore
+  await sleep(1000)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.ok(['0', '1', '2'].includes(res.headers['x-ratelimit-reset']))
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.equal(res.headers['x-ratelimit-reset'], '3')
+  t.equal(res.headers['retry-after'], '3')
+  t.same({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 3 seconds'
+  }, JSON.parse(res.payload))
+
+  // Not using fake timers here as we use an external Redis that would not be effected by this
+  await sleep(1000)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.equal(res.headers['x-ratelimit-reset'], '3')
+
+  t.teardown(async () => {
+    await redis.flushall()
+    await redis.quit()
+  })
+})
+
 test('When use a custom nameSpace', async t => {
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
