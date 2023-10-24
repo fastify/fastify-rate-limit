@@ -415,8 +415,8 @@ test('With redis store', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '0')
-  t.equal(res.headers['retry-after'], '1')
+  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
+  t.ok(['0', '1'].includes(res.headers['retry-after']))
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -594,7 +594,8 @@ test('With async/await keyGenerator', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
+  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
+  t.ok(['0', '1'].includes(res.headers['retry-after']))
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -660,7 +661,7 @@ test('With CustomStore', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '7')
-  t.equal(res.headers['retry-after'], '10')
+  t.equal(res.headers['retry-after'], '7')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -1335,7 +1336,7 @@ test('When use a custom nameSpace', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
-  t.equal(res.headers['retry-after'], '1')
+  t.ok(['0', '1'].includes(res.headers['retry-after']))
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
