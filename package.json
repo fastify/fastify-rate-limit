@@ -42,7 +42,7 @@
   "dependencies": {
     "@lukeed/ms": "^2.0.1",
     "fastify-plugin": "^4.0.0",
-    "tiny-lru": "^11.0.0"
+    "toad-cache": "^3.3.0"
   },
   "publishConfig": {
     "access": "public"
