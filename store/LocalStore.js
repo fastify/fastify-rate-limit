@@ -12,7 +12,7 @@ LocalStore.prototype.incr = function (ip, cb, max) {
   const nowInMs = Date.now()
   let current = this.lru.get(ip)
 
-  if (current === undefined) {
+  if (!current) {
     // Item doesn't exist
     current = { current: 1, iterationStartMs: nowInMs, ttl: this.timeWindow }
   } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
