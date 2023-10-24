@@ -24,7 +24,7 @@ RedisStore.prototype.incr = function (ip, cb, max) {
       }
 
       if (result[1][1] === -1) {
-        // Item's TTL has expired or it just got created
+        // Item just got created
         this.redis.pexpire(key, this.timeWindow, noop)
         cb(null, { current: 1, ttl: this.timeWindow })
         return

@@ -16,7 +16,7 @@ LocalStore.prototype.incr = function (ip, cb, max) {
     // Item doesn't exist
     current = { current: 1, iterationStartMs: nowInMs, ttl: this.timeWindow }
   } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
-    // Item's TTL has expired
+    // Item has expired
     current.current = 1
     current.iterationStartMs = nowInMs
     current.ttl = this.timeWindow
