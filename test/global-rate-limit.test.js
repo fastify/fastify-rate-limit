@@ -402,21 +402,23 @@ test('With redis store', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
+  t.equal(res.headers['x-ratelimit-reset'], '1')
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+
+  await sleep(100)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
-  t.ok(['0', '1'].includes(res.headers['retry-after']))
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.equal(res.headers['retry-after'], '1')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -594,8 +596,8 @@ test('With async/await keyGenerator', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
-  t.ok(['0', '1'].includes(res.headers['retry-after']))
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.equal(res.headers['retry-after'], '1')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -1110,10 +1112,10 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
   t.equal(res.headers['ratelimit-remaining'], '0')
 
   t.context.clock.tick(500)
-  await retry('9')
+  await retry('10')
 
   t.context.clock.tick(1000)
-  await retry('8')
+  await retry('9')
 
   async function retry (timeLeft) {
     const res = await fastify.inject('/')
@@ -1269,15 +1271,15 @@ test('When use a custom nameSpace', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(res.headers['x-ratelimit-reset'] < 2)
+  t.equal(res.headers['x-ratelimit-reset'], '1')
 
   res = await fastify.inject(allowListHeader)
   t.equal(res.statusCode, 429)
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
-  t.ok(['0', '1'].includes(res.headers['retry-after']))
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.equal(res.headers['retry-after'], '1')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',

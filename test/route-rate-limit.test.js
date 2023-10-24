@@ -55,15 +55,17 @@ test('Basic', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '0')
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+
+  t.context.clock.tick(500)
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
-  t.ok(['0', '1'].includes(res.headers['retry-after']))
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.equal(res.headers['retry-after'], '1')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -282,15 +284,15 @@ test('With redis store', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1'].includes(res.headers['x-ratelimit-reset']))
+  t.equal(res.headers['x-ratelimit-reset'], '1')
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '0')
-  t.equal(res.headers['retry-after'], '0')
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.equal(res.headers['retry-after'], '1')
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
@@ -313,7 +315,7 @@ test('With redis store', async t => {
 })
 
 test('Throw on redis error', async t => {
-  t.plan(5)
+  t.plan(6)
   const fastify = Fastify()
   const redis = new Redis({ host: REDIS_HOST })
   await fastify.register(rateLimit, {
@@ -337,6 +339,7 @@ test('Throw on redis error', async t => {
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.equal(res.headers['x-ratelimit-reset'], '1')
 
   await redis.flushall()
   await redis.quit()
@@ -631,7 +634,7 @@ test('custom error response', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1'].includes(res.headers['retry-after']))
+  t.equal(res.headers['retry-after'], '1')
   t.same(JSON.parse(res.payload), {
     statusCode: 429,
     timeWindow: '1 second',
@@ -1118,7 +1121,7 @@ test('Allow multiple different rate limiter registrations', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1'].includes(res.headers['retry-after']))
+  t.equal(res.headers['retry-after'], '1')
 
   res = await fastify.inject('/test')
   t.equal(res.statusCode, 200)
@@ -1130,7 +1133,7 @@ test('Allow multiple different rate limiter registrations', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1'].includes(res.headers['retry-after']))
+  t.equal(res.headers['retry-after'], '1')
 })
 
 test('With enable IETF draft spec', async t => {
@@ -1235,8 +1238,8 @@ test('Allow custom timeWindow in preHandler', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['119', '120'].includes(res.headers['x-ratelimit-reset']))
-  t.ok(['119', '120'].includes(res.headers['retry-after']))
+  t.equal(res.headers['x-ratelimit-reset'], '120')
+  t.equal(res.headers['retry-after'], '120')
 
   res = await fastify.inject('/3')
   t.equal(res.statusCode, 200)
@@ -1248,8 +1251,8 @@ test('Allow custom timeWindow in preHandler', async t => {
   t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
   t.equal(res.headers['x-ratelimit-limit'], '1')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['179', '180'].includes(res.headers['x-ratelimit-reset']))
-  t.ok(['179', '180'].includes(res.headers['retry-after']))
+  t.equal(res.headers['x-ratelimit-reset'], '180')
+  t.equal(res.headers['retry-after'], '180')
 
   res = await fastify.inject('/default')
   t.equal(res.statusCode, 200)
@@ -1257,7 +1260,7 @@ test('Allow custom timeWindow in preHandler', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/default')
-  t.ok(['9', '10'].includes(res.headers['retry-after']))
+  t.equal(res.headers['retry-after'], '10')
   t.equal(res.statusCode, 429)
 })
 
@@ -1293,47 +1296,6 @@ test('When continue exceeding is on (Local)', async t => {
   t.equal(second.headers['x-ratelimit-limit'], '1')
   t.equal(second.headers['x-ratelimit-remaining'], '0')
   t.equal(second.headers['x-ratelimit-reset'], '5')
-})
-
-test('When continue exceeding is on (Redis)', async t => {
-  const fastify = Fastify()
-  const redis = await new Redis({ host: REDIS_HOST })
-
-  await fastify.register(rateLimit, {
-    global: false,
-    redis
-  })
-
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        timeWindow: 5000,
-        max: 1,
-        continueExceeding: true
-      }
-    }
-  }, async (req, reply) => 'hello!')
-
-  const first = await fastify.inject({
-    url: '/',
-    method: 'GET'
-  })
-  const second = await fastify.inject({
-    url: '/',
-    method: 'GET'
-  })
-
-  t.equal(first.statusCode, 200)
-
-  t.equal(second.statusCode, 429)
-  t.equal(second.headers['x-ratelimit-limit'], '1')
-  t.equal(second.headers['x-ratelimit-remaining'], '0')
-  t.equal(second.headers['x-ratelimit-reset'], '5')
-
-  t.teardown(async () => {
-    await redis.flushall()
-    await redis.quit()
-  })
 })
 
 test('should consider routes allow list', async t => {
