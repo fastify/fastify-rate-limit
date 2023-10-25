@@ -1487,11 +1487,11 @@ test("child's allowList function should not crash and should override parent", a
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false,
-    allowList: undefined
+    allowList: ['127.0.0.1']
   })
 
   fastify.get('/', {
-    config: { rateLimit: { allowList: () => true, max: 2, timeWindow: 10000 } }
+    config: { rateLimit: { allowList: () => false, max: 2, timeWindow: 10000 } }
   }, (req, reply) => {
     reply.send('hello!')
   })
@@ -1503,7 +1503,7 @@ test("child's allowList function should not crash and should override parent", a
   t.equal(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.equal(res.statusCode, 429)
 })
 
 test('rateLimit decorator should work when a property other than timeWindow is modified', async t => {
@@ -1529,4 +1529,16 @@ test('rateLimit decorator should work when a property other than timeWindow is m
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
+
+  res = await fastify.inject({
+    path: '/',
+    remoteAddress: '1.1.1.1'
+  })
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject({
+    path: '/',
+    remoteAddress: '1.1.1.1'
+  })
+  t.equal(res.statusCode, 429)
 })
