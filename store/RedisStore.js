@@ -40,6 +40,15 @@ RedisStore.prototype.incrNormal = async function (ip, cb, max) {
     .pttl(key)
     .exec()
 
+  /**
+   * result[0] => incr response: [0]: error, [1]: new incr value
+   * result[1] => pttl response: [0]: error, [1]: ttl remaining
+  */
+  if (result[0][0] || result[1][0]) {
+    cb(result[0][0] || result[1][0], null)
+    return
+  }
+
   if (result[1][1] === -1) {
     // Item just got created
     this.redis.pexpire(key, this.timeWindow).catch()
