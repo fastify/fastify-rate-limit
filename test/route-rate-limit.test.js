@@ -1483,15 +1483,15 @@ test('on rateLimitHook should not be set twice on HEAD', async t => {
   }, async (req, reply) => 'fastify is awesome !')
 })
 
-test("child's allowList should override parent's function", async t => {
+test("child's allowList function should not crash and should override parent", async t => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false,
-    allowList: (req, key) => false
+    allowList: undefined
   })
 
   fastify.get('/', {
-    config: { rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 } }
+    config: { rateLimit: { allowList: () => true, max: 2, timeWindow: 10000 } }
   }, (req, reply) => {
     reply.send('hello!')
   })
