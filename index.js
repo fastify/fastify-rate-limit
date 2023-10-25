@@ -22,6 +22,14 @@ const draftSpecHeaders = {
   retryAfter: 'retry-after'
 }
 
+const defaultKeyGenerator = (req) => req.ip
+
+const defaultErrorResponse = (req, context) => {
+  const err = new Error(`Rate limit exceeded, retry in ${context.after}`)
+  err.statusCode = context.statusCode
+  return err
+}
+
 async function fastifyRateLimit (fastify, settings) {
   const globalParams = {
     global: (typeof settings.global === 'boolean') ? settings.global : true
@@ -235,14 +243,6 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     throw params.errorResponseBuilder(req, respCtx)
   }
-}
-
-function defaultKeyGenerator (req) { return req.ip }
-
-function defaultErrorResponse (req, context) {
-  const err = new Error(`Rate limit exceeded, retry in ${context.after}`)
-  err.statusCode = context.statusCode
-  return err
 }
 
 module.exports = fp(fastifyRateLimit, {
