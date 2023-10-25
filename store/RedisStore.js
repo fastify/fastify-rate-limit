@@ -3,8 +3,8 @@
 function RedisStore (redis, timeWindow, continueExceeding, key) {
   this.redis = redis
   this.timeWindow = timeWindow
-  this.key = key
   this.continueExceeding = continueExceeding
+  this.key = key
 }
 
 RedisStore.prototype.incr = function (ip, cb, max) {

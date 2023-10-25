@@ -1256,7 +1256,7 @@ test('Redis with continueExceeding should not always return the timeWindow as tt
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.ok(['0', '1', '2', '3'].includes(res.headers['x-ratelimit-reset']))
+  t.equal(res.headers['x-ratelimit-reset'], '3')
 
   // After this sleep, we should not see `x-ratelimit-reset === 3` anymore
   await sleep(1000)
@@ -1265,7 +1265,7 @@ test('Redis with continueExceeding should not always return the timeWindow as tt
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.ok(['0', '1', '2'].includes(res.headers['x-ratelimit-reset']))
+  t.equal(res.headers['x-ratelimit-reset'], '2')
 
   res = await fastify.inject('/')
   t.equal(res.statusCode, 429)

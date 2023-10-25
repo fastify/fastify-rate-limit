@@ -1482,3 +1482,86 @@ test('on rateLimitHook should not be set twice on HEAD', async t => {
     }
   }, async (req, reply) => 'fastify is awesome !')
 })
+
+test("child's allowList should not crash the app", async t => {
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    allowList: () => false
+  })
+
+  fastify.get('/', {
+    config: { rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  let res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+})
+
+test("child's allowList function should not crash and should override parent", async t => {
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    allowList: ['127.0.0.1']
+  })
+
+  fastify.get('/', {
+    config: { rateLimit: { allowList: () => false, max: 2, timeWindow: 10000 } }
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  let res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+})
+
+test('rateLimit decorator should work when a property other than timeWindow is modified', async t => {
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    allowList: (req, key) => false
+  })
+
+  fastify.get('/', {
+    onRequest: fastify.rateLimit({
+      allowList: ['127.0.0.1'], max: 1
+    })
+  }, (req, reply) => {
+    reply.send('hello!')
+  })
+
+  let res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject({
+    path: '/',
+    remoteAddress: '1.1.1.1'
+  })
+  t.equal(res.statusCode, 200)
+
+  res = await fastify.inject({
+    path: '/',
+    remoteAddress: '1.1.1.1'
+  })
+  t.equal(res.statusCode, 429)
+})
