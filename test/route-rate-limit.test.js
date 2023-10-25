@@ -1483,7 +1483,7 @@ test('on rateLimitHook should not be set twice on HEAD', async t => {
   }, async (req, reply) => 'fastify is awesome !')
 })
 
-test("child's allowList function should not", async t => {
+test("child's allowList should not crash the app", async t => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false,
