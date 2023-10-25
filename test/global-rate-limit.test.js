@@ -441,6 +441,63 @@ test('With redis store', async t => {
   })
 })
 
+test('With redis store (pipeline)', async t => {
+  t.plan(19)
+  const fastify = Fastify()
+  const redis = new Redis({ host: REDIS_HOST, enableAutoPipelining: true })
+  await fastify.register(rateLimit, {
+    max: 2,
+    timeWindow: 1000,
+    redis
+  })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+
+  await sleep(100)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.equal(res.headers['retry-after'], '1')
+  t.same({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 1 second'
+  }, JSON.parse(res.payload))
+
+  // Not using fake timers here as we use an external Redis that would not be effected by this
+  await sleep(1100)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.equal(res.headers['x-ratelimit-reset'], '1')
+
+  t.teardown(async () => {
+    await redis.flushall()
+    await redis.quit()
+  })
+})
+
 test('Skip on redis error', async t => {
   t.plan(9)
   const fastify = Fastify()
