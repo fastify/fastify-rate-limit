@@ -27,9 +27,10 @@ RedisStore.prototype.incrAutoPipe = async function (ip, cb, max) {
     // Reset TLL if max has been exceeded and `continueExceeding` is enabled
     this.redis.pexpire(key, this.timeWindow).catch()
     cb(null, { current, ttl: this.timeWindow })
+    return
   }
 
-  return cb(null, { current, ttl })
+  cb(null, { current, ttl })
 }
 
 RedisStore.prototype.incrNormal = function (ip, cb, max) {
