@@ -1565,3 +1565,45 @@ test('rateLimit decorator should work when a property other than timeWindow is m
   })
   t.equal(res.statusCode, 429)
 })
+
+test('With NaN in subroute config', async t => {
+  t.plan(12)
+  t.context.clock = FakeTimers.install()
+  const fastify = Fastify()
+  await fastify.register(rateLimit, { global: false })
+
+  fastify.get('/', {
+
+    config: { rateLimit: {
+      max: NaN
+    } }
+  }, async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '1000')
+  t.equal(res.headers['x-ratelimit-remaining'], '999')
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '1000')
+  t.equal(res.headers['x-ratelimit-remaining'], '998')
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '1000')
+  t.equal(res.headers['x-ratelimit-remaining'], '997')
+
+  t.context.clock.tick(70000)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '1000')
+  t.equal(res.headers['x-ratelimit-remaining'], '999')
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
+})
