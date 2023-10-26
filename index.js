@@ -6,6 +6,7 @@ const ms = require('@lukeed/ms')
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
 
+const defaultMax = 1000
 const defaultHook = 'onRequest'
 
 const defaultHeaders = {
@@ -59,7 +60,7 @@ async function fastifyRateLimit (fastify, settings) {
   // Global maximum allowed requests
   globalParams.max = ((typeof settings.max === 'number' && !isNaN(settings.max)) || typeof settings.max === 'function')
     ? settings.max
-    : 1000
+    : defaultMax
 
   // Global time window
   globalParams.timeWindow = typeof settings.timeWindow === 'string'
@@ -142,12 +143,19 @@ async function fastifyRateLimit (fastify, settings) {
 
 function mergeParams (...params) {
   const result = Object.assign({}, ...params)
+
   if (typeof result.timeWindow === 'string') {
     result.timeWindow = ms.parse(result.timeWindow)
   }
+
   if (typeof result.timeWindow === 'number' && !isNaN(result.timeWindow)) {
     result.timeWindowInSeconds = Math.floor(result.timeWindow / 1000)
   }
+
+  if (!(typeof result.max === 'number' && !isNaN(result.max)) && typeof result.max !== 'function') {
+    result.max = defaultMax
+  }
+
   return result
 }
 
@@ -187,7 +195,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       }
     }
 
-    const max = typeof params.max === 'number' && !isNaN(params.max) ? params.max : await params.max(req, key)
+    const max = typeof params.max === 'number' ? params.max : await params.max(req, key)
     let current = 0
     let ttl = 0
     let timeLeftInSeconds = 0
