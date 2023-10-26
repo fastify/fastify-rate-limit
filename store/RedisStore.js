@@ -10,7 +10,7 @@ const luaBasic = `
   local value = redis.call('INCR', key)
 
   -- Check the current TTL of the key
-  local ttl = redis.call('TTL', key)
+  local ttl = redis.call('PTTL', key)
 
   -- If the key is new then set its TTL
   if ttl == -1 then
@@ -33,7 +33,7 @@ const luaContinueExceeding = `
   local value = redis.call('INCR', key)
 
   -- Check the current TTL of the key
-  local ttl = redis.call('TTL', key)
+  local ttl = redis.call('PTTL', key)
 
   -- If the key is new then set its TTL
   if ttl == -1 then
