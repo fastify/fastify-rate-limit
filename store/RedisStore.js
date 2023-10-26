@@ -5,14 +5,15 @@ function RedisStore (redis, timeWindow, continueExceeding, key) {
   this.timeWindow = timeWindow
   this.continueExceeding = continueExceeding
   this.key = key
+
+  if (this.redis.options.enableAutoPipelining) {
+    RedisStore.prototype.incr = RedisStore.prototype.incrAutoPipeline
+  } else {
+    RedisStore.prototype.incr = RedisStore.prototype.incrNormal
+  }
 }
 
-RedisStore.prototype.incr = function (ip, cb, max) {
-  if (this.redis.options.enableAutoPipelining) this.incrAutoPipe(ip, cb, max)
-  else this.incrNormal(ip, cb, max)
-}
-
-RedisStore.prototype.incrAutoPipe = async function (ip, cb, max) {
+RedisStore.prototype.incrAutoPipeline = async function (ip, cb, max) {
   const key = this.key + ip
   const [current, ttl] = await Promise.all([this.redis.incr(key), this.redis.pttl(key)])
 
