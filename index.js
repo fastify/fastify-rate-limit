@@ -72,7 +72,7 @@ async function fastifyRateLimit (fastify, settings) {
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
-  globalParams.ban = settings.ban || 0 // 0 means turned off
+  globalParams.ban = settings.ban || Infinity
   globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : null
   globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : null
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : null
@@ -235,7 +235,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
     if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
     if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, timeLeftInSeconds) }
 
-    const code = params.ban && current - max > params.ban ? 403 : 429
+    const code = current - max > params.ban ? 403 : 429
     const respCtx = {
       statusCode: code,
       ban: false,
