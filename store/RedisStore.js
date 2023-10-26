@@ -14,7 +14,7 @@ const luaBasic = `
 
   -- If the key is new then set its TTL
   if ttl == -1 then
-      redis.call('EXPIRE', key, timeWindow)
+      redis.call('PEXPIRE', key, timeWindow)
       return {1, timeWindow}
   end
 
@@ -37,11 +37,11 @@ const luaContinueExceeding = `
 
   -- If the key is new then set its TTL
   if ttl == -1 then
-      redis.call('EXPIRE', key, timeWindow)
+      redis.call('PEXPIRE', key, timeWindow)
       return {1, timeWindow}
   -- If the key's incremented value has exceeded the max value, then reset its TTL
   elseif value > max then
-      redis.call('EXPIRE', key, timeWindow)
+      redis.call('PEXPIRE', key, timeWindow)
       return {value, timeWindow}
   end
 
