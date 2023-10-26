@@ -151,7 +151,7 @@ function mergeParams (...params) {
   if (typeof result.timeWindow === 'number' && !isNaN(result.timeWindow)) {
     result.timeWindowInSeconds = Math.floor(result.timeWindow / 1000)
   }
-  
+
   if (!(typeof result.max === 'number' && !isNaN(result.max)) && typeof result.max !== 'function') {
     result.max = defaultMax
   }

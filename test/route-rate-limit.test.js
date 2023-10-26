@@ -1574,9 +1574,11 @@ test('With NaN in subroute config', async t => {
 
   fastify.get('/', {
 
-    config: { rateLimit: {
-      max: NaN
-    } }
+    config: {
+      rateLimit: {
+        max: NaN
+      }
+    }
   }, async (req, reply) => 'hello!')
 
   let res
