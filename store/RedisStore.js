@@ -19,7 +19,7 @@ RedisStore.prototype.incr = function (ip, cb, max) {
      * result[1] => pttl response: [0]: error, [1]: ttl remaining
      */
       if (err || result[0][0] || result[1][0]) {
-        cb(err || result[0][0] || result[1][0], { current: 1, ttl: this.timeWindow })
+        cb(err || result[0][0] || result[1][0], null)
         return
       }
 
