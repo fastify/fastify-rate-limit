@@ -72,7 +72,7 @@ async function fastifyRateLimit (fastify, settings) {
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
-  globalParams.ban = settings.ban || Infinity
+  globalParams.ban = typeof settings.ban === 'number' && !isNaN(settings.ban) ? settings.ban : Infinity
   globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : null
   globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : null
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : null

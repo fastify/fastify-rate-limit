@@ -1406,3 +1406,51 @@ test('on preHandler hook', async t => {
   t.equal(fourth.statusCode, 429)
   t.equal(fifth.statusCode, 200)
 })
+
+test('ban directly', async t => {
+  t.plan(15)
+  t.context.clock = FakeTimers.install()
+  const fastify = Fastify()
+  await fastify.register(rateLimit, { max: 2, ban: 0, timeWindow: '1s' })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 403)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.equal(res.headers['retry-after'], '1')
+  t.same({
+    statusCode: 403,
+    error: 'Forbidden',
+    message: 'Rate limit exceeded, retry in 1 second'
+  }, JSON.parse(res.payload))
+
+  t.context.clock.tick(1100)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
+})
