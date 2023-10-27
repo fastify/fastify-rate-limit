@@ -8,7 +8,7 @@ const lua = `
   -- Max allowed value
   local max = tonumber(ARGV[2])
   -- Flag to determine if TTL should be reset upon exceeding max
-  local continueExceeding = ARGV[3] == "true"
+  local continueExceeding = ARGV[3] == 'true'
 
   -- Increment the key's value
   local value = redis.call('INCR', key)
