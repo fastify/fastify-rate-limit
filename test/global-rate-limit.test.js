@@ -1463,11 +1463,11 @@ test('wrong timewindow', async t => {
 
   fastify.get('/', {
     config: {
-      rateLimit:{
+      rateLimit: {
         timeWindow: -5
       }
     }
-  },async (req, reply) => 'hello!')
+  }, async (req, reply) => 'hello!')
 
   let res
 
@@ -1500,9 +1500,9 @@ test('wrong timewindow', async t => {
 
   res = await fastify.inject('/')
 
-  t.equal(res.statusCode, 200)
+  t.equal(res.statusCode, 403)
   t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
 
   t.teardown(() => {
     t.context.clock.uninstall()
