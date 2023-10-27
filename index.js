@@ -7,6 +7,7 @@ const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
 
 const defaultMax = 1000
+const defaultTimeWindow = 60000
 const defaultHook = 'onRequest'
 
 const defaultHeaders = {
@@ -58,21 +59,21 @@ async function fastifyRateLimit (fastify, settings) {
   }, settings.addHeadersOnExceeding)
 
   // Global maximum allowed requests
-  globalParams.max = ((typeof settings.max === 'number' && !isNaN(settings.max)) || typeof settings.max === 'function')
+  globalParams.max = ((typeof settings.max === 'number' && !Number.isNaN(settings.max) && (settings.max = Math.trunc(settings.max)) >= 0) || typeof settings.max === 'function')
     ? settings.max
     : defaultMax
 
   // Global time window
   globalParams.timeWindow = typeof settings.timeWindow === 'string'
     ? ms.parse(settings.timeWindow)
-    : typeof settings.timeWindow === 'number' && !isNaN(settings.timeWindow)
-      ? settings.timeWindow
-      : 1000 * 60
-  globalParams.timeWindowInSeconds = Math.floor(globalParams.timeWindow / 1000)
+    : typeof settings.timeWindow === 'number' && !Number.isNaN(settings.timeWindow) && settings.timeWindow >= 0
+      ? Math.trunc(settings.timeWindow)
+      : defaultTimeWindow
+  globalParams.timeWindowInSeconds = Math.trunc(globalParams.timeWindow / 1000)
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
-  globalParams.ban = typeof settings.ban === 'number' && Number.isFinite(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : Infinity
+  globalParams.ban = typeof settings.ban === 'number' && !Number.isNaN(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : Infinity
   globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : null
   globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : null
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : null
@@ -92,9 +93,8 @@ async function fastifyRateLimit (fastify, settings) {
 
   globalParams.skipOnError = typeof settings.skipOnError === 'boolean' ? settings.skipOnError : false
 
-  const rateLimitRan = Symbol('fastify.request.rateLimitRan')
   const pluginComponent = {
-    rateLimitRan,
+    rateLimitRan: Symbol('fastify.request.rateLimitRan'),
     store: null
   }
 
@@ -109,7 +109,7 @@ async function fastifyRateLimit (fastify, settings) {
     }
   }
 
-  fastify.decorateRequest(rateLimitRan, false)
+  fastify.decorateRequest(pluginComponent.rateLimitRan, false)
 
   if (!fastify.hasDecorator('rateLimit')) {
     fastify.decorate('rateLimit', (options) => {
@@ -146,13 +146,12 @@ function mergeParams (...params) {
 
   if (typeof result.timeWindow === 'string') {
     result.timeWindow = ms.parse(result.timeWindow)
+  } else if (!(typeof result.timeWindow === 'number' && !Number.isNaN(result.timeWindow) && result.timeWindow >= 0)) {
+    result.timeWindow = defaultTimeWindow
   }
+  result.timeWindowInSeconds = Math.trunc(result.timeWindow / 1000)
 
-  if (typeof result.timeWindow === 'number' && !isNaN(result.timeWindow)) {
-    result.timeWindowInSeconds = Math.floor(result.timeWindow / 1000)
-  }
-
-  if (!(typeof result.max === 'number' && !isNaN(result.max)) && typeof result.max !== 'function') {
+  if (!(typeof result.max === 'number' && !Number.isNaN(result.max) && result.max >= 0) && typeof result.max !== 'function') {
     result.max = defaultMax
   }
 
