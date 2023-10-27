@@ -1,33 +1,14 @@
 'use strict'
 
-const luaBasic = `
-  -- Key to operate on
-  local key = KEYS[1]
-  -- Time window for the TTL
-  local timeWindow = tonumber(ARGV[1])
-
-  -- Increment the key's value
-  local value = redis.call('INCR', key)
-
-  -- Check the current TTL of the key
-  local ttl = redis.call('PTTL', key)
-
-  -- If the key is new then set its TTL
-  if ttl == -1 then
-      redis.call('PEXPIRE', key, timeWindow)
-      return {1, timeWindow}
-  end
-
-  return {value, ttl}
-`
-
-const luaContinueExceeding = `
+const lua = `
   -- Key to operate on
   local key = KEYS[1]
   -- Time window for the TTL
   local timeWindow = tonumber(ARGV[1])
   -- Max allowed value
   local max = tonumber(ARGV[2])
+  -- Flag to determine if TTL should be reset upon exceeding max
+  local continueExceeding = ARGV[3] == "true"
 
   -- Increment the key's value
   local value = redis.call('INCR', key)
@@ -40,7 +21,7 @@ const luaContinueExceeding = `
       redis.call('PEXPIRE', key, timeWindow)
       return {1, timeWindow}
   -- If the key's incremented value has exceeded the max value, then reset its TTL
-  elseif value > max then
+  elseif continueExceeding and value > max then
       redis.call('PEXPIRE', key, timeWindow)
       return {value, timeWindow}
   end
@@ -54,31 +35,18 @@ function RedisStore (redis, timeWindow, continueExceeding, key) {
   this.continueExceeding = continueExceeding
   this.key = key
 
-  if (this.continueExceeding && !this.redis.rateLimitCE) {
-    this.redis.defineCommand('rateLimitCE', {
-      numberOfKeys: 1,
-      lua: luaContinueExceeding
-    })
-  } else if (!this.continueExceeding && !this.redis.rateLimit) {
+  if (!this.redis.rateLimit) {
     this.redis.defineCommand('rateLimit', {
       numberOfKeys: 1,
-      lua: luaBasic
+      lua
     })
   }
 }
 
 RedisStore.prototype.incr = function (ip, cb, max) {
-  const key = this.key + ip
-
-  if (this.continueExceeding) {
-    this.redis.rateLimitCE(key, this.timeWindow, max, (err, result) => {
-      err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
-    })
-  } else {
-    this.redis.rateLimit(key, this.timeWindow, max, (err, result) => {
-      err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
-    })
-  }
+  this.redis.rateLimit(this.key + ip, this.timeWindow, max, this.continueExceeding, (err, result) => {
+    err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
+  })
 }
 
 RedisStore.prototype.child = function (routeOptions) {
