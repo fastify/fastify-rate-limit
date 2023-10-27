@@ -1493,7 +1493,7 @@ test('wrong timewindow', async t => {
   t.same({
     statusCode: 403,
     error: 'Forbidden',
-    message: 'Rate limit exceeded, retry in 60 seconds'
+    message: 'Rate limit exceeded, retry in 1 minute'
   }, JSON.parse(res.payload))
 
   t.context.clock.tick(1100)

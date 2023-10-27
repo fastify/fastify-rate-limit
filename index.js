@@ -147,24 +147,24 @@ function mergeParams (...params) {
 
   if (typeof result.timeWindow === 'string') {
     result.timeWindow = ms.parse(result.timeWindow)
-  } else if (!(typeof result.timeWindow === 'number' && Number.isFinite(result.timeWindow) && result.timeWindow >= 0)) {
-    result.timeWindow = defaultTimeWindow
-  } else {
+  } else if (typeof result.timeWindow === 'number' && Number.isFinite(result.timeWindow) && result.timeWindow >= 0) {
     result.timeWindow = Math.trunc(result.timeWindow)
+  } else {
+    result.timeWindow = defaultTimeWindow
   }
 
   result.timeWindowInSeconds = Math.trunc(result.timeWindow / 1000)
 
-  if (!(typeof result.max === 'number' && Number.isFinite(result.max) && result.max >= 0) && typeof result.max !== 'function') {
-    result.max = defaultMax
-  } else if (typeof result.max === 'number') {
+  if (typeof result.max === 'number' && Number.isFinite(result.max) && result.max >= 0) {
     result.max = Math.trunc(result.max)
+  } else if (typeof result.max !== 'function') {
+    result.max = defaultMax
   }
 
-  if(!(typeof result.ban === 'number' && Number.isFinite(result.ban) && result.ban >= 0)) {
-    result.ban = Infinity
-  } else {
+  if (typeof result.ban === 'number' && Number.isFinite(result.ban) && result.ban >= 0) {
     result.ban = Math.trunc(result.ban)
+  } else {
+    result.ban = Infinity
   }
 
   return result
