@@ -51,10 +51,12 @@ const luaContinueExceeding = `
 function RedisStore (redis, timeWindow, continueExceeding, key) {
   this.redis = redis
   this.timeWindow = timeWindow
-  this.redis.defineCommand('rateLimit', {
-    numberOfKeys: 1,
-    lua: continueExceeding ? luaContinueExceeding : luaBasic
-  })
+  if (!this.redis.rateLimit) {
+    this.redis.defineCommand('rateLimit', {
+      numberOfKeys: 1,
+      lua: continueExceeding ? luaContinueExceeding : luaBasic
+    })
+  }
   this.key = key
 }
 
