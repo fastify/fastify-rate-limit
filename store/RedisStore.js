@@ -51,21 +51,34 @@ const luaContinueExceeding = `
 function RedisStore (redis, timeWindow, continueExceeding, key) {
   this.redis = redis
   this.timeWindow = timeWindow
-  if (!this.redis.rateLimit) {
+  this.continueExceeding = continueExceeding
+  this.key = key
+
+  if (this.continueExceeding && !this.redis.rateLimitCE) {
+    this.redis.defineCommand('rateLimitCE', {
+      numberOfKeys: 1,
+      lua: luaContinueExceeding
+    })
+  } else if (!this.continueExceeding && !this.redis.rateLimit) {
     this.redis.defineCommand('rateLimit', {
       numberOfKeys: 1,
-      lua: continueExceeding ? luaContinueExceeding : luaBasic
+      lua: luaBasic
     })
   }
-  this.key = key
 }
 
 RedisStore.prototype.incr = function (ip, cb, max) {
   const key = this.key + ip
 
-  this.redis.rateLimit(key, this.timeWindow, max, (err, result) => {
-    err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
-  })
+  if (this.continueExceeding) {
+    this.redis.rateLimitCE(key, this.timeWindow, max, (err, result) => {
+      err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
+    })
+  } else {
+    this.redis.rateLimit(key, this.timeWindow, max, (err, result) => {
+      err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
+    })
+  }
 }
 
 RedisStore.prototype.child = function (routeOptions) {
