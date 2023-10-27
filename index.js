@@ -59,14 +59,14 @@ async function fastifyRateLimit (fastify, settings) {
   }, settings.addHeadersOnExceeding)
 
   // Global maximum allowed requests
-  globalParams.max = ((typeof settings.max === 'number' && !Number.isNaN(settings.max) && (settings.max = Math.trunc(settings.max)) >= 0) || typeof settings.max === 'function')
+  globalParams.max = ((typeof settings.max === 'number' && Number.isFinite(settings.max) && (settings.max = Math.trunc(settings.max)) >= 0) || typeof settings.max === 'function')
     ? settings.max
     : defaultMax
 
   // Global time window
   globalParams.timeWindow = typeof settings.timeWindow === 'string'
     ? ms.parse(settings.timeWindow)
-    : typeof settings.timeWindow === 'number' && !Number.isNaN(settings.timeWindow) && settings.timeWindow >= 0
+    : typeof settings.timeWindow === 'number' && Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0
       ? Math.trunc(settings.timeWindow)
       : defaultTimeWindow
 
@@ -74,7 +74,7 @@ async function fastifyRateLimit (fastify, settings) {
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
-  globalParams.ban = typeof settings.ban === 'number' && !Number.isNaN(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : Infinity
+  globalParams.ban = typeof settings.ban === 'number' && Number.isFinite(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : Infinity
   globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : null
   globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : null
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : null
@@ -147,7 +147,7 @@ function mergeParams (...params) {
 
   if (typeof result.timeWindow === 'string') {
     result.timeWindow = ms.parse(result.timeWindow)
-  } else if (!(typeof result.timeWindow === 'number' && !Number.isNaN(result.timeWindow) && result.timeWindow >= 0)) {
+  } else if (!(typeof result.timeWindow === 'number' && Number.isFinite(result.timeWindow) && result.timeWindow >= 0)) {
     result.timeWindow = defaultTimeWindow
   } else {
     result.timeWindow = Math.trunc(result.timeWindow)
@@ -155,13 +155,13 @@ function mergeParams (...params) {
 
   result.timeWindowInSeconds = Math.trunc(result.timeWindow / 1000)
 
-  if (!(typeof result.max === 'number' && !Number.isNaN(result.max) && result.max >= 0) && typeof result.max !== 'function') {
+  if (!(typeof result.max === 'number' && Number.isFinite(result.max) && result.max >= 0) && typeof result.max !== 'function') {
     result.max = defaultMax
   } else if (typeof result.max === 'number') {
     result.max = Math.trunc(result.max)
   }
 
-  if(!(typeof result.ban === 'number' && !Number.isNaN(result.ban) && result.ban >= 0)) {
+  if(!(typeof result.ban === 'number' && Number.isFinite(result.ban) && result.ban >= 0)) {
     result.ban = Infinity
   } else {
     result.ban = Math.trunc(result.ban)
