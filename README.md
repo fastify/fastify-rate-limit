@@ -114,7 +114,7 @@ You can pass the following options during the plugin registration:
 await fastify.register(import('@fastify/rate-limit'), {
   global : false, // default true
   max: 3, // default 1000
-  ban: 2, // default Infinity
+  ban: 2, // default null
   timeWindow: 5000, // default 1000 * 60
   hook: 'preHandler', // default 'onRequest'
   cache: 10000, // default 5000
