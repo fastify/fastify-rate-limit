@@ -70,8 +70,6 @@ async function fastifyRateLimit (fastify, settings) {
       ? Math.trunc(settings.timeWindow)
       : defaultTimeWindow
 
-  globalParams.timeWindowInSeconds = Math.trunc(globalParams.timeWindow / 1000)
-
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = typeof settings.ban === 'number' && Number.isFinite(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : Infinity
@@ -152,8 +150,6 @@ function mergeParams (...params) {
   } else {
     result.timeWindow = defaultTimeWindow
   }
-
-  result.timeWindowInSeconds = Math.trunc(result.timeWindow / 1000)
 
   if (typeof result.max === 'number' && Number.isFinite(result.max) && result.max >= 0) {
     result.max = Math.trunc(result.max)
