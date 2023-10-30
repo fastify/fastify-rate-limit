@@ -20,8 +20,10 @@ const lua = `
   if ttl == -1 then
       redis.call('PEXPIRE', key, timeWindow)
       return {1, timeWindow}
-  -- If the key's incremented value has exceeded the max value, then reset its TTL
-  elseif continueExceeding and value > max then
+  end
+
+  -- If the key's incremented value has exceeded the max value then reset its TTL
+  if continueExceeding and value > max then
       redis.call('PEXPIRE', key, timeWindow)
       return {value, timeWindow}
   end
