@@ -1339,6 +1339,60 @@ test('When continue exceeding is on (Redis)', async t => {
   })
 })
 
+test('When continue exceeding is off under route (Redis)', async t => {
+  const fastify = Fastify()
+  const redis = await new Redis({ host: REDIS_HOST })
+
+  await fastify.register(rateLimit, {
+    global: false,
+    continueExceeding: true,
+    redis
+  })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        timeWindow: 5000,
+        max: 1,
+        continueExceeding: false
+      }
+    }
+  }, async (req, reply) => 'hello!')
+
+  const first = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+  const second = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+
+  await sleep(2000)
+
+  const third = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+
+  t.equal(first.statusCode, 200)
+
+  t.equal(second.statusCode, 429)
+  t.equal(second.headers['x-ratelimit-limit'], '1')
+  t.equal(second.headers['x-ratelimit-remaining'], '0')
+  t.equal(second.headers['x-ratelimit-reset'], '5')
+
+  t.equal(third.statusCode, 429)
+  t.equal(third.headers['x-ratelimit-limit'], '1')
+  t.equal(third.headers['x-ratelimit-remaining'], '0')
+  t.equal(third.headers['x-ratelimit-reset'], '3')
+
+  t.teardown(async () => {
+    await redis.flushall()
+    await redis.quit()
+  })
+})
+
 test('should consider routes allow list', async t => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
