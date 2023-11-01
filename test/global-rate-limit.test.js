@@ -459,7 +459,7 @@ test('With redis store (ban)', async t => {
   res = await fastify.inject('/')
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
   res = await fastify.inject('/')
