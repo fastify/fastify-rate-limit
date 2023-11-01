@@ -14,21 +14,21 @@ LocalStore.prototype.incr = function (ip, cb, max, ban) {
 
   if (!current) {
     // Item doesn't exist
-    current = { current: 1, iterationStartMs: nowInMs, ttl: this.timeWindow, ban: false }
+    current = { current: 1, ttl: this.timeWindow, ban: false, iterationStartMs: nowInMs }
   } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
     // Item has expired
     current.current = 1
-    current.iterationStartMs = nowInMs
     current.ttl = this.timeWindow
     current.ban = false
+    current.iterationStartMs = nowInMs
   } else {
     // Item is alive
     ++current.current
 
     // Reset TLL if max has been exceeded and `continueExceeding` is enabled
     if (this.continueExceeding && current.current > max) {
-      current.iterationStartMs = nowInMs
       current.ttl = this.timeWindow
+      current.iterationStartMs = nowInMs
     } else {
       current.ttl = this.timeWindow - (nowInMs - current.iterationStartMs)
     }
