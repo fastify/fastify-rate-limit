@@ -5,10 +5,12 @@ const lua = `
   local key = KEYS[1]
   -- Time window for the TTL
   local timeWindow = tonumber(ARGV[1])
-  -- Max allowed value
+  -- Max requests
   local max = tonumber(ARGV[2])
+  -- Ban after this number is exceeded
+  local ban = tonumber(ARGV[3])
   -- Flag to determine if TTL should be reset upon exceeding max
-  local continueExceeding = ARGV[3] == 'true'
+  local continueExceeding = ARGV[4] == 'true'
 
   -- Increment the key's value
   local value = redis.call('INCR', key)
@@ -19,16 +21,13 @@ const lua = `
   -- If the key is new then set its TTL
   if ttl == -1 then
       redis.call('PEXPIRE', key, timeWindow)
-      return {1, timeWindow}
-  end
-
+      value = 1
   -- If the key's incremented value has exceeded the max value then reset its TTL
-  if continueExceeding and value > max then
+  elseif continueExceeding and value > max then
       redis.call('PEXPIRE', key, timeWindow)
-      return {value, timeWindow}
   end
 
-  return {value, ttl}
+  return {value, ttl, ban ~= -1 and value - max > ban}
 `
 
 function RedisStore (redis, timeWindow, continueExceeding, key) {
@@ -45,9 +44,9 @@ function RedisStore (redis, timeWindow, continueExceeding, key) {
   }
 }
 
-RedisStore.prototype.incr = function (ip, cb, max) {
-  this.redis.rateLimit(this.key + ip, this.timeWindow, max, this.continueExceeding, (err, result) => {
-    err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
+RedisStore.prototype.incr = function (ip, cb, max, ban) {
+  this.redis.rateLimit(this.key + ip, this.timeWindow, max, ban, this.continueExceeding, (err, result) => {
+    err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1], ban: result[2] })
   })
 }
 

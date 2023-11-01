@@ -72,7 +72,7 @@ async function fastifyRateLimit (fastify, settings) {
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
-  globalParams.ban = settings.ban || 0 // 0 means turned off
+  globalParams.ban = settings.ban || -1
   globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : null
   globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : null
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : null
@@ -199,17 +199,19 @@ function rateLimitRequestHandler (pluginComponent, params) {
     let current = 0
     let ttl = 0
     let timeLeftInSeconds = 0
+    let ban = false
 
     // We increment the rate limit for the current request
     try {
       const res = await new Promise((resolve, reject) => {
         store.incr(key, (err, res) => {
           err ? reject(err) : resolve(res)
-        }, max)
+        }, max, params.ban)
       })
 
       current = res.current
       ttl = res.ttl
+      ban = res.ban
     } catch (err) {
       if (!params.skipOnError) {
         throw err
@@ -235,17 +237,15 @@ function rateLimitRequestHandler (pluginComponent, params) {
     if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
     if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, timeLeftInSeconds) }
 
-    const code = params.ban && current - max > params.ban ? 403 : 429
     const respCtx = {
-      statusCode: code,
-      ban: false,
+      statusCode: ban ? 403 : 429,
+      ban,
       max,
       ttl,
       after: ms.format(params.timeWindow, true)
     }
 
-    if (code === 403) {
-      respCtx.ban = true
+    if (ban) {
       params.onBanReach?.(req, key)
     }
 
