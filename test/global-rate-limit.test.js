@@ -477,7 +477,7 @@ test('With redis store (ban)', async t => {
   t.equal(res.headers['retry-after'], '1')
   t.same({
     statusCode: 403,
-    error: 'Too Many Requests',
+    error: 'Forbidden',
     message: 'Rate limit exceeded, retry in 1 second'
   }, JSON.parse(res.payload))
 
@@ -488,7 +488,7 @@ test('With redis store (ban)', async t => {
 
   t.equal(res.statusCode, 200)
   t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
   t.teardown(async () => {
