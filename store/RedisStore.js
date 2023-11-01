@@ -9,25 +9,26 @@ const lua = `
   local max = tonumber(ARGV[2])
   -- Ban after this number is exceeded
   local ban = tonumber(ARGV[3])
-  -- Flag to determine if TTL should be reset upon exceeding max
+  -- Flag to determine if TTL should be reset after exceeding
   local continueExceeding = ARGV[4] == 'true'
 
   -- Increment the key's value
-  local value = redis.call('INCR', key)
+  local current = redis.call('INCR', key)
 
-  -- Check the current TTL of the key
+  -- Check the TTL of the key
   local ttl = redis.call('PTTL', key)
 
   -- If the key is new then set its TTL
   if ttl == -1 then
       redis.call('PEXPIRE', key, timeWindow)
-      value = 1
+      ttl = timeWindow
   -- If the key's incremented value has exceeded the max value then reset its TTL
-  elseif continueExceeding and value > max then
+  elseif continueExceeding and current > max then
       redis.call('PEXPIRE', key, timeWindow)
+      ttl = timeWindow
   end
 
-  return {value, ttl, ban ~= -1 and value - max > ban}
+  return {current, ttl, ban ~= -1 and current - max > ban}
 `
 
 function RedisStore (redis, timeWindow, continueExceeding, key) {
