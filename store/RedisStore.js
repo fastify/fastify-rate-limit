@@ -18,12 +18,8 @@ const lua = `
   -- Check the TTL of the key
   local ttl = redis.call('PTTL', key)
 
-  -- If the key is new then set its TTL
-  if ttl == -1 then
-      redis.call('PEXPIRE', key, timeWindow)
-      ttl = timeWindow
-  -- If the key's incremented value has exceeded the max value then reset its TTL
-  elseif continueExceeding and current > max then
+  -- If the key is new or if its incremented value has exceeded the max value then set its TTL
+  if ttl == -1 or (continueExceeding and current > max) then
       redis.call('PEXPIRE', key, timeWindow)
       ttl = timeWindow
   end
