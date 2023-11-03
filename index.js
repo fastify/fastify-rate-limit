@@ -218,7 +218,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
       current = res.current
       ttl = res.ttl
-      ban = res.ban
+      ban = res.ban ?? (params.ban !== -1 && current - max > params.ban)
     } catch (err) {
       if (!params.skipOnError) {
         throw err
