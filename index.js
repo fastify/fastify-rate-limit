@@ -245,7 +245,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
     if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, timeLeftInSeconds) }
 
     const respCtx = {
-      statusCode: ban ? 403 : 429,
+      statusCode: 429,
       ban,
       max,
       ttl,
@@ -253,6 +253,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
     }
 
     if (ban) {
+      respCtx.statusCode = 403
       params.onBanReach?.(req, key)
     }
 
