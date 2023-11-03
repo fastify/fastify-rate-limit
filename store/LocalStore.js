@@ -14,12 +14,11 @@ LocalStore.prototype.incr = function (ip, cb, max) {
 
   if (!current) {
     // Item doesn't exist
-    current = { current: 1, ttl: this.timeWindow, ban: false, iterationStartMs: nowInMs }
+    current = { current: 1, ttl: this.timeWindow, iterationStartMs: nowInMs }
   } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
     // Item has expired
     current.current = 1
     current.ttl = this.timeWindow
-    current.ban = false
     current.iterationStartMs = nowInMs
   } else {
     // Item is alive
