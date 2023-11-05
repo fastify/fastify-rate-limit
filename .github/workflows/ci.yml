@@ -2,11 +2,6 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - master
-      - next
-      - v*
     paths-ignore:
       - 'docs/**'
       - '*.md'
@@ -17,7 +12,10 @@ on:
 
 jobs:
   test:
-    uses: fastify/workflows/.github/workflows/plugins-ci-redis.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: fastify/workflows/.github/workflows/plugins-ci-redis.yml@v3
     with:
       license-check: true
       lint: true
