@@ -74,7 +74,7 @@ The response will have some additional headers:
 |`x-ratelimit-limit`     | how many requests the client can make
 |`x-ratelimit-remaining` | how many requests remain to the client in the timewindow
 |`x-ratelimit-reset`     | how many seconds must pass before the rate limit resets
-|`retry-after`           | if the max has been reached, the milliseconds the client must wait before they can make new requests
+|`retry-after`           | if the max has been reached, the seconds the client must wait before they can make new requests
 
 
 ### Preventing guessing of URLS through 404s
