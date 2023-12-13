@@ -41,7 +41,7 @@ function RedisStore (redis, timeWindow, continueExceeding, key) {
 
 RedisStore.prototype.incr = function (ip, cb, max) {
   this.redis.rateLimit(this.key + ip, this.timeWindow, max, this.continueExceeding, (err, result) => {
-    err != null ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
+    err == null ? cb(null, { current: result[0], ttl: result[1] }) : cb(err, null)
   })
 }
 
