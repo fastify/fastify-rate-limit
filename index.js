@@ -205,7 +205,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
     const max = typeof params.max === 'number' ? params.max : await params.max(req, key)
     let current = 0
     let ttl = 0
-    let timeLeftInSeconds = 0
+    let ttlInSeconds = 0
     let ban = false
 
     // We increment the rate limit for the current request
@@ -225,12 +225,12 @@ function rateLimitRequestHandler (pluginComponent, params) {
       }
     }
 
-    timeLeftInSeconds = Math.ceil(ttl / 1000)
+    ttlInSeconds = Math.ceil(ttl / 1000)
 
     if (current <= max) {
       if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
       if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, max - current) }
-      if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
+      if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, ttlInSeconds) }
 
       params.onExceeding?.(req, key)
 
@@ -241,15 +241,15 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
-    if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
-    if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, timeLeftInSeconds) }
+    if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, ttlInSeconds) }
+    if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, ttlInSeconds) }
 
     const respCtx = {
       statusCode: 429,
       ban,
       max,
       ttl,
-      after: ms.format(ttl, true)
+      after: ms.format(ttlInSeconds * 1000, true)
     }
 
     if (ban) {
