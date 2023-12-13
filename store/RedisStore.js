@@ -31,7 +31,7 @@ function RedisStore (redis, timeWindow, continueExceeding, key) {
   this.continueExceeding = continueExceeding
   this.key = key
 
-  if (!this.redis.rateLimit) {
+  if (this.redis.rateLimit === undefined) {
     this.redis.defineCommand('rateLimit', {
       numberOfKeys: 1,
       lua
