@@ -212,7 +212,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       const res = await new Promise((resolve, reject) => {
         store.incr(key, (err, res) => {
           err ? reject(err) : resolve(res)
-        }, max, params.ban)
+        }, max)
       })
 
       current = res.current
