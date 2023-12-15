@@ -242,17 +242,17 @@ function rateLimitRequestHandler (pluginComponent, params) {
     if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
     if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, timeLeftInSeconds) }
 
-    const ban = params.ban !== -1 && current - max > params.ban
     const respCtx = {
       statusCode: 429,
-      ban,
+      ban: false,
       max,
       ttl,
       after: ms.format(params.timeWindow, true)
     }
 
-    if (ban) {
+    if (params.ban !== -1 && current - max > params.ban) {
       respCtx.statusCode = 403
+      respCtx.ban = true
       params.onBanReach?.(req, key)
     }
 
