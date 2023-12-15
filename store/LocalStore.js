@@ -12,7 +12,7 @@ LocalStore.prototype.incr = function (ip, cb, max) {
   const nowInMs = Date.now()
   let current = this.lru.get(ip)
 
-  if (current === undefined) {
+  if (!current) {
     // Item doesn't exist
     current = { current: 1, ttl: this.timeWindow, iterationStartMs: nowInMs }
   } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
@@ -25,7 +25,7 @@ LocalStore.prototype.incr = function (ip, cb, max) {
     ++current.current
 
     // Reset TLL if max has been exceeded and `continueExceeding` is enabled
-    if (this.continueExceeding === true && current.current > max) {
+    if (this.continueExceeding && current.current > max) {
       current.ttl = this.timeWindow
       current.iterationStartMs = nowInMs
     } else {

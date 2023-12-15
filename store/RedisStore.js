@@ -17,7 +17,7 @@ const lua = `
   local ttl = redis.call('PTTL', key)
 
   -- If the key is new or if its incremented value has exceeded the max value then set its TTL
-  if ttl == -1 or (continueExceeding == true and current > max) then
+  if ttl == -1 or (continueExceeding and current > max) then
     ttl = timeWindow
     redis.call('PEXPIRE', key, timeWindow)
   end
@@ -31,7 +31,7 @@ function RedisStore (redis, timeWindow, continueExceeding, key) {
   this.continueExceeding = continueExceeding
   this.key = key
 
-  if (this.redis.rateLimit === undefined) {
+  if (!this.redis.rateLimit) {
     this.redis.defineCommand('rateLimit', {
       numberOfKeys: 1,
       lua
@@ -41,7 +41,7 @@ function RedisStore (redis, timeWindow, continueExceeding, key) {
 
 RedisStore.prototype.incr = function (ip, cb, max) {
   this.redis.rateLimit(this.key + ip, this.timeWindow, max, this.continueExceeding, (err, result) => {
-    err == null ? cb(null, { current: result[0], ttl: result[1] }) : cb(err, null)
+    err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
   })
 }
 
