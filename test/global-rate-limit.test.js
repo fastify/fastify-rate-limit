@@ -723,7 +723,7 @@ test('With CustomStore', async t => {
   t.same({
     statusCode: 429,
     error: 'Too Many Requests',
-    message: 'Rate limit exceeded, retry in 7 seconds'
+    message: 'Rate limit exceeded, retry in 7 second(s)'
   }, JSON.parse(res.payload))
 })
 
