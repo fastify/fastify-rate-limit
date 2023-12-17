@@ -27,7 +27,7 @@ const draftSpecHeaders = {
 const defaultKeyGenerator = (req) => req.ip
 
 const defaultErrorResponse = (req, context) => {
-  const err = new Error(`Rate limit exceeded, retry in ${context.ttlInSeconds} second(s)`)
+  const err = new Error(`Rate limit exceeded, retry in ${context.ttlInSeconds} second${context.ttlInSeconds !== 1 ? 's' : ''}}`)
   err.statusCode = context.statusCode
   return err
 }
