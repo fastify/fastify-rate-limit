@@ -8,18 +8,17 @@ function LocalStore (cache = 5000, timeWindow, continueExceeding) {
   this.continueExceeding = continueExceeding
 }
 
-LocalStore.prototype.incr = function (ip, cb, max, ban) {
+LocalStore.prototype.incr = function (ip, cb, max) {
   const nowInMs = Date.now()
   let current = this.lru.get(ip)
 
   if (!current) {
     // Item doesn't exist
-    current = { current: 1, ttl: this.timeWindow, ban: false, iterationStartMs: nowInMs }
+    current = { current: 1, ttl: this.timeWindow, iterationStartMs: nowInMs }
   } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
     // Item has expired
     current.current = 1
     current.ttl = this.timeWindow
-    current.ban = false
     current.iterationStartMs = nowInMs
   } else {
     // Item is alive
@@ -32,10 +31,6 @@ LocalStore.prototype.incr = function (ip, cb, max, ban) {
     } else {
       current.ttl = this.timeWindow - (nowInMs - current.iterationStartMs)
     }
-  }
-
-  if (ban !== -1 && !current.ban && current.current - max > ban) {
-    current.ban = true
   }
 
   this.lru.set(ip, current)

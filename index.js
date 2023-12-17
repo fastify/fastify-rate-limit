@@ -206,19 +206,17 @@ function rateLimitRequestHandler (pluginComponent, params) {
     let current = 0
     let ttl = 0
     let timeLeftInSeconds = 0
-    let ban = false
 
     // We increment the rate limit for the current request
     try {
       const res = await new Promise((resolve, reject) => {
         store.incr(key, (err, res) => {
           err ? reject(err) : resolve(res)
-        }, max, params.ban)
+        }, max)
       })
 
       current = res.current
       ttl = res.ttl
-      ban = res.ban ?? (params.ban !== -1 && current - max > params.ban)
     } catch (err) {
       if (!params.skipOnError) {
         throw err
@@ -246,14 +244,15 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     const respCtx = {
       statusCode: 429,
-      ban,
+      ban: false,
       max,
       ttl,
       after: ms.format(params.timeWindow, true)
     }
 
-    if (ban) {
+    if (params.ban !== -1 && current - max > params.ban) {
       respCtx.statusCode = 403
+      respCtx.ban = true
       params.onBanReach?.(req, key)
     }
 
