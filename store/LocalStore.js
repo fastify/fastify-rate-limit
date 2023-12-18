@@ -1,6 +1,6 @@
 'use strict'
 
-const { Lru } = require('toad-cache')
+const { LruMap: Lru } = require('toad-cache')
 
 function LocalStore (cache = 5000, timeWindow, continueExceeding) {
   this.lru = new Lru(cache)
