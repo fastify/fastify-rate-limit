@@ -38,7 +38,7 @@
     "sqlite3": "^5.0.2",
     "standard": "^17.0.0",
     "tap": "^16.0.0",
-    "tsd": "^0.29.0"
+    "tsd": "^0.30.0"
   },
   "dependencies": {
     "@lukeed/ms": "^2.0.1",
