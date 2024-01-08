@@ -26,8 +26,6 @@ const lua = `
 `
 
 function RedisStore (redis, key = 'fastify-rate-limit-', timeWindow, continueExceeding) {
-  if (!redis) throw new TypeError('Redis instance must be provided')
-
   this.redis = redis
   this.key = key
   this.timeWindow = timeWindow
