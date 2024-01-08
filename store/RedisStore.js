@@ -25,11 +25,11 @@ const lua = `
   return {current, ttl}
 `
 
-function RedisStore (redis, timeWindow, continueExceeding, key) {
+function RedisStore (redis, key = 'fastify-rate-limit-', timeWindow, continueExceeding) {
   this.redis = redis
+  this.key = key
   this.timeWindow = timeWindow
   this.continueExceeding = continueExceeding
-  this.key = key
 
   if (!this.redis.rateLimit) {
     this.redis.defineCommand('rateLimit', {
@@ -46,7 +46,7 @@ RedisStore.prototype.incr = function (ip, cb, max) {
 }
 
 RedisStore.prototype.child = function (routeOptions) {
-  return new RedisStore(this.redis, routeOptions.timeWindow, routeOptions.continueExceeding, this.key + routeOptions.routeInfo.method + routeOptions.routeInfo.url + '-')
+  return new RedisStore(this.redis, `${this.key}${routeOptions.routeInfo.method}${routeOptions.routeInfo.url}-`, routeOptions.timeWindow, routeOptions.continueExceeding)
 }
 
 module.exports = RedisStore
