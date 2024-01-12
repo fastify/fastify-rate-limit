@@ -92,7 +92,69 @@ test('With text timeWindow', async t => {
   await fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
-    config: defaultRouteConfig
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: '1s'
+      },
+      someOtherPlugin: {
+        someValue: 1
+      }
+    }
+  }, async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.equal(res.headers['retry-after'], '1')
+  t.same(JSON.parse(res.payload), {
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 1 second'
+  })
+
+  t.context.clock.tick(1100)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
+})
+
+test('With function timeWindow', async t => {
+  t.plan(15)
+  t.context.clock = FakeTimers.install()
+  const fastify = Fastify()
+  await fastify.register(rateLimit, { global: false })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: (_, __) => 1000
+      },
+      someOtherPlugin: {
+        someValue: 1
+      }
+    }
   }, async (req, reply) => 'hello!')
 
   let res

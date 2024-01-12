@@ -80,10 +80,14 @@ declare namespace fastifyRateLimit {
 
   export interface RateLimitOptions {
     max?:
-    | number
-    | ((req: FastifyRequest, key: string) => number)
-    | ((req: FastifyRequest, key: string) => Promise<number>);
-    timeWindow?: number | string;
+      | number
+      | ((req: FastifyRequest, key: string) => number)
+      | ((req: FastifyRequest, key: string) => Promise<number>);
+    timeWindow?:
+      | number
+      | string
+      | ((req: FastifyRequest, key: string) => number)
+      | ((req: FastifyRequest, key: string) => Promise<number>);
     hook?: RateLimitHook;
     cache?: number;
     store?: FastifyRateLimitStoreCtor;
