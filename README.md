@@ -191,7 +191,7 @@ await fastify.register(import('@fastify/rate-limit'), {
   /* ... */
   errorResponseBuilder: function (request, context) {
     return {
-      code: 429,
+      statusCode: 429,
       error: 'Too Many Requests',
       message: `I only allow ${context.max} requests per ${context.after} to this Website. Try again soon.`,
       date: Date.now(),
