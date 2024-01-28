@@ -106,6 +106,54 @@ test('With text timeWindow', async t => {
   })
 })
 
+test('With function timeWindow', async t => {
+  t.plan(15)
+  t.context.clock = FakeTimers.install()
+  const fastify = Fastify()
+  await fastify.register(rateLimit, { max: 2, timeWindow: (_, __) => 1000 })
+
+  fastify.get('/', async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.equal(res.headers['retry-after'], '1')
+  t.same({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 1 second'
+  }, JSON.parse(res.payload))
+
+  t.context.clock.tick(1100)
+
+  res = await fastify.inject('/')
+
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
+})
+
 test('When passing NaN to the timeWindow property then the timeWindow should be the default value - 60 seconds', async t => {
   t.plan(5)
 

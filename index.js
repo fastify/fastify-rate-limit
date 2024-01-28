@@ -64,11 +64,18 @@ async function fastifyRateLimit (fastify, settings) {
     : defaultMax
 
   // Global time window
-  globalParams.timeWindow = typeof settings.timeWindow === 'string'
-    ? ms.parse(settings.timeWindow)
-    : typeof settings.timeWindow === 'number' && Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0
-      ? Math.trunc(settings.timeWindow)
-      : defaultTimeWindow
+  const twType = typeof settings.timeWindow
+  globalParams.timeWindow = defaultTimeWindow
+  if (twType === 'function') {
+    globalParams.timeWindow = settings.timeWindow
+  } else if (twType === 'string') {
+    globalParams.timeWindow = ms.parse(settings.timeWindow)
+  } else if (
+    twType === 'number' &&
+    Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0
+  ) {
+    globalParams.timeWindow = Math.trunc(settings.timeWindow)
+  }
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
@@ -147,7 +154,7 @@ function mergeParams (...params) {
     result.timeWindow = ms.parse(result.timeWindow)
   } else if (typeof result.timeWindow === 'number' && Number.isFinite(result.timeWindow) && result.timeWindow >= 0) {
     result.timeWindow = Math.trunc(result.timeWindow)
-  } else {
+  } else if (typeof result.timeWindow !== 'function') {
     result.timeWindow = defaultTimeWindow
   }
 
@@ -180,7 +187,6 @@ function addRouteRateHook (pluginComponent, params, routeOptions) {
 
 function rateLimitRequestHandler (pluginComponent, params) {
   const { rateLimitRan, store } = pluginComponent
-  const timeWindowString = ms.format(params.timeWindow, true)
 
   return async (req, res) => {
     if (req[rateLimitRan]) {
@@ -204,6 +210,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
     }
 
     const max = typeof params.max === 'number' ? params.max : await params.max(req, key)
+    const timeWindow = typeof params.timeWindow === 'number' ? params.timeWindow : await params.timeWindow(req, key)
     let current = 0
     let ttl = 0
     let timeLeftInSeconds = 0
@@ -213,7 +220,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       const res = await new Promise((resolve, reject) => {
         store.incr(key, (err, res) => {
           err ? reject(err) : resolve(res)
-        }, max)
+        }, timeWindow, max)
       })
 
       current = res.current
@@ -248,7 +255,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       ban: false,
       max,
       ttl,
-      after: timeWindowString
+      after: ms.format(timeWindow, true)
     }
 
     if (params.ban !== -1 && current - max > params.ban) {

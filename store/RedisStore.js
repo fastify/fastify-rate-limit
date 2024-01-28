@@ -39,8 +39,8 @@ function RedisStore (redis, key = 'fastify-rate-limit-', timeWindow, continueExc
   }
 }
 
-RedisStore.prototype.incr = function (ip, cb, max) {
-  this.redis.rateLimit(this.key + ip, this.timeWindow, max, this.continueExceeding, (err, result) => {
+RedisStore.prototype.incr = function (ip, cb, timeWindow, max) {
+  this.redis.rateLimit(this.key + ip, timeWindow, max, this.continueExceeding, (err, result) => {
     err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
   })
 }

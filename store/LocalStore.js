@@ -4,21 +4,20 @@ const { LruMap: Lru } = require('toad-cache')
 
 function LocalStore (cache = 5000, timeWindow, continueExceeding) {
   this.lru = new Lru(cache)
-  this.timeWindow = timeWindow
   this.continueExceeding = continueExceeding
 }
 
-LocalStore.prototype.incr = function (ip, cb, max) {
+LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
   const nowInMs = Date.now()
   let current = this.lru.get(ip)
 
   if (!current) {
     // Item doesn't exist
-    current = { current: 1, ttl: this.timeWindow, iterationStartMs: nowInMs }
-  } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
+    current = { current: 1, ttl: timeWindow, iterationStartMs: nowInMs }
+  } else if (current.iterationStartMs + timeWindow <= nowInMs) {
     // Item has expired
     current.current = 1
-    current.ttl = this.timeWindow
+    current.ttl = timeWindow
     current.iterationStartMs = nowInMs
   } else {
     // Item is alive
@@ -26,10 +25,10 @@ LocalStore.prototype.incr = function (ip, cb, max) {
 
     // Reset TLL if max has been exceeded and `continueExceeding` is enabled
     if (this.continueExceeding && current.current > max) {
-      current.ttl = this.timeWindow
+      current.ttl = timeWindow
       current.iterationStartMs = nowInMs
     } else {
-      current.ttl = this.timeWindow - (nowInMs - current.iterationStartMs)
+      current.ttl = timeWindow - (nowInMs - current.iterationStartMs)
     }
   }
 
