@@ -187,7 +187,6 @@ function addRouteRateHook (pluginComponent, params, routeOptions) {
 
 function rateLimitRequestHandler (pluginComponent, params) {
   const { rateLimitRan, store } = pluginComponent
-  const timeWindowString = ms.format(typeof params.timeWindow === 'function' ? params.timeWindow() : params.timeWindow, true)
 
   return async (req, res) => {
     if (req[rateLimitRan]) {
@@ -256,7 +255,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       ban: false,
       max,
       ttl,
-      after: timeWindowString
+      after: ms.format(timeWindow, true)
     }
 
     if (params.ban !== -1 && current - max > params.ban) {
