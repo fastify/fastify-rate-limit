@@ -2,9 +2,9 @@
 
 const { LruMap: Lru } = require('toad-cache')
 
-function LocalStore (cache = 5000, timeWindow, continueExceeding) {
-  this.lru = new Lru(cache)
+function LocalStore (continueExceeding, cache = 5000) {
   this.continueExceeding = continueExceeding
+  this.lru = new Lru(cache)
 }
 
 LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
@@ -37,7 +37,7 @@ LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
 }
 
 LocalStore.prototype.child = function (routeOptions) {
-  return new LocalStore(routeOptions.cache, routeOptions.timeWindow, routeOptions.continueExceeding)
+  return new LocalStore(routeOptions.continueExceeding, routeOptions.cache)
 }
 
 module.exports = LocalStore
