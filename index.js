@@ -24,6 +24,8 @@ const draftSpecHeaders = {
   retryAfter: 'retry-after'
 }
 
+const defaultOnFn = () => {}
+
 const defaultKeyGenerator = (req) => req.ip
 
 const defaultErrorResponse = (req, context) => {
@@ -85,9 +87,9 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
   globalParams.ban = Number.isFinite(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : -1
-  globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : null
-  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : null
-  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : null
+  globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : defaultOnFn
+  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : defaultOnFn
+  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : defaultOnFn
   globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
 
   globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
@@ -247,12 +249,12 @@ function rateLimitRequestHandler (pluginComponent, params) {
       if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, max - current) }
       if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
 
-      params.onExceeding?.(req, key)
+      params.onExceeding(req, key)
 
       return
     }
 
-    params.onExceeded?.(req, key)
+    params.onExceeded(req, key)
 
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
@@ -270,7 +272,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
     if (params.ban !== -1 && current - max > params.ban) {
       respCtx.statusCode = 403
       respCtx.ban = true
-      params.onBanReach?.(req, key)
+      params.onBanReach(req, key)
     }
 
     throw params.errorResponseBuilder(req, respCtx)
