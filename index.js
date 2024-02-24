@@ -225,7 +225,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
     const timeWindow = typeof params.timeWindow === 'number' ? params.timeWindow : await params.timeWindow(req, key)
     let current = 0
     let ttl = 0
-    let timeLeftInSeconds = 0
+    let ttlInSeconds = 0
 
     // We increment the rate limit for the current request
     try {
@@ -237,7 +237,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
       current = res.current
       ttl = res.ttl
-      timeLeftInSeconds = Math.ceil(res.ttl / 1000)
+      ttlInSeconds = Math.ceil(res.ttl / 1000)
     } catch (err) {
       if (!params.skipOnError) {
         throw err
@@ -247,7 +247,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
     if (current <= max) {
       if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
       if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, max - current) }
-      if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
+      if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, ttlInSeconds) }
 
       params.onExceeding(req, key)
 
@@ -258,8 +258,8 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
-    if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
-    if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, timeLeftInSeconds) }
+    if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, ttlInSeconds) }
+    if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, ttlInSeconds) }
 
     const respCtx = {
       statusCode: 429,
