@@ -59,13 +59,20 @@ async function fastifyRateLimit (fastify, settings) {
   }, settings.addHeadersOnExceeding)
 
   // Global maximum allowed requests
-  globalParams.max = ((typeof settings.max === 'number' && Number.isFinite(settings.max) && (settings.max = Math.trunc(settings.max)) >= 0) || typeof settings.max === 'function')
-    ? settings.max
-    : defaultMax
+  const maxType = typeof settings.max
+  if (maxType === 'function') {
+    globalParams.max = settings.max
+  } else if (
+    maxType === 'number' &&
+    Number.isFinite(settings.max) && settings.max >= 0
+  ) {
+    globalParams.max = Math.trunc(settings.max)
+  } else {
+    globalParams.max = defaultMax
+  }
 
   // Global time window
   const twType = typeof settings.timeWindow
-  globalParams.timeWindow = defaultTimeWindow
   if (twType === 'function') {
     globalParams.timeWindow = settings.timeWindow
   } else if (twType === 'string') {
@@ -75,6 +82,8 @@ async function fastifyRateLimit (fastify, settings) {
     Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0
   ) {
     globalParams.timeWindow = Math.trunc(settings.timeWindow)
+  } else {
+    globalParams.timeWindow = defaultTimeWindow
   }
 
   globalParams.hook = settings.hook || defaultHook
