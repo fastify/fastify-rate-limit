@@ -235,13 +235,12 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
       current = res.current
       ttl = res.ttl
+      timeLeftInSeconds = Math.ceil(ttl / 1000)
     } catch (err) {
       if (!params.skipOnError) {
         throw err
       }
     }
-
-    timeLeftInSeconds = Math.ceil(ttl / 1000)
 
     if (current <= max) {
       if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
@@ -265,7 +264,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       ban: false,
       max,
       ttl,
-      after: timeWindowString ?? ms.format(timeWindow, true)
+      after: timeWindowString || ms.format(timeWindow, true)
     }
 
     if (params.ban !== -1 && current - max > params.ban) {
