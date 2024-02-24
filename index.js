@@ -59,32 +59,32 @@ async function fastifyRateLimit (fastify, settings) {
   }, settings.addHeadersOnExceeding)
 
   // Global maximum allowed requests
-  if (typeof settings.max === 'function') {
-    globalParams.max = settings.max
-  } else if (
-    Number.isFinite(settings.max) && settings.max >= 0
-  ) {
+  if (Number.isFinite(settings.max) && settings.max >= 0) {
     globalParams.max = Math.trunc(settings.max)
+  } else if (
+    typeof settings.max === 'function'
+  ) {
+    globalParams.max = settings.max
   } else {
     globalParams.max = defaultMax
   }
 
   // Global time window
-  if (typeof settings.timeWindow === 'function') {
-    globalParams.timeWindow = settings.timeWindow
+  if (Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0) {
+    globalParams.timeWindow = Math.trunc(settings.timeWindow)
   } else if (typeof settings.timeWindow === 'string') {
     globalParams.timeWindow = ms.parse(settings.timeWindow)
   } else if (
-    Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0
+    typeof settings.timeWindow === 'function'
   ) {
-    globalParams.timeWindow = Math.trunc(settings.timeWindow)
+    globalParams.timeWindow = settings.timeWindow
   } else {
     globalParams.timeWindow = defaultTimeWindow
   }
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
-  globalParams.ban = typeof settings.ban === 'number' && Number.isFinite(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : -1
+  globalParams.ban = Number.isFinite(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : -1
   globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : null
   globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : null
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : null
@@ -155,21 +155,21 @@ async function fastifyRateLimit (fastify, settings) {
 function mergeParams (...params) {
   const result = Object.assign({}, ...params)
 
-  if (typeof result.timeWindow === 'string') {
-    result.timeWindow = ms.parse(result.timeWindow)
-  } else if (typeof result.timeWindow === 'number' && Number.isFinite(result.timeWindow) && result.timeWindow >= 0) {
+  if (Number.isFinite(result.timeWindow) && result.timeWindow >= 0) {
     result.timeWindow = Math.trunc(result.timeWindow)
+  } else if (typeof result.timeWindow === 'string') {
+    result.timeWindow = ms.parse(result.timeWindow)
   } else if (typeof result.timeWindow !== 'function') {
     result.timeWindow = defaultTimeWindow
   }
 
-  if (typeof result.max === 'number' && Number.isFinite(result.max) && result.max >= 0) {
+  if (Number.isFinite(result.max) && result.max >= 0) {
     result.max = Math.trunc(result.max)
   } else if (typeof result.max !== 'function') {
     result.max = defaultMax
   }
 
-  if (typeof result.ban === 'number' && Number.isFinite(result.ban) && result.ban >= 0) {
+  if (Number.isFinite(result.ban) && result.ban >= 0) {
     result.ban = Math.trunc(result.ban)
   } else {
     result.ban = -1
