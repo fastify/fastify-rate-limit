@@ -264,7 +264,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       ban: false,
       max,
       ttl,
-      after: timeWindowString || ms.format(timeWindow, true)
+      after: timeWindowString ?? ms.format(timeWindow, true)
     }
 
     if (params.ban !== -1 && current - max > params.ban) {
