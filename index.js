@@ -237,7 +237,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
       current = res.current
       ttl = res.ttl
-      timeLeftInSeconds = Math.ceil(ttl / 1000)
+      timeLeftInSeconds = Math.ceil(res.ttl / 1000)
     } catch (err) {
       if (!params.skipOnError) {
         throw err
