@@ -23,6 +23,7 @@ declare namespace fastifyRateLimit {
   export interface FastifyRateLimitOptions { }
 
   export interface errorResponseBuilderContext {
+    statusCode: number;
     ban: boolean;
     after: string;
     max: number;
