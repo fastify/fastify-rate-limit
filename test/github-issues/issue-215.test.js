@@ -11,7 +11,9 @@ t.beforeEach(t => {
 })
 
 t.afterEach(t => {
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('issue #215 - when using local store, 2nd user should not be rate limited when the time window is passed for the 1st user', async t => {

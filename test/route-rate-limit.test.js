@@ -80,7 +80,9 @@ test('Basic', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('With text timeWindow', async t => {
@@ -132,7 +134,9 @@ test('With text timeWindow', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('With function timeWindow', async t => {
@@ -184,7 +188,9 @@ test('With function timeWindow', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('With ips allowList', async t => {
@@ -497,7 +503,9 @@ test('With keyGenerator', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('no rate limit without settings', async t => {
@@ -818,7 +826,9 @@ test('hide rate limit headers', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('hide rate limit headers on exceeding', async t => {
@@ -872,7 +882,9 @@ test('hide rate limit headers on exceeding', async t => {
   t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('hide rate limit headers at all times', async t => {
@@ -938,7 +950,9 @@ test('hide rate limit headers at all times', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('global timeWindow when not set in routes', async t => {
@@ -1701,5 +1715,7 @@ test('With NaN in subroute config', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '1000')
   t.equal(res.headers['x-ratelimit-remaining'], '999')
 
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })

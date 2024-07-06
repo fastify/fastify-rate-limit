@@ -11,7 +11,9 @@ t.beforeEach(t => {
 })
 
 t.afterEach(t => {
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test("issue #284 - don't set the reply code automatically", async t => {

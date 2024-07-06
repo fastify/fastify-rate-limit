@@ -11,7 +11,9 @@ t.beforeEach(t => {
 })
 
 t.afterEach(t => {
-  t.context.clock.uninstall()
+  t.teardown(() => {
+    t.context.clock.uninstall()
+  })
 })
 
 test('issue #207 - when continueExceeding is true and the store is local then it should reset the rate-limit', async t => {
