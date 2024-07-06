@@ -364,10 +364,8 @@ test('With redis store', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.teardown(async () => {
-    await redis.flushall()
-    await redis.quit()
-  })
+  await redis.flushall()
+  await redis.quit()
 })
 
 test('Throw on redis error', async t => {
@@ -1381,10 +1379,8 @@ test('When continue exceeding is on (Redis)', async t => {
   t.equal(second.headers['x-ratelimit-remaining'], '0')
   t.equal(second.headers['x-ratelimit-reset'], '5')
 
-  t.teardown(async () => {
-    await redis.flushall()
-    await redis.quit()
-  })
+  await redis.flushall()
+  await redis.quit()
 })
 
 test('When continue exceeding is off under route (Redis)', async t => {
@@ -1435,10 +1431,8 @@ test('When continue exceeding is off under route (Redis)', async t => {
   t.equal(third.headers['x-ratelimit-remaining'], '0')
   t.equal(third.headers['x-ratelimit-reset'], '3')
 
-  t.teardown(async () => {
-    await redis.flushall()
-    await redis.quit()
-  })
+  await redis.flushall()
+  await redis.quit()
 })
 
 test('should consider routes allow list', async t => {
