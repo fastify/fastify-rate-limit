@@ -475,7 +475,7 @@ test('With redis store', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.after(async () => {
+  t.teardown(async () => {
     await redis.flushall()
     await redis.quit()
   })
@@ -531,7 +531,7 @@ test('With redis store (ban)', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.after(async () => {
+  t.teardown(async () => {
     await redis.flushall()
     await redis.quit()
   })
@@ -1313,7 +1313,7 @@ test('When continue exceeding is on (Redis)', async t => {
   t.equal(second.headers['x-ratelimit-remaining'], '0')
   t.equal(second.headers['x-ratelimit-reset'], '5')
 
-  t.after(async () => {
+  t.teardown(async () => {
     await redis.flushall()
     await redis.quit()
   })
@@ -1372,7 +1372,7 @@ test('Redis with continueExceeding should not always return the timeWindow as tt
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '3')
 
-  t.after(async () => {
+  t.teardown(async () => {
     await redis.flushall()
     await redis.quit()
   })
@@ -1437,7 +1437,7 @@ test('When use a custom nameSpace', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.after(async () => {
+  t.teardown(async () => {
     await redis.flushall()
     await redis.quit()
   })
