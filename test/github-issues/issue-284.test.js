@@ -11,7 +11,7 @@ t.beforeEach(t => {
 })
 
 t.afterEach(t => {
-  t.teardown(() => {
+  t.after(() => {
     t.context.clock.uninstall()
   })
 })
