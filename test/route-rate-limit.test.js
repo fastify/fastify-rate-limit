@@ -80,7 +80,7 @@ test('Basic', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.teardown(() => {
+  t.after(() => {
     t.context.clock.uninstall()
   })
 })
@@ -134,7 +134,7 @@ test('With text timeWindow', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.teardown(() => {
+  t.after(() => {
     t.context.clock.uninstall()
   })
 })
@@ -188,7 +188,7 @@ test('With function timeWindow', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.teardown(() => {
+  t.after(() => {
     t.context.clock.uninstall()
   })
 })
@@ -370,7 +370,7 @@ test('With redis store', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.teardown(async () => {
+  t.after(async () => {
     await redis.flushall()
     await redis.quit()
   })
@@ -505,7 +505,7 @@ test('With keyGenerator', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.teardown(() => {
+  t.after(() => {
     t.context.clock.uninstall()
   })
 })
@@ -828,7 +828,7 @@ test('hide rate limit headers', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.teardown(() => {
+  t.after(() => {
     t.context.clock.uninstall()
   })
 })
@@ -884,7 +884,7 @@ test('hide rate limit headers on exceeding', async t => {
   t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 
-  t.teardown(() => {
+  t.after(() => {
     t.context.clock.uninstall()
   })
 })
@@ -952,7 +952,7 @@ test('hide rate limit headers at all times', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 
-  t.teardown(() => {
+  t.after(() => {
     t.context.clock.uninstall()
   })
 })
@@ -1395,7 +1395,7 @@ test('When continue exceeding is on (Redis)', async t => {
   t.equal(second.headers['x-ratelimit-remaining'], '0')
   t.equal(second.headers['x-ratelimit-reset'], '5')
 
-  t.teardown(async () => {
+  t.after(async () => {
     await redis.flushall()
     await redis.quit()
   })
@@ -1449,7 +1449,7 @@ test('When continue exceeding is off under route (Redis)', async t => {
   t.equal(third.headers['x-ratelimit-remaining'], '0')
   t.equal(third.headers['x-ratelimit-reset'], '3')
 
-  t.teardown(async () => {
+  t.after(async () => {
     await redis.flushall()
     await redis.quit()
   })
@@ -1721,7 +1721,7 @@ test('With NaN in subroute config', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '1000')
   t.equal(res.headers['x-ratelimit-remaining'], '999')
 
-  t.teardown(() => {
+  t.after(() => {
     t.context.clock.uninstall()
   })
 })
