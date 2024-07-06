@@ -1,3 +1,4 @@
+jobs: 1
 disable-coverage: true
 files:
   - test/**/*.test.js
