@@ -170,3 +170,11 @@ appWithHttp2.get('/public', {
 }, (request, reply) => {
   reply.send({ hello: 'from ... public' })
 })
+
+const errorResponseContext: errorResponseBuilderContext = {
+  statusCode: 429,
+  ban: true,
+  after: '123',
+  max: 1000,
+  ttl: 123
+}
