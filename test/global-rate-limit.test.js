@@ -53,9 +53,8 @@ test('Basic', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  
+  t.context.clock.uninstall()
 })
 
 test('With text timeWindow', async t => {
@@ -101,9 +100,7 @@ test('With text timeWindow', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('With function timeWindow', async t => {
@@ -149,9 +146,7 @@ test('With function timeWindow', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('When passing NaN to the timeWindow property then the timeWindow should be the default value - 60 seconds', async t => {
@@ -191,9 +186,7 @@ test('When passing NaN to the timeWindow property then the timeWindow should be 
 
   t.equal(res.statusCode, 200)
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('With ips allowList, allowed ips should not result in rate limiting', async t => {
@@ -661,9 +654,7 @@ test('With keyGenerator', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('With async/await keyGenerator', async t => {
@@ -932,9 +923,7 @@ test('hide rate limit headers', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('hide rate limit headers on exceeding', async t => {
@@ -980,9 +969,7 @@ test('hide rate limit headers on exceeding', async t => {
   t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('hide rate limit headers at all times', async t => {
@@ -1034,9 +1021,7 @@ test('hide rate limit headers at all times', async t => {
   t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('With ban', async t => {
@@ -1142,9 +1127,7 @@ test('With enabled IETF Draft Spec', async t => {
   t.equal(res.headers['ratelimit-limit'], '2')
   t.equal(res.headers['ratelimit-remaining'], '1')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('hide IETF draft spec headers', async t => {
@@ -1192,9 +1175,7 @@ test('hide IETF draft spec headers', async t => {
   t.equal(res.headers['ratelimit-remaining'], '0')
   t.equal(res.headers['ratelimit-reset'], '1')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled', async t => {
@@ -1231,9 +1212,7 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
     t.equal(res.headers['ratelimit-reset'], res.headers['retry-after'])
   }
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('Before async in "max"', async t => {
@@ -1554,9 +1533,7 @@ test('ban directly', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('wrong timewindow', async t => {
@@ -1608,7 +1585,5 @@ test('wrong timewindow', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '0')
 
-  t.after(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
