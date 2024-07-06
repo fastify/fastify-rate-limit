@@ -53,7 +53,6 @@ test('Basic', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  
   t.context.clock.uninstall()
 })
 
