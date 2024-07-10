@@ -441,7 +441,6 @@ To run tests locally, you need a Redis instance that you can launch with this co
 npm run redis
 ```
 
-
 <a name="license"></a>
 ## License
 **[MIT](https://github.com/fastify/fastify-rate-limit/blob/master/LICENSE)**<br>
