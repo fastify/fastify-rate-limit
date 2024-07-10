@@ -153,3 +153,6 @@ yarn.lock
 
 # redis
 dump.rdb
+
+# docker-compose to test in local
+docker-compose.yml
