@@ -167,7 +167,7 @@ function mergeParams (...params) {
 }
 
 function addRouteRateHook (pluginComponent, params, routeOptions) {
-  const hook = params.hook || defaultHook
+  const hook = params.hook
   const hookHandler = rateLimitRequestHandler(pluginComponent, params)
   if (Array.isArray(routeOptions[hook])) {
     routeOptions[hook].push(hookHandler)
