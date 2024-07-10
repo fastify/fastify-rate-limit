@@ -2,24 +2,22 @@
 
 const { LruMap: Lru } = require('toad-cache')
 
-function LocalStore (cache = 5000, timeWindow, continueExceeding) {
-  this.lru = new Lru(cache)
-  this.timeWindow = timeWindow
+function LocalStore (continueExceeding, cache = 5000) {
   this.continueExceeding = continueExceeding
+  this.lru = new Lru(cache)
 }
 
-LocalStore.prototype.incr = function (ip, cb, max, ban) {
+LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
   const nowInMs = Date.now()
   let current = this.lru.get(ip)
 
   if (!current) {
     // Item doesn't exist
-    current = { current: 1, ttl: this.timeWindow, ban: false, iterationStartMs: nowInMs }
-  } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
+    current = { current: 1, ttl: timeWindow, iterationStartMs: nowInMs }
+  } else if (current.iterationStartMs + timeWindow <= nowInMs) {
     // Item has expired
     current.current = 1
-    current.ttl = this.timeWindow
-    current.ban = false
+    current.ttl = timeWindow
     current.iterationStartMs = nowInMs
   } else {
     // Item is alive
@@ -27,15 +25,11 @@ LocalStore.prototype.incr = function (ip, cb, max, ban) {
 
     // Reset TLL if max has been exceeded and `continueExceeding` is enabled
     if (this.continueExceeding && current.current > max) {
-      current.ttl = this.timeWindow
+      current.ttl = timeWindow
       current.iterationStartMs = nowInMs
     } else {
-      current.ttl = this.timeWindow - (nowInMs - current.iterationStartMs)
+      current.ttl = timeWindow - (nowInMs - current.iterationStartMs)
     }
-  }
-
-  if (ban !== -1 && !current.ban && current.current - max > ban) {
-    current.ban = true
   }
 
   this.lru.set(ip, current)
@@ -43,7 +37,7 @@ LocalStore.prototype.incr = function (ip, cb, max, ban) {
 }
 
 LocalStore.prototype.child = function (routeOptions) {
-  return new LocalStore(routeOptions.cache, routeOptions.timeWindow, routeOptions.continueExceeding)
+  return new LocalStore(routeOptions.continueExceeding, routeOptions.cache)
 }
 
 module.exports = LocalStore

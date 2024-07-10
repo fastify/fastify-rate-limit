@@ -80,9 +80,7 @@ test('Basic', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.teardown(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('With text timeWindow', async t => {
@@ -92,7 +90,15 @@ test('With text timeWindow', async t => {
   await fastify.register(rateLimit, { global: false })
 
   fastify.get('/', {
-    config: defaultRouteConfig
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: '1s'
+      },
+      someOtherPlugin: {
+        someValue: 1
+      }
+    }
   }, async (req, reply) => 'hello!')
 
   let res
@@ -126,9 +132,59 @@ test('With text timeWindow', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.teardown(() => {
-    t.context.clock.uninstall()
+  t.context.clock.uninstall()
+})
+
+test('With function timeWindow', async t => {
+  t.plan(15)
+  t.context.clock = FakeTimers.install()
+  const fastify = Fastify()
+  await fastify.register(rateLimit, { global: false })
+
+  fastify.get('/', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: (_, __) => 1000
+      },
+      someOtherPlugin: {
+        someValue: 1
+      }
+    }
+  }, async (req, reply) => 'hello!')
+
+  let res
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 429)
+  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.equal(res.headers['retry-after'], '1')
+  t.same(JSON.parse(res.payload), {
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded, retry in 1 second'
   })
+
+  t.context.clock.tick(1100)
+
+  res = await fastify.inject('/')
+  t.equal(res.statusCode, 200)
+  t.equal(res.headers['x-ratelimit-limit'], '2')
+  t.equal(res.headers['x-ratelimit-remaining'], '1')
+
+  t.context.clock.uninstall()
 })
 
 test('With ips allowList', async t => {
@@ -308,10 +364,8 @@ test('With redis store', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '1')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.teardown(async () => {
-    await redis.flushall()
-    await redis.quit()
-  })
+  await redis.flushall()
+  await redis.quit()
 })
 
 test('Throw on redis error', async t => {
@@ -443,9 +497,7 @@ test('With keyGenerator', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '2')
   t.equal(res.headers['x-ratelimit-remaining'], '1')
 
-  t.teardown(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('no rate limit without settings', async t => {
@@ -766,9 +818,7 @@ test('hide rate limit headers', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.equal(res.headers['x-ratelimit-reset'], '1')
 
-  t.teardown(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('hide rate limit headers on exceeding', async t => {
@@ -822,9 +872,7 @@ test('hide rate limit headers on exceeding', async t => {
   t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 
-  t.teardown(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('hide rate limit headers at all times', async t => {
@@ -890,9 +938,7 @@ test('hide rate limit headers at all times', async t => {
   t.equal(res.headers['x-ratelimit-remaining'], '0')
   t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
 
-  t.teardown(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })
 
 test('global timeWindow when not set in routes', async t => {
@@ -1333,10 +1379,8 @@ test('When continue exceeding is on (Redis)', async t => {
   t.equal(second.headers['x-ratelimit-remaining'], '0')
   t.equal(second.headers['x-ratelimit-reset'], '5')
 
-  t.teardown(async () => {
-    await redis.flushall()
-    await redis.quit()
-  })
+  await redis.flushall()
+  await redis.quit()
 })
 
 test('When continue exceeding is off under route (Redis)', async t => {
@@ -1387,10 +1431,8 @@ test('When continue exceeding is off under route (Redis)', async t => {
   t.equal(third.headers['x-ratelimit-remaining'], '0')
   t.equal(third.headers['x-ratelimit-reset'], '3')
 
-  t.teardown(async () => {
-    await redis.flushall()
-    await redis.quit()
-  })
+  await redis.flushall()
+  await redis.quit()
 })
 
 test('should consider routes allow list', async t => {
@@ -1659,7 +1701,5 @@ test('With NaN in subroute config', async t => {
   t.equal(res.headers['x-ratelimit-limit'], '1000')
   t.equal(res.headers['x-ratelimit-remaining'], '999')
 
-  t.teardown(() => {
-    t.context.clock.uninstall()
-  })
+  t.context.clock.uninstall()
 })

@@ -24,6 +24,8 @@ const draftSpecHeaders = {
   retryAfter: 'retry-after'
 }
 
+const defaultOnFn = () => {}
+
 const defaultKeyGenerator = (req) => req.ip
 
 const defaultErrorResponse = (req, context) => {
@@ -59,23 +61,35 @@ async function fastifyRateLimit (fastify, settings) {
   }, settings.addHeadersOnExceeding)
 
   // Global maximum allowed requests
-  globalParams.max = ((typeof settings.max === 'number' && Number.isFinite(settings.max) && (settings.max = Math.trunc(settings.max)) >= 0) || typeof settings.max === 'function')
-    ? settings.max
-    : defaultMax
+  if (Number.isFinite(settings.max) && settings.max >= 0) {
+    globalParams.max = Math.trunc(settings.max)
+  } else if (
+    typeof settings.max === 'function'
+  ) {
+    globalParams.max = settings.max
+  } else {
+    globalParams.max = defaultMax
+  }
 
   // Global time window
-  globalParams.timeWindow = typeof settings.timeWindow === 'string'
-    ? ms.parse(settings.timeWindow)
-    : typeof settings.timeWindow === 'number' && Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0
-      ? Math.trunc(settings.timeWindow)
-      : defaultTimeWindow
+  if (Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0) {
+    globalParams.timeWindow = Math.trunc(settings.timeWindow)
+  } else if (typeof settings.timeWindow === 'string') {
+    globalParams.timeWindow = ms.parse(settings.timeWindow)
+  } else if (
+    typeof settings.timeWindow === 'function'
+  ) {
+    globalParams.timeWindow = settings.timeWindow
+  } else {
+    globalParams.timeWindow = defaultTimeWindow
+  }
 
   globalParams.hook = settings.hook || defaultHook
   globalParams.allowList = settings.allowList || settings.whitelist || null
-  globalParams.ban = typeof settings.ban === 'number' && Number.isFinite(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : -1
-  globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : null
-  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : null
-  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : null
+  globalParams.ban = Number.isFinite(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : -1
+  globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : defaultOnFn
+  globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : defaultOnFn
+  globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : defaultOnFn
   globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
 
   globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
@@ -102,9 +116,9 @@ async function fastifyRateLimit (fastify, settings) {
     pluginComponent.store = new Store(globalParams)
   } else {
     if (settings.redis) {
-      pluginComponent.store = new RedisStore(settings.redis, globalParams.timeWindow, settings.continueExceeding, settings.nameSpace || 'fastify-rate-limit-')
+      pluginComponent.store = new RedisStore(globalParams.continueExceeding, settings.redis, settings.nameSpace)
     } else {
-      pluginComponent.store = new LocalStore(settings.cache, globalParams.timeWindow, settings.continueExceeding)
+      pluginComponent.store = new LocalStore(globalParams.continueExceeding, settings.cache)
     }
   }
 
@@ -143,21 +157,21 @@ async function fastifyRateLimit (fastify, settings) {
 function mergeParams (...params) {
   const result = Object.assign({}, ...params)
 
-  if (typeof result.timeWindow === 'string') {
-    result.timeWindow = ms.parse(result.timeWindow)
-  } else if (typeof result.timeWindow === 'number' && Number.isFinite(result.timeWindow) && result.timeWindow >= 0) {
+  if (Number.isFinite(result.timeWindow) && result.timeWindow >= 0) {
     result.timeWindow = Math.trunc(result.timeWindow)
-  } else {
+  } else if (typeof result.timeWindow === 'string') {
+    result.timeWindow = ms.parse(result.timeWindow)
+  } else if (typeof result.timeWindow !== 'function') {
     result.timeWindow = defaultTimeWindow
   }
 
-  if (typeof result.max === 'number' && Number.isFinite(result.max) && result.max >= 0) {
+  if (Number.isFinite(result.max) && result.max >= 0) {
     result.max = Math.trunc(result.max)
   } else if (typeof result.max !== 'function') {
     result.max = defaultMax
   }
 
-  if (typeof result.ban === 'number' && Number.isFinite(result.ban) && result.ban >= 0) {
+  if (Number.isFinite(result.ban) && result.ban >= 0) {
     result.ban = Math.trunc(result.ban)
   } else {
     result.ban = -1
@@ -180,7 +194,11 @@ function addRouteRateHook (pluginComponent, params, routeOptions) {
 
 function rateLimitRequestHandler (pluginComponent, params) {
   const { rateLimitRan, store } = pluginComponent
-  const timeWindowString = ms.format(params.timeWindow, true)
+
+  let timeWindowString
+  if (typeof params.timeWindow === 'number') {
+    timeWindowString = ms.format(params.timeWindow, true)
+  }
 
   return async (req, res) => {
     if (req[rateLimitRan]) {
@@ -204,58 +222,57 @@ function rateLimitRequestHandler (pluginComponent, params) {
     }
 
     const max = typeof params.max === 'number' ? params.max : await params.max(req, key)
+    const timeWindow = typeof params.timeWindow === 'number' ? params.timeWindow : await params.timeWindow(req, key)
     let current = 0
     let ttl = 0
-    let timeLeftInSeconds = 0
-    let ban = false
+    let ttlInSeconds = 0
 
     // We increment the rate limit for the current request
     try {
       const res = await new Promise((resolve, reject) => {
         store.incr(key, (err, res) => {
           err ? reject(err) : resolve(res)
-        }, max, params.ban)
+        }, timeWindow, max)
       })
 
       current = res.current
       ttl = res.ttl
-      ban = res.ban ?? (params.ban !== -1 && current - max > params.ban)
+      ttlInSeconds = Math.ceil(res.ttl / 1000)
     } catch (err) {
       if (!params.skipOnError) {
         throw err
       }
     }
 
-    timeLeftInSeconds = Math.ceil(ttl / 1000)
-
     if (current <= max) {
       if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
       if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, max - current) }
-      if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
+      if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, ttlInSeconds) }
 
-      params.onExceeding?.(req, key)
+      params.onExceeding(req, key)
 
       return
     }
 
-    params.onExceeded?.(req, key)
+    params.onExceeded(req, key)
 
     if (params.addHeaders[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
     if (params.addHeaders[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, 0) }
-    if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, timeLeftInSeconds) }
-    if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, timeLeftInSeconds) }
+    if (params.addHeaders[params.labels.rateReset]) { res.header(params.labels.rateReset, ttlInSeconds) }
+    if (params.addHeaders[params.labels.retryAfter]) { res.header(params.labels.retryAfter, ttlInSeconds) }
 
     const respCtx = {
       statusCode: 429,
-      ban,
+      ban: false,
       max,
       ttl,
-      after: timeWindowString
+      after: timeWindowString ?? ms.format(timeWindow, true)
     }
 
-    if (ban) {
+    if (params.ban !== -1 && current - max > params.ban) {
       respCtx.statusCode = 403
-      params.onBanReach?.(req, key)
+      respCtx.ban = true
+      params.onBanReach(req, key)
     }
 
     throw params.errorResponseBuilder(req, respCtx)

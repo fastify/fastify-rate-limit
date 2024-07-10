@@ -29,21 +29,21 @@
   },
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
   "devDependencies": {
-    "@fastify/pre-commit": "^2.0.2",
-    "@sinonjs/fake-timers": "^11.0.0",
-    "@types/node": "^20.1.1",
-    "fastify": "^4.7.0",
-    "ioredis": "^5.0.5",
-    "knex": "^3.0.1",
-    "sqlite3": "^5.0.2",
-    "standard": "^17.0.0",
-    "tap": "^16.0.0",
-    "tsd": "^0.31.0"
+    "@fastify/pre-commit": "^2.1.0",
+    "@sinonjs/fake-timers": "^11.2.2",
+    "@types/node": "^20.14.10",
+    "fastify": "^5.0.0-alpha.3",
+    "ioredis": "^5.4.1",
+    "knex": "^3.1.0",
+    "sqlite3": "^5.1.7",
+    "standard": "^17.1.0",
+    "tap": "20.0.3",
+    "tsd": "^0.31.1"
   },
   "dependencies": {
-    "@lukeed/ms": "^2.0.1",
-    "fastify-plugin": "^4.0.0",
-    "toad-cache": "^3.3.1"
+    "@lukeed/ms": "^2.0.2",
+    "fastify-plugin": "^5.0.0-pre.fv5.1",
+    "toad-cache": "^3.7.0"
   },
   "publishConfig": {
     "access": "public"
