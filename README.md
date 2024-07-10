@@ -436,18 +436,11 @@ The response will have the following headers if `enableDraftSpec` is `true`:
 |`retry-after`           | contains the same value in time as `ratelimit-reset`
 
 ### Contribute
-To run tests locally, you need a Redis instance.
-Here's a sample `docker-compose.yml` file to run Redis in your local environment:
-
-```yaml
-version: '3.8'
-
-services:
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
+To run tests locally, you need a Redis instance that you can launch with this command:
 ```
+npm run redis
+```
+
 
 <a name="license"></a>
 ## License
