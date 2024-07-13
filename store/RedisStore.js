@@ -7,10 +7,8 @@ const lua = `
   local timeWindow = tonumber(ARGV[1])
   -- Max requests
   local max = tonumber(ARGV[2])
-  -- Ban after this number is exceeded
-  local ban = tonumber(ARGV[3])
   -- Flag to determine if TTL should be reset after exceeding
-  local continueExceeding = ARGV[4] == 'true'
+  local continueExceeding = ARGV[3] == 'true'
 
   -- Increment the key's value
   local current = redis.call('INCR', key)
@@ -24,13 +22,12 @@ const lua = `
     ttl = timeWindow
   end
 
-  return {current, ttl, ban ~= -1 and current - max > ban}
+  return {current, ttl}
 `
 
-function RedisStore (redis, timeWindow, continueExceeding, key) {
-  this.redis = redis
-  this.timeWindow = timeWindow
+function RedisStore (continueExceeding, redis, key = 'fastify-rate-limit-') {
   this.continueExceeding = continueExceeding
+  this.redis = redis
   this.key = key
 
   if (!this.redis.rateLimit) {
@@ -41,14 +38,14 @@ function RedisStore (redis, timeWindow, continueExceeding, key) {
   }
 }
 
-RedisStore.prototype.incr = function (ip, cb, max, ban) {
-  this.redis.rateLimit(this.key + ip, this.timeWindow, max, ban, this.continueExceeding, (err, result) => {
-    err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1], ban: result[2] })
+RedisStore.prototype.incr = function (ip, cb, timeWindow, max) {
+  this.redis.rateLimit(this.key + ip, timeWindow, max, this.continueExceeding, (err, result) => {
+    err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
   })
 }
 
 RedisStore.prototype.child = function (routeOptions) {
-  return new RedisStore(this.redis, routeOptions.timeWindow, routeOptions.continueExceeding, this.key + routeOptions.routeInfo.method + routeOptions.routeInfo.url + '-')
+  return new RedisStore(routeOptions.continueExceeding, this.redis, `${this.key}${routeOptions.routeInfo.method}${routeOptions.routeInfo.url}-`)
 }
 
 module.exports = RedisStore
