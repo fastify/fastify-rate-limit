@@ -435,6 +435,12 @@ The response will have the following headers if `enableDraftSpec` is `true`:
 |`ratelimit-reset`       | how many seconds must pass before the rate limit resets
 |`retry-after`           | contains the same value in time as `ratelimit-reset`
 
+### Contribute
+To run tests locally, you need a Redis instance that you can launch with this command:
+```
+npm run redis
+```
+
 <a name="license"></a>
 ## License
 **[MIT](https://github.com/fastify/fastify-rate-limit/blob/master/LICENSE)**<br>
