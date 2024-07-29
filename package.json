@@ -31,7 +31,7 @@
   "devDependencies": {
     "@fastify/pre-commit": "^2.1.0",
     "@sinonjs/fake-timers": "^11.2.2",
-    "@types/node": "^20.14.10",
+    "@types/node": "^22.0.0",
     "fastify": "^5.0.0-alpha.3",
     "ioredis": "^5.4.1",
     "knex": "^3.1.0",
