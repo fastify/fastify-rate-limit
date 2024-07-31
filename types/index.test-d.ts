@@ -7,6 +7,7 @@ import fastify, {
 } from 'fastify'
 import * as http2 from 'http2'
 import { default as ioredis } from 'ioredis'
+import pino from 'pino';
 import fastifyRateLimit, {
   errorResponseBuilderContext,
   FastifyRateLimitOptions,
@@ -160,3 +161,15 @@ const errorResponseContext: errorResponseBuilderContext = {
   max: 1000,
   ttl: 123
 }
+const appWithCustomLogger = fastify({
+  logger: pino(),
+}).withTypeProvider()
+
+appWithCustomLogger.register(fastifyRateLimit, options1)
+
+appWithCustomLogger.route({
+  method: 'GET',
+  url: '/',
+  preHandler: appWithCustomLogger.rateLimit({}),
+  handler: () => {},
+})
