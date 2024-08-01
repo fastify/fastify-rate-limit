@@ -280,7 +280,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
 }
 
 module.exports = fp(fastifyRateLimit, {
-  fastify: '4.x',
+  fastify: '5.x',
   name: '@fastify/rate-limit'
 })
 module.exports.default = fastifyRateLimit
