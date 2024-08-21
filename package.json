@@ -10,7 +10,7 @@
     "lint:fix": "standard --fix",
     "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
     "test": "npm run test:unit && npm run test:typescript",
-    "test:unit": "tap",
+    "test:unit": "c8 --100 node --test",
     "test:typescript": "tsd"
   },
   "repository": {
@@ -32,12 +32,12 @@
     "@fastify/pre-commit": "^2.1.0",
     "@sinonjs/fake-timers": "^11.2.2",
     "@types/node": "^22.0.0",
+    "c8": "^10.1.2",
     "fastify": "^5.0.0-alpha.3",
     "ioredis": "^5.4.1",
     "knex": "^3.1.0",
     "sqlite3": "^5.1.7",
     "standard": "^17.1.0",
-    "tap": "20.0.3",
     "tsd": "^0.31.1"
   },
   "dependencies": {
