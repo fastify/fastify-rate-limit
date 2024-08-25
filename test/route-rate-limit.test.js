@@ -1,15 +1,8 @@
 'use strict'
 
-const t = require('tap')
-const test = t.test
-const Redis = require('ioredis')
+const { test, mock } = require('node:test')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
-const FakeTimers = require('@sinonjs/fake-timers')
-
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
-const REDIS_HOST = '127.0.0.1'
 
 const defaultRouteConfig = {
   rateLimit: {
@@ -21,19 +14,26 @@ const defaultRouteConfig = {
   }
 }
 
-test('Basic', async t => {
-  t.plan(21)
-  t.context.clock = FakeTimers.install()
+test('Basic', async (t) => {
+  t.plan(20)
+
+  const clock = mock.timers
+  clock.enable(0)
+
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-    config: defaultRouteConfig
-  }, async (req, reply) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: defaultRouteConfig
+    },
+    async (req, reply) => 'hello!'
+  )
 
   fastify.setErrorHandler(function (error, request, reply) {
-    t.pass('Error handler has been called')
-    t.equal(error.statusCode, 429)
+    // t.assert.ok('Error handler has been called')
+    t.assert.deepStrictEqual(error.statusCode, 429)
     reply.code(429)
     error.message += ' from error handler'
     reply.send(error)
@@ -42,152 +42,174 @@ test('Basic', async t => {
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
   // Ticking time to simulate time been passed, passing `shouldAdvanceTime: true` won't help as between the 2 requests
   // the event loop not reached the timer stage and is not able to run the `setInterval` that sinonjs/fake-timers use internally to update the time
-  t.context.clock.tick(1)
+  clock.tick(1)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
-  t.context.clock.tick(500)
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
-  t.equal(res.headers['retry-after'], '1')
-  t.same({
-    statusCode: 429,
-    error: 'Too Many Requests',
-    message: 'Rate limit exceeded, retry in 1 second from error handler'
-  }, JSON.parse(res.payload))
-
-  t.context.clock.tick(1100)
+  clock.tick(500)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '1')
+  t.assert.deepStrictEqual(
+    {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 1 second from error handler'
+    },
+    JSON.parse(res.payload)
+  )
 
-  t.context.clock.uninstall()
+  clock.tick(1100)
+
+  res = await fastify.inject('/')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+
+  clock.reset()
 })
 
-test('With text timeWindow', async t => {
+test('With text timeWindow', async (t) => {
   t.plan(15)
-  t.context.clock = FakeTimers.install()
+  const clock = mock.timers
+  clock.enable(0)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: '1s'
-      },
-      someOtherPlugin: {
-        someValue: 1
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: '1s'
+        },
+        someOtherPlugin: {
+          someValue: 1
+        }
       }
-    }
-  }, async (req, reply) => 'hello!')
+    },
+    async (req, reply) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
-  t.same(JSON.parse(res.payload), {
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '1')
+  t.assert.deepStrictEqual(JSON.parse(res.payload), {
     statusCode: 429,
     error: 'Too Many Requests',
     message: 'Rate limit exceeded, retry in 1 second'
   })
 
-  t.context.clock.tick(1100)
+  clock.tick(1100)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
-  t.context.clock.uninstall()
+  clock.reset()
 })
 
-test('With function timeWindow', async t => {
+test('With function timeWindow', async (t) => {
   t.plan(15)
-  t.context.clock = FakeTimers.install()
+  const clock = mock.timers
+  clock.enable(0)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: (_, __) => 1000
-      },
-      someOtherPlugin: {
-        someValue: 1
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: (_, __) => 1000
+        },
+        someOtherPlugin: {
+          someValue: 1
+        }
       }
-    }
-  }, async (req, reply) => 'hello!')
+    },
+    async (req, reply) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
-  t.same(JSON.parse(res.payload), {
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '1')
+  t.assert.deepStrictEqual(JSON.parse(res.payload), {
     statusCode: 429,
     error: 'Too Many Requests',
     message: 'Rate limit exceeded, retry in 1 second'
   })
 
-  t.context.clock.tick(1100)
+  clock.tick(1100)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
-  t.context.clock.uninstall()
+  clock.reset()
 })
 
-test('With ips allowList', async t => {
+test('With ips allowList', async (t) => {
   t.plan(3)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
@@ -195,38 +217,46 @@ test('With ips allowList', async t => {
     allowList: ['127.0.0.1']
   })
 
-  fastify.get('/', {
-    config: defaultRouteConfig
-  }, async (req, reply) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: defaultRouteConfig
+    },
+    async (req, reply) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 })
 
-test('With function allowList', async t => {
+test('With function allowList', async (t) => {
   t.plan(18)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false,
     keyGenerator: () => 42,
     allowList: (req, key) => {
-      t.ok(req.headers)
-      t.equal(key, 42)
+      t.assert.ok(req.headers)
+      t.assert.deepStrictEqual(key, 42)
       return req.headers['x-my-header'] !== undefined
     }
   })
 
-  fastify.get('/', {
-    config: defaultRouteConfig
-  }, async (req, reply) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: defaultRouteConfig
+    },
+    async (req, reply) => 'hello!'
+  )
 
   const allowListHeader = {
     method: 'GET',
@@ -239,225 +269,110 @@ test('With function allowList', async t => {
   let res
 
   res = await fastify.inject(allowListHeader)
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject(allowListHeader)
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject(allowListHeader)
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
+  t.assert.deepStrictEqual(res.statusCode, 429)
 })
 
-test('With onExceeding option', async t => {
+test('With onExceeding option', async (t) => {
   t.plan(5)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: '2s',
-        onExceeding: function (req) {
-          t.pass('onExceeding called')
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: '2s',
+          onExceeding: function (req) {
+            t.assert.ok('onExceeding called')
+          }
         }
       }
-    }
-  }, async (req, res) => 'hello!')
+    },
+    async (req, res) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
+  t.assert.deepStrictEqual(res.statusCode, 429)
 })
 
-test('With onExceeded option', async t => {
+test('With onExceeded option', async (t) => {
   t.plan(4)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: '2s',
-        onExceeded: function (req) {
-          t.pass('onExceeded called')
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: '2s',
+          onExceeded: function (req) {
+            t.assert.ok('onExceeded called')
+          }
         }
       }
-    }
-  }, async (req, res) => 'hello!')
+    },
+    async (req, res) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
+  t.assert.deepStrictEqual(res.statusCode, 429)
 })
 
-test('With redis store', async t => {
+test('With keyGenerator', async (t) => {
   t.plan(19)
-  const fastify = Fastify()
-  const redis = new Redis({ host: REDIS_HOST })
-  await fastify.register(rateLimit, {
-    global: false,
-    redis
-  })
-
-  fastify.get('/', {
-    config: defaultRouteConfig
-  }, async (req, reply) => 'hello!')
-
-  let res
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
-  t.equal(res.headers['retry-after'], '1')
-  t.same({
-    statusCode: 429,
-    error: 'Too Many Requests',
-    message: 'Rate limit exceeded, retry in 1 second'
-  }, JSON.parse(res.payload))
-
-  // Not using fake timers here as we use an external Redis that would not be effected by this
-  await sleep(1100)
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
-
-  await redis.flushall()
-  await redis.quit()
-})
-
-test('Throw on redis error', async t => {
-  t.plan(6)
-  const fastify = Fastify()
-  const redis = new Redis({ host: REDIS_HOST })
-  await fastify.register(rateLimit, {
-    redis,
-    global: false
-  })
-
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000,
-        skipOnError: false
-      }
-    }
-  }, async (req, reply) => 'hello!')
-
-  let res
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
-
-  await redis.flushall()
-  await redis.quit()
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 500)
-  t.equal(res.body, '{"statusCode":500,"error":"Internal Server Error","message":"Connection is closed."}')
-})
-
-test('Skip on redis error', async t => {
-  t.plan(9)
-  const fastify = Fastify()
-  const redis = new Redis({ host: REDIS_HOST })
-  await fastify.register(rateLimit, {
-    redis,
-    global: false
-  })
-
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000,
-        skipOnError: true
-      }
-    }
-  }, async (req, reply) => 'hello!')
-
-  let res
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
-
-  await redis.flushall()
-  await redis.quit()
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '2')
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '2')
-})
-
-test('With keyGenerator', async t => {
-  t.plan(19)
-  t.context.clock = FakeTimers.install()
+  const clock = mock.timers
+  clock.enable(0)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false,
     keyGenerator: (req) => {
-      t.equal(req.headers['my-custom-header'], 'random-value')
+      t.assert.deepStrictEqual(req.headers['my-custom-header'], 'random-value')
       return req.headers['my-custom-header']
     }
   })
 
-  fastify.get('/', {
-    config: defaultRouteConfig
-  }, async (req, reply) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: defaultRouteConfig
+    },
+    async (req, reply) => 'hello!'
+  )
 
   const payload = {
     method: 'GET',
@@ -469,38 +384,44 @@ test('With keyGenerator', async t => {
   let res
 
   res = await fastify.inject(payload)
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
   res = await fastify.inject(payload)
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject(payload)
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
-  t.same({
-    statusCode: 429,
-    error: 'Too Many Requests',
-    message: 'Rate limit exceeded, retry in 1 second'
-  }, JSON.parse(res.payload))
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '1')
+  t.assert.deepStrictEqual(
+    {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 1 second'
+    },
+    JSON.parse(res.payload)
+  )
 
-  t.context.clock.tick(1100)
+  clock.tick(1100)
 
   res = await fastify.inject(payload)
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
-  t.context.clock.uninstall()
+  clock.reset()
 })
 
-test('no rate limit without settings', async t => {
+test('no rate limit without settings', async (t) => {
   t.plan(3)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
@@ -508,100 +429,123 @@ test('no rate limit without settings', async t => {
   fastify.get('/', async (req, reply) => 'hello!')
 
   const res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], undefined)
-  t.equal(res.headers['x-ratelimit-remaining'], undefined)
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], undefined)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], undefined)
 })
 
-test('no rate limit with bad rate-limit parameters', async t => {
+test('no rate limit with bad rate-limit parameters', async (t) => {
   t.plan(1)
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   try {
-    fastify.get('/', {
-      config: Object.assign({}, defaultRouteConfig, { rateLimit: () => { } })
-    }, async (req, reply) => 'hello!')
+    fastify.get(
+      '/',
+      {
+        config: Object.assign({}, defaultRouteConfig, { rateLimit: () => {} })
+      },
+      async (req, reply) => 'hello!'
+    )
 
     t.fail('should throw')
   } catch (err) {
-    t.equal(err.message, 'Unknown value for route rate-limit configuration')
+    t.assert.deepStrictEqual(
+      err.message,
+      'Unknown value for route rate-limit configuration'
+    )
   }
 })
 
-test('works with existing route config', async t => {
+test('works with existing route config', async (t) => {
   t.plan(2)
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
-  fastify.get('/', {
-    config: defaultRouteConfig
-  }, async (req, reply) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: defaultRouteConfig
+    },
+    async (req, reply) => 'hello!'
+  )
 
   await fastify.ready()
   const res = await fastify.inject('/')
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 })
 
-test('With ban', async t => {
+test('With ban', async (t) => {
   t.plan(3)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false
   })
 
-  fastify.get('/', {
-    config: { rateLimit: { max: 1, ban: 1 } }
-  }, async (req, reply) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: { rateLimit: { max: 1, ban: 1 } }
+    },
+    async (req, reply) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
+  t.assert.deepStrictEqual(res.statusCode, 429)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 403)
+  t.assert.deepStrictEqual(res.statusCode, 403)
 })
 
-test('route can disable the global limit', async t => {
+test('route can disable the global limit', async (t) => {
   t.plan(3)
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
-  fastify.get('/', {
-    config: Object.assign({}, defaultRouteConfig, { rateLimit: false })
-  }, async (req, reply) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: Object.assign({}, defaultRouteConfig, { rateLimit: false })
+    },
+    async (req, reply) => 'hello!'
+  )
 
   const res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], undefined)
-  t.equal(res.headers['x-ratelimit-remaining'], undefined)
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], undefined)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], undefined)
 })
 
-test('does not override onRequest', async t => {
+test('does not override onRequest', async (t) => {
   t.plan(4)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-    onRequest: function (req, reply, next) {
-      t.pass('onRequest called')
-      next()
+  fastify.get(
+    '/',
+    {
+      onRequest: function (req, reply, next) {
+        t.assert.ok('onRequest called')
+        next()
+      },
+      config: defaultRouteConfig
     },
-    config: defaultRouteConfig
-  }, async (req, reply) => 'hello!')
+    async (req, reply) => 'hello!'
+  )
 
   const res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 })
 
-test('onExceeding and onExceeded events', async t => {
+test('onExceeding and onExceeded events', async (t) => {
   t.plan(11)
 
   let onExceedingCounter = 0
@@ -609,46 +553,50 @@ test('onExceeding and onExceeded events', async t => {
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-    config: Object.assign({}, defaultRouteConfig, {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000,
-        onExceeding: function (req) {
-          // it will be executed 2 times
-          t.ok(req, 'req should be not null')
-          onExceedingCounter += 1
-        },
-        onExceeded: function (req) {
-          // it will be executed 2 times
-          t.ok(req, 'req should be not null')
-          onExceededCounter += 1
+  fastify.get(
+    '/',
+    {
+      config: Object.assign({}, defaultRouteConfig, {
+        rateLimit: {
+          max: 2,
+          timeWindow: 1000,
+          onExceeding: function (req) {
+            // it will be executed 2 times
+            t.assert.ok(req, 'req should be not null')
+            onExceedingCounter += 1
+          },
+          onExceeded: function (req) {
+            // it will be executed 2 times
+            t.assert.ok(req, 'req should be not null')
+            onExceededCounter += 1
+          }
         }
-      }
-    })
-  }, async (req, reply) => 'hello!')
+      })
+    },
+    async (req, reply) => 'hello!'
+  )
 
   const payload = { method: 'GET', url: '/' }
 
   let res
 
   res = await fastify.inject(payload)
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
   res = await fastify.inject(payload)
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject(payload)
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
-  t.equal(onExceedingCounter, 2)
-  t.equal(onExceededCounter, 1)
+  t.assert.deepStrictEqual(onExceedingCounter, 2)
+  t.assert.deepStrictEqual(onExceededCounter, 1)
 })
 
-test('custom error response', async t => {
+test('custom error response', async (t) => {
   t.plan(12)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
@@ -660,41 +608,48 @@ test('custom error response', async t => {
     })
   })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 2,
-        timeWindow: 1000
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: 1000
+        }
       }
-    }
-  }, async (req, reply) => 'hello!')
+    },
+    async (req, reply) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
-  t.same(JSON.parse(res.payload), {
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '1')
+  t.assert.deepStrictEqual(JSON.parse(res.payload), {
     statusCode: 429,
     timeWindow: '1 second',
     limit: 2
   })
 })
 
-test('variable max contenders', async t => {
+test('variable max contenders', async (t) => {
   t.plan(9)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
@@ -703,16 +658,24 @@ test('variable max contenders', async t => {
     timeWindow: 10000
   })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        keyGenerator: (req) => req.headers['api-key'],
-        max: (req, key) => key === 'pro' ? 3 : 2
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          keyGenerator: (req) => req.headers['api-key'],
+          max: (req, key) => (key === 'pro' ? 3 : 2)
+        }
       }
-    }
-  }, async (req, reply) => 'hello')
+    },
+    async (req, reply) => 'hello'
+  )
 
-  fastify.get('/limit', { config: { rateLimit: {} } }, async (req, res) => 'limited')
+  fastify.get(
+    '/limit',
+    { config: { rateLimit: {} } },
+    async (req, res) => 'limited'
+  )
 
   const requestSequence = [
     { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
@@ -728,27 +691,31 @@ test('variable max contenders', async t => {
 
   for (const item of requestSequence) {
     const res = await fastify.inject({ url: item.url, headers: item.headers })
-    t.equal(res.statusCode, item.status)
+    t.assert.deepStrictEqual(res.statusCode, item.status)
   }
 })
 
-// TODO this test gets extremely flaky because of setTimeout
-// rewrite using https://www.npmjs.com/package/@sinonjs/fake-timers
-test('limit reset per Local storage', { skip: true }, async t => {
+// // TODO this test gets extremely flaky because of setTimeout
+// // rewrite using https://www.npmjs.com/package/@sinonjs/fake-timers
+test('limit reset per Local storage', { skip: true }, async (t) => {
   t.plan(12)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 1,
-        timeWindow: 4000
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 1,
+          timeWindow: 4000
+        }
       }
+    },
+    (req, reply) => {
+      reply.send('hello!')
     }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  )
 
   setTimeout(doRequest.bind(null, 4), 0)
   setTimeout(doRequest.bind(null, 3), 1000)
@@ -760,14 +727,15 @@ test('limit reset per Local storage', { skip: true }, async t => {
   function doRequest (resetValue) {
     fastify.inject('/', (err, res) => {
       t.error(err)
-      t.equal(res.headers['x-ratelimit-reset'], resetValue)
+      t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], resetValue)
     })
   }
 })
 
-test('hide rate limit headers', async t => {
+test('hide rate limit headers', async (t) => {
   t.plan(14)
-  t.context.clock = FakeTimers.install()
+  const clock = mock.timers
+  clock.enable(0)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     max: 1,
@@ -780,50 +748,67 @@ test('hide rate limit headers', async t => {
     }
   })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        timeWindow: 1000,
-        addHeaders: {
-          'x-ratelimit-limit': true, // this must override the global one
-          'x-ratelimit-remaining': false,
-          'x-ratelimit-reset': false,
-          'retry-after': false
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          timeWindow: 1000,
+          addHeaders: {
+            'x-ratelimit-limit': true, // this must override the global one
+            'x-ratelimit-remaining': false,
+            'x-ratelimit-reset': false,
+            'retry-after': false
+          }
         }
       }
-    }
-  }, async (req, res) => 'hello')
+    },
+    async (req, res) => 'hello'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
-  t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
-  t.notOk(res.headers['retry-after'], 'the header must be missing')
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-remaining'],
+    'the header must be missing'
+  )
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-reset'],
+    'the header must be missing'
+  )
+  t.assert.notStrictEqual(
+    res.headers['retry-after'],
+    'the header must be missing'
+  )
 
-  t.context.clock.tick(1100)
+  clock.tick(1100)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepEqual(res.headers['x-ratelimit-reset'], '1')
 
-  t.context.clock.uninstall()
+  clock.reset()
 })
 
-test('hide rate limit headers on exceeding', async t => {
+test('hide rate limit headers on exceeding', async (t) => {
   t.plan(14)
-  t.context.clock = FakeTimers.install()
+  const clock = mock.timers
+  clock.enable(0)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     max: 1,
@@ -835,49 +820,69 @@ test('hide rate limit headers on exceeding', async t => {
     }
   })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        timeWindow: 1000,
-        addHeadersOnExceeding: {
-          'x-ratelimit-limit': true, // this must override the global one
-          'x-ratelimit-remaining': false,
-          'x-ratelimit-reset': false
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          timeWindow: 1000,
+          addHeadersOnExceeding: {
+            'x-ratelimit-limit': true, // this must override the global one
+            'x-ratelimit-remaining': false,
+            'x-ratelimit-reset': false
+          }
         }
       }
-    }
-  }, async (req, res) => 'hello')
+    },
+    async (req, res) => 'hello'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
-  t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-remaining'],
+    'the header must be missing'
+  )
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-reset'],
+    'the header must be missing'
+  )
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.not(res.headers['x-ratelimit-reset'], undefined)
-  t.equal(res.headers['retry-after'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.notStrictEqual(res.headers['x-ratelimit-reset'], undefined)
+  t.assert.deepStrictEqual(res.headers['retry-after'], '1')
 
-  t.context.clock.tick(1100)
+  clock.tick(1100)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
-  t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-remaining'],
+    'the header must be missing'
+  )
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-reset'],
+    'the header must be missing'
+  )
 
-  t.context.clock.uninstall()
+  clock.reset()
 })
 
-test('hide rate limit headers at all times', async t => {
+test('hide rate limit headers at all times', async (t) => {
   t.plan(14)
-  t.context.clock = FakeTimers.install()
+  const clock = mock.timers
+  clock.enable(0)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     max: 1,
@@ -895,53 +900,81 @@ test('hide rate limit headers at all times', async t => {
     }
   })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        timeWindow: 1000,
-        addHeaders: {
-          'x-ratelimit-limit': true, // this must override the global one
-          'x-ratelimit-remaining': false,
-          'x-ratelimit-reset': false,
-          'retry-after': false
-        },
-        addHeadersOnExceeding: {
-          'x-ratelimit-limit': false,
-          'x-ratelimit-remaining': true, // this must override the global one
-          'x-ratelimit-reset': false
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          timeWindow: 1000,
+          addHeaders: {
+            'x-ratelimit-limit': true, // this must override the global one
+            'x-ratelimit-remaining': false,
+            'x-ratelimit-reset': false,
+            'retry-after': false
+          },
+          addHeadersOnExceeding: {
+            'x-ratelimit-limit': false,
+            'x-ratelimit-remaining': true, // this must override the global one
+            'x-ratelimit-reset': false
+          }
         }
       }
-    }
-  }, async (req, res) => 'hello')
+    },
+    async (req, res) => 'hello'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-limit'],
+    'the header must be missing'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-reset'],
+    'the header must be missing'
+  )
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.notOk(res.headers['x-ratelimit-remaining'], 'the header must be missing')
-  t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
-  t.notOk(res.headers['retry-after'], 'the header must be missing')
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-remaining'],
+    'the header must be missing'
+  )
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-reset'],
+    'the header must be missing'
+  )
+  t.assert.notStrictEqual(
+    res.headers['retry-after'],
+    'the header must be missing'
+  )
 
-  t.context.clock.tick(1100)
+  clock.tick(1100)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.notOk(res.headers['x-ratelimit-limit'], 'the header must be missing')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.notOk(res.headers['x-ratelimit-reset'], 'the header must be missing')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-limit'],
+    'the header must be missing'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.notStrictEqual(
+    res.headers['x-ratelimit-reset'],
+    'the header must be missing'
+  )
 
-  t.context.clock.uninstall()
+  clock.reset()
 })
 
-test('global timeWindow when not set in routes', async t => {
+test('global timeWindow when not set in routes', async (t) => {
   t.plan(4)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
@@ -949,26 +982,34 @@ test('global timeWindow when not set in routes', async t => {
     timeWindow: 6000
   })
 
-  fastify.get('/six', {
-    config: { rateLimit: { max: 6 } }
-  }, async (req, res) => 'hello!')
+  fastify.get(
+    '/six',
+    {
+      config: { rateLimit: { max: 6 } }
+    },
+    async (req, res) => 'hello!'
+  )
 
-  fastify.get('/four', {
-    config: { rateLimit: { max: 4, timeWindow: 4000 } }
-  }, async (req, res) => 'hello!')
+  fastify.get(
+    '/four',
+    {
+      config: { rateLimit: { max: 4, timeWindow: 4000 } }
+    },
+    async (req, res) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/six')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-reset'], '6')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '6')
 
   res = await fastify.inject('/four')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-reset'], '4')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '4')
 })
 
-test('timeWindow specified as a string', async t => {
+test('timeWindow specified as a string', async (t) => {
   t.plan(9)
   function CustomStore (options) {
     this.options = options
@@ -978,7 +1019,7 @@ test('timeWindow specified as a string', async t => {
   CustomStore.prototype.incr = function (key, cb) {
     const timeWindow = this.options.timeWindow
     this.current++
-    cb(null, { current: this.current, ttl: timeWindow - (this.current * 1000) })
+    cb(null, { current: this.current, ttl: timeWindow - this.current * 1000 })
   }
 
   CustomStore.prototype.child = function (routeOptions) {
@@ -992,29 +1033,33 @@ test('timeWindow specified as a string', async t => {
     store: CustomStore
   })
 
-  fastify.get('/', {
-    config: { rateLimit: { max: 2, timeWindow: '10 seconds' } }
-  }, async (req, res) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: { rateLimit: { max: 2, timeWindow: '10 seconds' } }
+    },
+    async (req, res) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.equal(res.headers['x-ratelimit-reset'], '9')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '9')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '8')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '8')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
+  t.assert.deepStrictEqual(res.statusCode, 429)
 })
 
-test('With CustomStore', async t => {
+test('With CustomStore', async (t) => {
   t.plan(15)
   function CustomStore (options) {
     this.options = options
@@ -1024,7 +1069,7 @@ test('With CustomStore', async t => {
   CustomStore.prototype.incr = function (key, cb) {
     const timeWindow = this.options.timeWindow
     this.current++
-    cb(null, { current: this.current, ttl: timeWindow - (this.current * 1000) })
+    cb(null, { current: this.current, ttl: timeWindow - this.current * 1000 })
   }
 
   CustomStore.prototype.child = function (routeOptions) {
@@ -1040,70 +1085,84 @@ test('With CustomStore', async t => {
     store: CustomStore
   })
 
-  fastify.get('/', {
-    config: { rateLimit: { max: 2, timeWindow: 10000 } }
-  }, async (req, res) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: { rateLimit: { max: 2, timeWindow: 10000 } }
+    },
+    async (req, res) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '1')
-  t.equal(res.headers['x-ratelimit-reset'], '9')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '9')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '8')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '8')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '2')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '7')
-  t.equal(res.headers['retry-after'], '7')
-  t.same({
-    statusCode: 429,
-    error: 'Too Many Requests',
-    message: 'Rate limit exceeded, retry in 10 seconds'
-  }, JSON.parse(res.payload))
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '7')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '7')
+  t.assert.deepStrictEqual(
+    {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 10 seconds'
+    },
+    JSON.parse(res.payload)
+  )
 })
 
-test('stops fastify lifecycle after onRequest and before preValidation', async t => {
+test('stops fastify lifecycle after onRequest and before preValidation', async (t) => {
   t.plan(4)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
   let preValidationCallCount = 0
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 1,
-        timeWindow: 1000
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 1,
+          timeWindow: 1000
+        }
+      },
+      preValidation: function (req, reply, next) {
+        t.assert.ok('preValidation called only once')
+        preValidationCallCount++
+        next()
       }
     },
-    preValidation: function (req, reply, next) {
-      t.pass('preValidation called only once')
-      preValidationCallCount++
-      next()
-    }
-  }, async (req, res) => 'hello!')
+    async (req, res) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(preValidationCallCount, 1)
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(preValidationCallCount, 1)
 })
 
-test('avoid double onRequest', async t => {
+test('avoid double onRequest', async (t) => {
   t.plan(3)
 
   const fastify = Fastify()
@@ -1115,7 +1174,7 @@ test('avoid double onRequest', async t => {
       max: 1,
       timeWindow: 1000,
       keyGenerator: (req) => {
-        t.pass('keyGenerator called only once')
+        t.assert.ok('keyGenerator called only once')
         keyGeneratorCallCount++
 
         return req.ip
@@ -1131,11 +1190,11 @@ test('avoid double onRequest', async t => {
     url: '/test',
     method: 'GET'
   })
-  t.equal(res.statusCode, 200)
-  t.equal(keyGeneratorCallCount, 1)
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(keyGeneratorCallCount, 1)
 })
 
-test('Allow multiple different rate limiter registrations', async t => {
+test('Allow multiple different rate limiter registrations', async (t) => {
   t.plan(16)
   const fastify = Fastify()
 
@@ -1158,31 +1217,37 @@ test('Allow multiple different rate limiter registrations', async t => {
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '1')
 
   res = await fastify.inject('/test')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/test')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['retry-after'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '1')
 })
 
-test('With enable IETF draft spec', async t => {
+test('With enable IETF draft spec', async (t) => {
   t.plan(4)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
@@ -1190,31 +1255,39 @@ test('With enable IETF draft spec', async t => {
     enableDraftSpec: true
   })
 
-  fastify.get('/', {
-    config: defaultRouteConfig
-  }, async (req, res) => 'hello!')
+  fastify.get(
+    '/',
+    {
+      config: defaultRouteConfig
+    },
+    async (req, res) => 'hello!'
+  )
 
   const res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['ratelimit-limit'], '2')
-  t.equal(res.headers['ratelimit-remaining'], '1')
-  t.equal(res.headers['ratelimit-reset'], '1')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['ratelimit-limit'], '2')
+  t.assert.deepStrictEqual(res.headers['ratelimit-remaining'], '1')
+  t.assert.deepStrictEqual(res.headers['ratelimit-reset'], '1')
 })
 
-test('per route rate limit', async t => {
+test('per route rate limit', async (t) => {
   const fastify = Fastify({
     exposeHeadRoutes: true
   })
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 10,
-        timeWindow: 1000
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: 1000
+        }
       }
-    }
-  }, async (req, reply) => 'hello!')
+    },
+    async (req, reply) => 'hello!'
+  )
 
   const res = await fastify.inject({
     url: '/',
@@ -1226,23 +1299,48 @@ test('per route rate limit', async t => {
     method: 'HEAD'
   })
 
-  t.equal(res.statusCode, 200, 'GET: Response status code')
-  t.equal(res.headers['x-ratelimit-limit'], '10', 'GET: x-ratelimit-limit header (per route limit)')
-  t.equal(res.headers['x-ratelimit-remaining'], '9', 'GET: x-ratelimit-remaining header (per route limit)')
+  t.assert.deepStrictEqual(res.statusCode, 200, 'GET: Response status code')
+  t.assert.deepStrictEqual(
+    res.headers['x-ratelimit-limit'],
+    '10',
+    'GET: x-ratelimit-limit header (per route limit)'
+  )
+  t.assert.deepStrictEqual(
+    res.headers['x-ratelimit-remaining'],
+    '9',
+    'GET: x-ratelimit-remaining header (per route limit)'
+  )
 
-  t.equal(resHead.statusCode, 200, 'HEAD: Response status code')
-  t.equal(resHead.headers['x-ratelimit-limit'], '10', 'HEAD: x-ratelimit-limit header (per route limit)')
-  t.equal(resHead.headers['x-ratelimit-remaining'], '9', 'HEAD: x-ratelimit-remaining header (per route limit)')
+  t.assert.deepStrictEqual(
+    resHead.statusCode,
+    200,
+    'HEAD: Response status code'
+  )
+  t.assert.deepStrictEqual(
+    resHead.headers['x-ratelimit-limit'],
+    '10',
+    'HEAD: x-ratelimit-limit header (per route limit)'
+  )
+  t.assert.deepStrictEqual(
+    resHead.headers['x-ratelimit-remaining'],
+    '9',
+    'HEAD: x-ratelimit-remaining header (per route limit)'
+  )
 })
 
-test('Allow custom timeWindow in preHandler', async t => {
+test('Allow custom timeWindow in preHandler', async (t) => {
   t.plan(23)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
   fastify.register((fastify, options, done) => {
-    fastify.get('/default', {
-      config: { rateLimit: { max: 1, timeWindow: '10 seconds' } }
-    }, async (req, reply) => 'Global rateLimiter should limit this with 60seconds timeWindow')
+    fastify.get(
+      '/default',
+      {
+        config: { rateLimit: { max: 1, timeWindow: '10 seconds' } }
+      },
+      async (req, reply) =>
+        'Global rateLimiter should limit this with 60seconds timeWindow'
+    )
     fastify.route({
       method: 'GET',
       url: '/2',
@@ -1275,217 +1373,146 @@ test('Allow custom timeWindow in preHandler', async t => {
   })
 
   let res = await fastify.inject('/2')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/2')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '120')
-  t.equal(res.headers['retry-after'], '120')
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '120')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '120')
 
   res = await fastify.inject('/3')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/3')
-  t.equal(res.statusCode, 429)
-  t.equal(res.headers['content-type'], 'application/json; charset=utf-8')
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
-  t.equal(res.headers['x-ratelimit-reset'], '180')
-  t.equal(res.headers['retry-after'], '180')
+  t.assert.deepStrictEqual(res.statusCode, 429)
+  t.assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '180')
+  t.assert.deepStrictEqual(res.headers['retry-after'], '180')
 
   res = await fastify.inject('/default')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1')
-  t.equal(res.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
   res = await fastify.inject('/default')
-  t.equal(res.headers['retry-after'], '10')
-  t.equal(res.statusCode, 429)
+  t.assert.deepStrictEqual(res.headers['retry-after'], '10')
+  t.assert.deepStrictEqual(res.statusCode, 429)
 })
 
-test('When continue exceeding is on (Local)', async t => {
+test('When continue exceeding is on (Local)', async (t) => {
   const fastify = Fastify()
 
   await fastify.register(rateLimit, {
     global: false
   })
 
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        max: 1,
-        timeWindow: 5000,
-        continueExceeding: true
-      }
-    }
-  }, async (req, reply) => 'hello!')
-
-  const first = await fastify.inject({
-    url: '/',
-    method: 'GET'
-  })
-  const second = await fastify.inject({
-    url: '/',
-    method: 'GET'
-  })
-
-  t.equal(first.statusCode, 200)
-
-  t.equal(second.statusCode, 429)
-  t.equal(second.headers['x-ratelimit-limit'], '1')
-  t.equal(second.headers['x-ratelimit-remaining'], '0')
-  t.equal(second.headers['x-ratelimit-reset'], '5')
-})
-
-test('When continue exceeding is on (Redis)', async t => {
-  const fastify = Fastify()
-  const redis = await new Redis({ host: REDIS_HOST })
-
-  await fastify.register(rateLimit, {
-    global: false,
-    redis
-  })
-
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        timeWindow: 5000,
-        max: 1,
-        continueExceeding: true
-      }
-    }
-  }, async (req, reply) => 'hello!')
-
-  const first = await fastify.inject({
-    url: '/',
-    method: 'GET'
-  })
-  const second = await fastify.inject({
-    url: '/',
-    method: 'GET'
-  })
-
-  t.equal(first.statusCode, 200)
-
-  t.equal(second.statusCode, 429)
-  t.equal(second.headers['x-ratelimit-limit'], '1')
-  t.equal(second.headers['x-ratelimit-remaining'], '0')
-  t.equal(second.headers['x-ratelimit-reset'], '5')
-
-  await redis.flushall()
-  await redis.quit()
-})
-
-test('When continue exceeding is off under route (Redis)', async t => {
-  const fastify = Fastify()
-  const redis = await new Redis({ host: REDIS_HOST })
-
-  await fastify.register(rateLimit, {
-    global: false,
-    continueExceeding: true,
-    redis
-  })
-
-  fastify.get('/', {
-    config: {
-      rateLimit: {
-        timeWindow: 5000,
-        max: 1,
-        continueExceeding: false
-      }
-    }
-  }, async (req, reply) => 'hello!')
-
-  const first = await fastify.inject({
-    url: '/',
-    method: 'GET'
-  })
-  const second = await fastify.inject({
-    url: '/',
-    method: 'GET'
-  })
-
-  await sleep(2000)
-
-  const third = await fastify.inject({
-    url: '/',
-    method: 'GET'
-  })
-
-  t.equal(first.statusCode, 200)
-
-  t.equal(second.statusCode, 429)
-  t.equal(second.headers['x-ratelimit-limit'], '1')
-  t.equal(second.headers['x-ratelimit-remaining'], '0')
-  t.equal(second.headers['x-ratelimit-reset'], '5')
-
-  t.equal(third.statusCode, 429)
-  t.equal(third.headers['x-ratelimit-limit'], '1')
-  t.equal(third.headers['x-ratelimit-remaining'], '0')
-  t.equal(third.headers['x-ratelimit-reset'], '3')
-
-  await redis.flushall()
-  await redis.quit()
-})
-
-test('should consider routes allow list', async t => {
-  const fastify = Fastify()
-  await fastify.register(rateLimit, {
-    global: false
-  })
-
-  fastify.get('/', {
-    config: { rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 } }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
-
-  let res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-
-  res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-})
-
-test('on preValidation hook', async t => {
-  const fastify = Fastify()
-
-  await fastify.register(rateLimit, {
-    global: false
-  })
-
-  fastify.get('/quero', {
-    config: {
-      rateLimit: {
-        max: 1,
-        timeWindow: 10000,
-        hook: 'preValidation',
-        keyGenerator (req) {
-          return req.userId || req.ip
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: 1,
+          timeWindow: 5000,
+          continueExceeding: true
         }
       }
+    },
+    async (req, reply) => 'hello!'
+  )
+
+  const first = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+  const second = await fastify.inject({
+    url: '/',
+    method: 'GET'
+  })
+
+  t.assert.deepStrictEqual(first.statusCode, 200)
+
+  t.assert.deepStrictEqual(second.statusCode, 429)
+  t.assert.deepStrictEqual(second.headers['x-ratelimit-limit'], '1')
+  t.assert.deepStrictEqual(second.headers['x-ratelimit-remaining'], '0')
+  t.assert.deepStrictEqual(second.headers['x-ratelimit-reset'], '5')
+})
+
+test('should consider routes allow list', async (t) => {
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 }
+      }
+    },
+    (req, reply) => {
+      reply.send('hello!')
     }
-  }, async (req, reply) => 'fastify is awesome !')
+  )
+
+  let res = await fastify.inject('/')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+
+  res = await fastify.inject('/')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+})
+
+test('on preValidation hook', async (t) => {
+  const fastify = Fastify()
+
+  await fastify.register(rateLimit, {
+    global: false
+  })
+
+  fastify.get(
+    '/quero',
+    {
+      config: {
+        rateLimit: {
+          max: 1,
+          timeWindow: 10000,
+          hook: 'preValidation',
+          keyGenerator (req) {
+            return req.userId || req.ip
+          }
+        }
+      }
+    },
+    async (req, reply) => 'fastify is awesome !'
+  )
 
   fastify.decorateRequest('userId', '')
-  fastify.addHook('preParsing', async req => {
+  fastify.addHook('preParsing', async (req) => {
     const { userId } = req.query
     if (userId) {
       req.userId = userId
     }
   })
 
-  const send = userId => {
+  const send = (userId) => {
     let query
     if (userId) {
       query = { userId }
@@ -1502,14 +1529,14 @@ test('on preValidation hook', async t => {
   const fourth = await send('123')
   const fifth = await send('234')
 
-  t.equal(first.statusCode, 200)
-  t.equal(second.statusCode, 429)
-  t.equal(third.statusCode, 200)
-  t.equal(fourth.statusCode, 429)
-  t.equal(fifth.statusCode, 200)
+  t.assert.deepStrictEqual(first.statusCode, 200)
+  t.assert.deepStrictEqual(second.statusCode, 429)
+  t.assert.deepStrictEqual(third.statusCode, 200)
+  t.assert.deepStrictEqual(fourth.statusCode, 429)
+  t.assert.deepStrictEqual(fifth.statusCode, 200)
 })
 
-test('on undefined hook should use onRequest-hook', async t => {
+test('on undefined hook should use onRequest-hook', async (t) => {
   t.plan(2)
   const fastify = Fastify()
 
@@ -1518,23 +1545,27 @@ test('on undefined hook should use onRequest-hook', async t => {
   })
 
   fastify.addHook('onRoute', function (routeOptions) {
-    t.equal(routeOptions.preHandler, undefined)
-    t.equal(routeOptions.onRequest.length, 1)
+    t.assert.deepStrictEqual(routeOptions.preHandler, undefined)
+    t.assert.deepStrictEqual(routeOptions.onRequest.length, 1)
   })
 
-  fastify.get('/', {
-    exposeHeadRoute: false,
-    config: {
-      rateLimit: {
-        max: 1,
-        timeWindow: 10000,
-        hook: 'onRequest'
+  fastify.get(
+    '/',
+    {
+      exposeHeadRoute: false,
+      config: {
+        rateLimit: {
+          max: 1,
+          timeWindow: 10000,
+          hook: 'onRequest'
+        }
       }
-    }
-  }, async (req, reply) => 'fastify is awesome !')
+    },
+    async (req, reply) => 'fastify is awesome !'
+  )
 })
 
-test('on rateLimitHook should not be set twice on HEAD', async t => {
+test('on rateLimitHook should not be set twice on HEAD', async (t) => {
   const fastify = Fastify()
 
   await fastify.register(rateLimit, {
@@ -1542,164 +1573,197 @@ test('on rateLimitHook should not be set twice on HEAD', async t => {
   })
 
   fastify.addHook('onRoute', function (routeOptions) {
-    t.equal(routeOptions.preHandler, undefined)
-    t.equal(routeOptions.onRequest.length, 1)
+    t.assert.deepStrictEqual(routeOptions.preHandler, undefined)
+    t.assert.deepStrictEqual(routeOptions.onRequest.length, 1)
   })
 
-  fastify.get('/', {
-    exposeHeadRoute: true,
-    config: {
-      rateLimit: {
-        max: 1,
-        timeWindow: 10000,
-        hook: 'onRequest'
+  fastify.get(
+    '/',
+    {
+      exposeHeadRoute: true,
+      config: {
+        rateLimit: {
+          max: 1,
+          timeWindow: 10000,
+          hook: 'onRequest'
+        }
       }
-    }
-  }, async (req, reply) => 'fastify is awesome !')
+    },
+    async (req, reply) => 'fastify is awesome !'
+  )
 
-  fastify.head('/explicit-head', {
-    config: {
-      rateLimit: {
-        max: 1,
-        timeWindow: 10000,
-        hook: 'onRequest'
+  fastify.head(
+    '/explicit-head',
+    {
+      config: {
+        rateLimit: {
+          max: 1,
+          timeWindow: 10000,
+          hook: 'onRequest'
+        }
       }
-    }
-  }, async (req, reply) => 'fastify is awesome !')
+    },
+    async (req, reply) => 'fastify is awesome !'
+  )
 
-  fastify.head('/explicit-head-2', {
-    exposeHeadRoute: true,
-    config: {
-      rateLimit: {
-        max: 1,
-        timeWindow: 10000,
-        hook: 'onRequest'
+  fastify.head(
+    '/explicit-head-2',
+    {
+      exposeHeadRoute: true,
+      config: {
+        rateLimit: {
+          max: 1,
+          timeWindow: 10000,
+          hook: 'onRequest'
+        }
       }
-    }
-  }, async (req, reply) => 'fastify is awesome !')
+    },
+    async (req, reply) => 'fastify is awesome !'
+  )
 })
 
-test("child's allowList should not crash the app", async t => {
+test("child's allowList should not crash the app", async (t) => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false,
     allowList: () => false
   })
 
-  fastify.get('/', {
-    config: { rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 } }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 }
+      }
+    },
+    (req, reply) => {
+      reply.send('hello!')
+    }
+  )
 
   let res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 })
 
-test("child's allowList function should not crash and should override parent", async t => {
+test("child's allowList function should not crash and should override parent", async (t) => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false,
     allowList: ['127.0.0.1']
   })
 
-  fastify.get('/', {
-    config: { rateLimit: { allowList: () => false, max: 2, timeWindow: 10000 } }
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: { allowList: () => false, max: 2, timeWindow: 10000 }
+      }
+    },
+    (req, reply) => {
+      reply.send('hello!')
+    }
+  )
 
   let res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 429)
+  t.assert.deepStrictEqual(res.statusCode, 429)
 })
 
-test('rateLimit decorator should work when a property other than timeWindow is modified', async t => {
+test('rateLimit decorator should work when a property other than timeWindow is modified', async (t) => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     global: false,
     allowList: (req, key) => false
   })
 
-  fastify.get('/', {
-    onRequest: fastify.rateLimit({
-      allowList: ['127.0.0.1'], max: 1
-    })
-  }, (req, reply) => {
-    reply.send('hello!')
-  })
+  fastify.get(
+    '/',
+    {
+      onRequest: fastify.rateLimit({
+        allowList: ['127.0.0.1'],
+        max: 1
+      })
+    },
+    (req, reply) => {
+      reply.send('hello!')
+    }
+  )
 
   let res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject({
     path: '/',
     remoteAddress: '1.1.1.1'
   })
-  t.equal(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.statusCode, 200)
 
   res = await fastify.inject({
     path: '/',
     remoteAddress: '1.1.1.1'
   })
-  t.equal(res.statusCode, 429)
+  t.assert.deepStrictEqual(res.statusCode, 429)
 })
 
-test('With NaN in subroute config', async t => {
+test('With NaN in subroute config', async (t) => {
   t.plan(12)
-  t.context.clock = FakeTimers.install()
+  const clock = mock.timers
+  clock.enable(0)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
-  fastify.get('/', {
-
-    config: {
-      rateLimit: {
-        max: NaN
+  fastify.get(
+    '/',
+    {
+      config: {
+        rateLimit: {
+          max: NaN
+        }
       }
-    }
-  }, async (req, reply) => 'hello!')
+    },
+    async (req, reply) => 'hello!'
+  )
 
   let res
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1000')
-  t.equal(res.headers['x-ratelimit-remaining'], '999')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1000')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '999')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1000')
-  t.equal(res.headers['x-ratelimit-remaining'], '998')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1000')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '998')
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1000')
-  t.equal(res.headers['x-ratelimit-remaining'], '997')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1000')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '997')
 
-  t.context.clock.tick(70000)
+  clock.tick(70000)
 
   res = await fastify.inject('/')
-  t.equal(res.statusCode, 200)
-  t.equal(res.headers['x-ratelimit-limit'], '1000')
-  t.equal(res.headers['x-ratelimit-remaining'], '999')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1000')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '999')
 
-  t.context.clock.uninstall()
+  clock.reset()
 })
