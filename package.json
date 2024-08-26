@@ -30,7 +30,7 @@
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
   "devDependencies": {
     "@fastify/pre-commit": "^2.1.0",
-    "@sinonjs/fake-timers": "^11.2.2",
+    "@sinonjs/fake-timers": "^13.0.1",
     "@types/node": "^22.0.0",
     "c8": "^10.1.2",
     "fastify": "^5.0.0-alpha.3",
