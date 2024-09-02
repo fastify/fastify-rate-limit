@@ -144,14 +144,13 @@ async function fastifyRateLimit (fastify, settings) {
         const mergedRateLimitParams = mergeParams(globalParams, routeOptions.config.rateLimit, { routeInfo: routeOptions })
         newPluginComponent.store = pluginComponent.store.child(mergedRateLimitParams)
 
-        if(routeOptions?.config?.rateLimit?.groupId){
-          const groupId = routeOptions.config.rateLimit.groupId;
-          if(typeof groupId == 'string'){
+        if (routeOptions?.config?.rateLimit?.groupId) {
+          const groupId = routeOptions.config.rateLimit.groupId
+          if (typeof groupId === 'string') {
             addRouteRateHook(pluginComponent, globalParams, routeOptions)
           } else {
-            throw new Error('groupId must be a string');
+            throw new Error('groupId must be a string')
           }
-    
         } else {
           addRouteRateHook(newPluginComponent, mergedRateLimitParams, routeOptions)
         }
@@ -220,10 +219,10 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     // Retrieve the key from the generator (the global one or the one defined in the endpoint)
     let key = await params.keyGenerator(req)
-    const groupId = req?.routeConfig?.rateLimit?.groupId;
+    const groupId = req?.routeConfig?.rateLimit?.groupId
 
-    if(groupId){
-      key+=groupId
+    if (groupId) {
+      key += groupId
     }
 
     // Don't apply any rate limiting if in the allow list

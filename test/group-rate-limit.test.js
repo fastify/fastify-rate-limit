@@ -9,7 +9,7 @@ test('With multiple routes and custom groupId', async (t) => {
   const clock = mock.timers
   clock.enable(0)
   const fastify = Fastify()
-  
+
   // Register rate limit plugin
   await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
@@ -50,6 +50,7 @@ test('With multiple routes and custom groupId', async (t) => {
 
   res = await fastify.inject('/route1')
   t.assert.deepStrictEqual(res.statusCode, 429)
+  await sleep(10)
   t.assert.deepStrictEqual(
     res.headers['content-type'],
     'application/json; charset=utf-8'
@@ -57,6 +58,7 @@ test('With multiple routes and custom groupId', async (t) => {
   t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
   t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
   t.assert.deepStrictEqual(res.headers['retry-after'], '1')
+  await sleep(10)
   t.assert.deepStrictEqual(
     {
       statusCode: 429,
