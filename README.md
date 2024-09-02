@@ -371,6 +371,31 @@ fastify.get('/public/sub-rated-1', {
 }, (request, reply) => {
   reply.send({ hello: 'from sub-rated-1 ... using default max value ... ' })
 })
+
+// gorup routes and add a rate limit
+fastify.get('/otp/send', {
+  config: {
+    rateLimit: {
+      max: 3,
+      timeWindow: '1 minute',
+      groupId:"OTP"
+    }
+  }
+}, (request, reply) => {
+  reply.send({ hello: 'from ... grouped rate limit' })
+})
+
+fastify.get('/otp/resend', {
+  config: {
+    rateLimit: {
+      max: 3,
+      timeWindow: '1 minute',
+      groupId:"OTP"
+    }
+  }
+}, (request, reply) => {
+  reply.send({ hello: 'from ... grouped rate limit' })
+})
 ```
 
 In the route creation you can override the same settings of the plugin registration plus the following additional options:
