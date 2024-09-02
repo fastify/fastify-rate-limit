@@ -1,15 +1,31 @@
 /// <reference types='node' />
 
 import {
+  ContextConfigDefault,
   FastifyPluginCallback,
   FastifyRequest,
+  FastifySchema,
   preHandlerAsyncHookHandler,
+  RouteGenericInterface,
   RouteOptions
 } from 'fastify';
 
 declare module 'fastify' {
-  interface FastifyInstance {
-    rateLimit: (options?: fastifyRateLimit.RateLimitOptions) => preHandlerAsyncHookHandler;
+  interface FastifyInstance<RawServer, RawRequest, RawReply, Logger, TypeProvider> {
+    rateLimit<
+      RouteGeneric extends RouteGenericInterface = RouteGenericInterface,
+      ContextConfig = ContextConfigDefault,
+      SchemaCompiler extends FastifySchema = FastifySchema,
+    >(options?: fastifyRateLimit.RateLimitOptions): preHandlerAsyncHookHandler<
+      RawServer,
+      RawRequest,
+      RawReply,
+      RouteGeneric,
+      ContextConfig,
+      SchemaCompiler,
+      TypeProvider,
+      Logger
+    >;
   }
   interface FastifyContextConfig {
     rateLimit?: fastifyRateLimit.RateLimitOptions | false;
