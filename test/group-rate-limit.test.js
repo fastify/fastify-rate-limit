@@ -114,3 +114,28 @@ test('With multiple routes and custom groupId', async (t) => {
 
   clock.reset()
 })
+
+test('Invalid groupId type', async (t) => {
+  t.plan(1)
+  const fastify = Fastify()
+
+  // Register rate limit plugin with a route having an invalid groupId
+  await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
+
+  fastify.get('/invalidGroupId', {
+    config: {
+      rateLimit: {
+        max: 2,
+        timeWindow: 1000,
+        groupId: 123 // Invalid groupId type
+      }
+    }
+  }, async (req, reply) => 'hello with invalid groupId!')
+
+  try {
+    await fastify.inject('/invalidGroupId')
+    t.fail('Expected an error to be thrown')
+  } catch (err) {
+    t.assert(err.message.includes('groupId must be a string'))
+  }
+})
