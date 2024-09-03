@@ -135,6 +135,6 @@ test('Invalid groupId type', async (t) => {
     await fastify.inject('/invalidGroupId')
     t.fail('should throw')
   } catch (err) {
-    t.assert.deepStrictEqual(err.message, ('groupId must be a string'))
+    t.assert.deepStrictEqual(err.message, 'groupId must be a string')
   }
 })
