@@ -5,7 +5,6 @@ const rateLimit = require('../index')
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 test('With multiple routes and custom groupId', async (t) => {
-  t.plan(22)
   const clock = mock.timers
   clock.enable(0)
   const fastify = Fastify()
@@ -134,8 +133,8 @@ test('Invalid groupId type', async (t) => {
 
   try {
     await fastify.inject('/invalidGroupId')
-    t.fail('Expected an error to be thrown')
+    t.fail('should throw')
   } catch (err) {
-    t.assert(err.message.includes('groupId must be a string'))
+    t.assert.deepStrictEqual(err.message, ('groupId must be a string'))
   }
 })
