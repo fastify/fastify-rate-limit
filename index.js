@@ -219,7 +219,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     // Retrieve the key from the generator (the global one or the one defined in the endpoint)
     let key = await params.keyGenerator(req)
-    const groupId = req?.routeConfig?.rateLimit?.groupId
+    const groupId = req?.routeOptions?.config?.rateLimit?.groupId
 
     if (groupId) {
       key += groupId

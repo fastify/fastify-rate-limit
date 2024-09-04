@@ -6,6 +6,60 @@ const rateLimit = require('../index')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+test('GroupId from routeConfig', async (t) => {
+  const fastify = Fastify()
+
+  // Register rate limit plugin with groupId in routeConfig
+  await fastify.register(rateLimit, { max: 2, timeWindow: 500 })
+
+  fastify.get(
+    '/routeWithGroupId',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: 500,
+          groupId: 'group1' // groupId specified in routeConfig
+        }
+      }
+    },
+    async (req, reply) => 'hello from route with groupId!'
+  )
+
+  // Test: Request should have the correct groupId in response
+  const res = await fastify.inject({ url: '/routeWithGroupId', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+})
+
+test('GroupId from routeOptions', async (t) => {
+  const fastify = Fastify()
+
+  // Register rate limit plugin with groupId in routeOptions
+  await fastify.register(rateLimit, { max: 2, timeWindow: 500 })
+
+  fastify.get(
+    '/routeWithGroupIdFromOptions',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: 500
+          // groupId not specified here
+        }
+      }
+    },
+    async (req, reply) => 'hello from route with groupId from options!'
+  )
+
+  // Test: Request should have the correct groupId from routeOptions
+  const res = await fastify.inject({ url: '/routeWithGroupIdFromOptions', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+})
+
 test('No groupId provided', async (t) => {
   const fastify = Fastify()
 
@@ -57,7 +111,6 @@ test('No groupId provided', async (t) => {
     JSON.parse(res.payload)
   )
 })
-
 
 test('With multiple routes and custom groupId', async (t) => {
   const fastify = Fastify()
