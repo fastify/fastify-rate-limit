@@ -6,6 +6,59 @@ const rateLimit = require('../index')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+test('No groupId provided', async (t) => {
+  const fastify = Fastify()
+
+  // Register rate limit plugin without groupId
+  await fastify.register(rateLimit, { max: 2, timeWindow: 500 })
+
+  // Route without groupId
+  fastify.get(
+    '/noGroupId',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: 500
+        }
+      }
+    },
+    async (req, reply) => 'hello from no groupId route!'
+  )
+
+  let res
+
+  // Test without groupId
+  res = await fastify.inject({ url: '/noGroupId', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+
+  res = await fastify.inject({ url: '/noGroupId', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+
+  res = await fastify.inject({ url: '/noGroupId', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 429)
+  assert.deepStrictEqual(
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  assert.deepStrictEqual(res.headers['retry-after'], '1')
+  assert.deepStrictEqual(
+    {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 500 ms'
+    },
+    JSON.parse(res.payload)
+  )
+})
+
+
 test('With multiple routes and custom groupId', async (t) => {
   const fastify = Fastify()
 
