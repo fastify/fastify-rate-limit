@@ -1,148 +1,146 @@
-"use strict";
-const { test, mock } = require("node:test");
-const assert = require("assert");
-const Fastify = require("fastify");
-const rateLimit = require("../index");
+'use strict'
+const { test } = require('node:test')
+const assert = require('assert')
+const Fastify = require('fastify')
+const rateLimit = require('../index')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-
-test("With multiple routes and custom groupId", async (t) => {
-  const fastify = Fastify();
+test('With multiple routes and custom groupId', async (t) => {
+  const fastify = Fastify()
 
   // Register rate limit plugin
-  await fastify.register(rateLimit, { max: 2, timeWindow: 500 });
+  await fastify.register(rateLimit, { max: 2, timeWindow: 500 })
 
   // Route 1 with groupId 'group1'
   fastify.get(
-    "/route1",
+    '/route1',
     {
       config: {
         rateLimit: {
           max: 2,
           timeWindow: 500,
-          groupId: "group1",
-        },
-      },
+          groupId: 'group1'
+        }
+      }
     },
-    async (req, reply) => "hello from route 1!"
-  );
+    async (req, reply) => 'hello from route 1!'
+  )
 
   // Route 2 with groupId 'group2'
   fastify.get(
-    "/route2",
+    '/route2',
     {
       config: {
         rateLimit: {
           max: 2,
           timeWindow: 500,
-          groupId: "group2",
-        },
-      },
+          groupId: 'group2'
+        }
+      }
     },
-    async (req, reply) => "hello from route 2!"
-  );
+    async (req, reply) => 'hello from route 2!'
+  )
 
-  let res;
+  let res
 
   // Test Route 1
-  res = await fastify.inject({ url: "/route1", method: "GET" });
-  assert.deepStrictEqual(res.statusCode, 200);
-  assert.deepStrictEqual(res.headers["x-ratelimit-limit"], "2");
-  assert.deepStrictEqual(res.headers["x-ratelimit-remaining"], "1");
+  res = await fastify.inject({ url: '/route1', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
-  res = await fastify.inject({ url: "/route1", method: "GET" });
-  assert.deepStrictEqual(res.statusCode, 200);
-  assert.deepStrictEqual(res.headers["x-ratelimit-limit"], "2");
-  assert.deepStrictEqual(res.headers["x-ratelimit-remaining"], "0");
+  res = await fastify.inject({ url: '/route1', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
-  res = await fastify.inject({ url: "/route1", method: "GET" });
-  assert.deepStrictEqual(res.statusCode, 429);
+  res = await fastify.inject({ url: '/route1', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 429)
   assert.deepStrictEqual(
-    res.headers["content-type"],
-    "application/json; charset=utf-8"
-  );
-  assert.deepStrictEqual(res.headers["x-ratelimit-limit"], "2");
-  assert.deepStrictEqual(res.headers["x-ratelimit-remaining"], "0");
-  assert.deepStrictEqual(res.headers["retry-after"], "1");
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  assert.deepStrictEqual(res.headers['retry-after'], '1')
   assert.deepStrictEqual(
     {
       statusCode: 429,
-      error: "Too Many Requests",
-      message: "Rate limit exceeded, retry in 500 ms",
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 500 ms'
     },
     JSON.parse(res.payload)
-  );
+  )
 
   // Test Route 2
-  res = await fastify.inject({ url: "/route2", method: "GET" });
-  assert.deepStrictEqual(res.statusCode, 200);
-  assert.deepStrictEqual(res.headers["x-ratelimit-limit"], "2");
-  assert.deepStrictEqual(res.headers["x-ratelimit-remaining"], "1");
+  res = await fastify.inject({ url: '/route2', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
-  res = await fastify.inject({ url: "/route2", method: "GET" });
-  assert.deepStrictEqual(res.statusCode, 200);
-  assert.deepStrictEqual(res.headers["x-ratelimit-limit"], "2");
-  assert.deepStrictEqual(res.headers["x-ratelimit-remaining"], "0");
+  res = await fastify.inject({ url: '/route2', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
 
-  res = await fastify.inject({ url: "/route2", method: "GET" });
-  assert.deepStrictEqual(res.statusCode, 429);
+  res = await fastify.inject({ url: '/route2', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 429)
   assert.deepStrictEqual(
-    res.headers["content-type"],
-    "application/json; charset=utf-8"
-  );
-  assert.deepStrictEqual(res.headers["x-ratelimit-limit"], "2");
-  assert.deepStrictEqual(res.headers["x-ratelimit-remaining"], "0");
-  assert.deepStrictEqual(res.headers["retry-after"], "1");
+    res.headers['content-type'],
+    'application/json; charset=utf-8'
+  )
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+  assert.deepStrictEqual(res.headers['retry-after'], '1')
   assert.deepStrictEqual(
     {
       statusCode: 429,
-      error: "Too Many Requests",
-      message: "Rate limit exceeded, retry in 500 ms",
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 500 ms'
     },
     JSON.parse(res.payload)
-  );
+  )
 
   // Wait for the window to reset
-  await sleep(1000);
+  await sleep(1000)
 
   // After reset, Route 1 should succeed again
-  res = await fastify.inject({ url: "/route1", method: "GET" });
-  assert.deepStrictEqual(res.statusCode, 200);
-  assert.deepStrictEqual(res.headers["x-ratelimit-limit"], "2");
-  assert.deepStrictEqual(res.headers["x-ratelimit-remaining"], "1");
+  res = await fastify.inject({ url: '/route1', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
   // Route 2 should also succeed after the reset
-  res = await fastify.inject({ url: "/route2", method: "GET" });
-  assert.deepStrictEqual(res.statusCode, 200);
-  assert.deepStrictEqual(res.headers["x-ratelimit-limit"], "2");
-  assert.deepStrictEqual(res.headers["x-ratelimit-remaining"], "1");
+  res = await fastify.inject({ url: '/route2', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+})
 
-});
-
-test("Invalid groupId type", async (t) => {
-  const fastify = Fastify();
+test('Invalid groupId type', async (t) => {
+  const fastify = Fastify()
 
   // Register rate limit plugin with a route having an invalid groupId
-  await fastify.register(rateLimit, { max: 2, timeWindow: 1000 });
+  await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
   try {
     fastify.get(
-      "/invalidGroupId",
+      '/invalidGroupId',
       {
         config: {
           rateLimit: {
             max: 2,
             timeWindow: 1000,
-            groupId: 123, // Invalid groupId type
-          },
-        },
+            groupId: 123 // Invalid groupId type
+          }
+        }
       },
-      async (req, reply) => "hello with invalid groupId!"
-    );
-    assert.fail("should throw");
-    console.log("HER")
+      async (req, reply) => 'hello with invalid groupId!'
+    )
+    assert.fail('should throw')
+    console.log('HER')
   } catch (err) {
-    assert.deepStrictEqual(err.message, "groupId must be a string");
+    assert.deepStrictEqual(err.message, 'groupId must be a string')
   }
-});
+})
