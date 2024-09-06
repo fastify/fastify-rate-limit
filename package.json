@@ -1,6 +1,6 @@
 {
   "name": "@fastify/rate-limit",
-  "version": "10.0.0-pre.fv5.2",
+  "version": "10.0.0",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "type": "commonjs",
@@ -33,7 +33,7 @@
     "@sinonjs/fake-timers": "^13.0.1",
     "@types/node": "^22.0.0",
     "c8": "^10.1.2",
-    "fastify": "^5.0.0-alpha.3",
+    "fastify": "^5.0.0-alpha.4",
     "ioredis": "^5.4.1",
     "knex": "^3.1.0",
     "sqlite3": "^5.1.7",
@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@lukeed/ms": "^2.0.2",
-    "fastify-plugin": "^5.0.0-pre.fv5.1",
+    "fastify-plugin": "^5.0.0",
     "toad-cache": "^3.7.0"
   },
   "publishConfig": {
