@@ -41,6 +41,7 @@ const options1: RateLimitPluginOptions = {
   ban: 10,
   continueExceeding: false,
   keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
+  groupId: '42',
   errorResponseBuilder: (
     req: FastifyRequest<RequestGenericInterface>,
     context: errorResponseBuilderContext

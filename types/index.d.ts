@@ -118,6 +118,7 @@ declare namespace fastifyRateLimit {
     ban?: number;
     onBanReach?: (req: FastifyRequest, key: string) => void;
     keyGenerator?: (req: FastifyRequest) => string | number | Promise<string | number>;
+    groupId?: string;
     errorResponseBuilder?: (
       req: FastifyRequest,
       context: errorResponseBuilderContext
