@@ -1,10 +1,12 @@
 'use strict'
 
-const { test, mock } = require('node:test')
+const { mock } = require('node:test')
+const tap = require('tap')
+const assert = require('node:assert')
 const Fastify = require('fastify')
 const rateLimit = require('../../index')
 
-test('issue #215 - when using local store, 2nd user should not be rate limited when the time window is passed for the 1st user', async (t) => {
+tap.test('issue #215 - when using local store, 2nd user should not be rate limited when the time window is passed for the 1st user', async (t) => {
   t.plan(5)
   const clock = mock.timers
   clock.enable()
@@ -67,21 +69,23 @@ test('issue #215 - when using local store, 2nd user should not be rate limited w
     remoteAddress: '2.2.2.2'
   })
 
-  t.assert.deepStrictEqual(user1FirstRequest.statusCode, 200)
-  t.assert.deepStrictEqual(user2FirstRequest.statusCode, 200)
+  assert.deepStrictEqual(user1FirstRequest.statusCode, 200)
+  assert.deepStrictEqual(user2FirstRequest.statusCode, 200)
 
-  t.assert.deepStrictEqual(
+  assert.deepStrictEqual(
     user2SecondRequestAndShouldBeRateLimited.statusCode,
     429
   )
-  t.assert.deepStrictEqual(
+  assert.deepStrictEqual(
     user2ThirdRequestAndShouldStillBeRateLimited.statusCode,
     429
   )
 
-  t.assert.deepStrictEqual(
+  assert.deepStrictEqual(
     user2OkResponseAfterRateLimitCompleted.statusCode,
     200
   )
   clock.reset()
+
+  t.end()
 })

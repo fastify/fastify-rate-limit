@@ -1,6 +1,8 @@
 'use strict'
 
-const { test, describe } = require('node:test')
+const { describe } = require('node:test')
+const tap = require('tap')
+const assert = require('node:assert')
 const Redis = require('ioredis')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
@@ -10,7 +12,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const REDIS_HOST = '127.0.0.1'
 
 describe('Global rate limit', () => {
-  test('With redis store', async (t) => {
+  tap.test('With redis store', async (t) => {
     t.plan(21)
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
@@ -25,32 +27,32 @@ describe('Global rate limit', () => {
     let res
 
     res = await fastify.inject('/')
-    t.assert.strictEqual(res.statusCode, 200)
-    t.assert.ok(res)
-    t.assert.strictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.strictEqual(res.statusCode, 200)
+    assert.ok(res)
+    assert.strictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     await sleep(100)
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 429)
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.statusCode, 429)
+    assert.deepStrictEqual(
       res.headers['content-type'],
       'application/json; charset=utf-8'
     )
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
-    t.assert.deepStrictEqual(res.headers['retry-after'], '1')
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.headers['retry-after'], '1')
+    assert.deepStrictEqual(
       {
         statusCode: 429,
         error: 'Too Many Requests',
@@ -64,16 +66,16 @@ describe('Global rate limit', () => {
 
     res = await fastify.inject('/')
 
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     await redis.flushall()
     await redis.quit()
   })
 
-  test('With redis store (ban)', async (t) => {
+  tap.test('With redis store (ban)', async (t) => {
     t.plan(19)
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
@@ -89,28 +91,28 @@ describe('Global rate limit', () => {
     let res
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 429)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.statusCode, 429)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 403)
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.statusCode, 403)
+    assert.deepStrictEqual(
       res.headers['content-type'],
       'application/json; charset=utf-8'
     )
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
-    t.assert.deepStrictEqual(res.headers['retry-after'], '1')
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.headers['retry-after'], '1')
+    assert.deepStrictEqual(
       {
         statusCode: 403,
         error: 'Forbidden',
@@ -124,16 +126,16 @@ describe('Global rate limit', () => {
 
     res = await fastify.inject('/')
 
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     await redis.flushall()
     await redis.quit()
   })
 
-  test('Skip on redis error', async (t) => {
+  tap.test('Skip on redis error', async (t) => {
     t.plan(9)
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
@@ -149,25 +151,25 @@ describe('Global rate limit', () => {
     let res
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
     await redis.flushall()
     await redis.quit()
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '2')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '2')
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '2')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '2')
   })
 
-  test('Throw on redis error', async (t) => {
+  tap.test('Throw on redis error', async (t) => {
     t.plan(5)
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
@@ -183,22 +185,22 @@ describe('Global rate limit', () => {
     let res
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
     await redis.flushall()
     await redis.quit()
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 500)
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.statusCode, 500)
+    assert.deepStrictEqual(
       res.body,
       '{"statusCode":500,"error":"Internal Server Error","message":"Connection is closed."}'
     )
   })
 
-  test('When continue exceeding is on (Redis)', async (t) => {
+  tap.test('When continue exceeding is on (Redis)', async (t) => {
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
 
@@ -220,18 +222,18 @@ describe('Global rate limit', () => {
       method: 'GET'
     })
 
-    t.assert.deepStrictEqual(first.statusCode, 200)
+    assert.deepStrictEqual(first.statusCode, 200)
 
-    t.assert.deepStrictEqual(second.statusCode, 429)
-    t.assert.deepStrictEqual(second.headers['x-ratelimit-limit'], '1')
-    t.assert.deepStrictEqual(second.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(second.headers['x-ratelimit-reset'], '5')
+    assert.deepStrictEqual(second.statusCode, 429)
+    assert.deepStrictEqual(second.headers['x-ratelimit-limit'], '1')
+    assert.deepStrictEqual(second.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(second.headers['x-ratelimit-reset'], '5')
 
     await redis.flushall()
     await redis.quit()
   })
 
-  test('Redis with continueExceeding should not always return the timeWindow as ttl', async (t) => {
+  tap.test('Redis with continueExceeding should not always return the timeWindow as ttl', async (t) => {
     t.plan(19)
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
@@ -247,31 +249,31 @@ describe('Global rate limit', () => {
     let res
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '3')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '3')
 
     // After this sleep, we should not see `x-ratelimit-reset === 3` anymore
     await sleep(1000)
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '2')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '2')
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 429)
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.statusCode, 429)
+    assert.deepStrictEqual(
       res.headers['content-type'],
       'application/json; charset=utf-8'
     )
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '3')
-    t.assert.deepStrictEqual(res.headers['retry-after'], '3')
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '3')
+    assert.deepStrictEqual(res.headers['retry-after'], '3')
+    assert.deepStrictEqual(
       {
         statusCode: 429,
         error: 'Too Many Requests',
@@ -285,16 +287,16 @@ describe('Global rate limit', () => {
 
     res = await fastify.inject('/')
 
-    t.assert.deepStrictEqual(res.statusCode, 429)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '3')
+    assert.deepStrictEqual(res.statusCode, 429)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '3')
 
     await redis.flushall()
     await redis.quit()
   })
 
-  test('When use a custom nameSpace', async (t) => {
+  tap.test('When use a custom nameSpace', async (t) => {
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
 
@@ -319,28 +321,28 @@ describe('Global rate limit', () => {
     let res
 
     res = await fastify.inject(allowListHeader)
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     res = await fastify.inject(allowListHeader)
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     res = await fastify.inject(allowListHeader)
-    t.assert.deepStrictEqual(res.statusCode, 429)
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.statusCode, 429)
+    assert.deepStrictEqual(
       res.headers['content-type'],
       'application/json; charset=utf-8'
     )
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
-    t.assert.deepStrictEqual(res.headers['retry-after'], '1')
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.headers['retry-after'], '1')
+    assert.deepStrictEqual(
       {
         statusCode: 429,
         error: 'Too Many Requests',
@@ -354,10 +356,10 @@ describe('Global rate limit', () => {
 
     res = await fastify.inject(allowListHeader)
 
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     await redis.flushall()
     await redis.quit()
@@ -365,7 +367,7 @@ describe('Global rate limit', () => {
 })
 
 describe('Route rate limit', () => {
-  test('With redis store', async t => {
+  tap.test('With redis store', async t => {
     t.plan(19)
     const fastify = Fastify()
     const redis = new Redis({ host: REDIS_HOST })
@@ -389,25 +391,25 @@ describe('Route rate limit', () => {
     let res
 
     res = await fastify.inject('/')
-    t.assert.strictEqual(res.statusCode, 200)
-    t.assert.strictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.strictEqual(res.headers['x-ratelimit-remaining'], '1')
-    t.assert.strictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.strictEqual(res.statusCode, 200)
+    assert.strictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.strictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.strictEqual(res.headers['x-ratelimit-reset'], '1')
 
     res = await fastify.inject('/')
-    t.assert.strictEqual(res.statusCode, 200)
-    t.assert.strictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.strictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.strictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.strictEqual(res.statusCode, 200)
+    assert.strictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.strictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.strictEqual(res.headers['x-ratelimit-reset'], '1')
 
     res = await fastify.inject('/')
-    t.assert.strictEqual(res.statusCode, 429)
-    t.assert.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
-    t.assert.strictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.strictEqual(res.headers['x-ratelimit-remaining'], '0')
-    t.assert.strictEqual(res.headers['x-ratelimit-reset'], '1')
-    t.assert.strictEqual(res.headers['retry-after'], '1')
-    t.assert.deepStrictEqual({
+    assert.strictEqual(res.statusCode, 429)
+    assert.strictEqual(res.headers['content-type'], 'application/json; charset=utf-8')
+    assert.strictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.strictEqual(res.headers['x-ratelimit-remaining'], '0')
+    assert.strictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.strictEqual(res.headers['retry-after'], '1')
+    assert.deepStrictEqual({
       statusCode: 429,
       error: 'Too Many Requests',
       message: 'Rate limit exceeded, retry in 1 second'
@@ -417,16 +419,16 @@ describe('Route rate limit', () => {
     await sleep(1100)
 
     res = await fastify.inject('/')
-    t.assert.strictEqual(res.statusCode, 200)
-    t.assert.strictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.strictEqual(res.headers['x-ratelimit-remaining'], '1')
-    t.assert.strictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.strictEqual(res.statusCode, 200)
+    assert.strictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.strictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.strictEqual(res.headers['x-ratelimit-reset'], '1')
 
     await redis.flushall()
     await redis.quit()
   })
 
-  test('Throw on redis error', async (t) => {
+  tap.test('Throw on redis error', async (t) => {
     t.plan(6)
     const fastify = Fastify()
     const redis = new Redis({ host: REDIS_HOST })
@@ -452,23 +454,23 @@ describe('Route rate limit', () => {
     let res
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
     await redis.flushall()
     await redis.quit()
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 500)
-    t.assert.deepStrictEqual(
+    assert.deepStrictEqual(res.statusCode, 500)
+    assert.deepStrictEqual(
       res.body,
       '{"statusCode":500,"error":"Internal Server Error","message":"Connection is closed."}'
     )
   })
 
-  test('Skip on redis error', async (t) => {
+  tap.test('Skip on redis error', async (t) => {
     t.plan(9)
     const fastify = Fastify()
     const redis = new Redis({ host: REDIS_HOST })
@@ -494,25 +496,25 @@ describe('Route rate limit', () => {
     let res
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
     await redis.flushall()
     await redis.quit()
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '2')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '2')
 
     res = await fastify.inject('/')
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
-    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '2')
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '2')
   })
 
-  test('When continue exceeding is on (Redis)', async (t) => {
+  tap.test('When continue exceeding is on (Redis)', async (t) => {
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
 
@@ -544,18 +546,18 @@ describe('Route rate limit', () => {
       method: 'GET'
     })
 
-    t.assert.deepStrictEqual(first.statusCode, 200)
+    assert.deepStrictEqual(first.statusCode, 200)
 
-    t.assert.deepStrictEqual(second.statusCode, 429)
-    t.assert.deepStrictEqual(second.headers['x-ratelimit-limit'], '1')
-    t.assert.deepStrictEqual(second.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(second.headers['x-ratelimit-reset'], '5')
+    assert.deepStrictEqual(second.statusCode, 429)
+    assert.deepStrictEqual(second.headers['x-ratelimit-limit'], '1')
+    assert.deepStrictEqual(second.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(second.headers['x-ratelimit-reset'], '5')
 
     await redis.flushall()
     await redis.quit()
   })
 
-  test('When continue exceeding is off under route (Redis)', async (t) => {
+  tap.test('When continue exceeding is off under route (Redis)', async (t) => {
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
 
@@ -595,17 +597,17 @@ describe('Route rate limit', () => {
       method: 'GET'
     })
 
-    t.assert.deepStrictEqual(first.statusCode, 200)
+    assert.deepStrictEqual(first.statusCode, 200)
 
-    t.assert.deepStrictEqual(second.statusCode, 429)
-    t.assert.deepStrictEqual(second.headers['x-ratelimit-limit'], '1')
-    t.assert.deepStrictEqual(second.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(second.headers['x-ratelimit-reset'], '5')
+    assert.deepStrictEqual(second.statusCode, 429)
+    assert.deepStrictEqual(second.headers['x-ratelimit-limit'], '1')
+    assert.deepStrictEqual(second.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(second.headers['x-ratelimit-reset'], '5')
 
-    t.assert.deepStrictEqual(third.statusCode, 429)
-    t.assert.deepStrictEqual(third.headers['x-ratelimit-limit'], '1')
-    t.assert.deepStrictEqual(third.headers['x-ratelimit-remaining'], '0')
-    t.assert.deepStrictEqual(third.headers['x-ratelimit-reset'], '3')
+    assert.deepStrictEqual(third.statusCode, 429)
+    assert.deepStrictEqual(third.headers['x-ratelimit-limit'], '1')
+    assert.deepStrictEqual(third.headers['x-ratelimit-remaining'], '0')
+    assert.deepStrictEqual(third.headers['x-ratelimit-reset'], '3')
 
     await redis.flushall()
     await redis.quit()

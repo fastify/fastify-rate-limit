@@ -1,12 +1,13 @@
 'use strict'
-const { test } = require('node:test')
+
+const tap = require('tap')
 const assert = require('assert')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-test('GroupId from routeConfig', async (t) => {
+tap.test('GroupId from routeConfig', async (t) => {
   const fastify = Fastify()
 
   // Register rate limit plugin with groupId in routeConfig
@@ -33,7 +34,7 @@ test('GroupId from routeConfig', async (t) => {
   assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 })
 
-test('GroupId from routeOptions', async (t) => {
+tap.test('GroupId from routeOptions', async (t) => {
   const fastify = Fastify()
 
   // Register rate limit plugin with groupId in routeOptions
@@ -60,7 +61,7 @@ test('GroupId from routeOptions', async (t) => {
   assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 })
 
-test('No groupId provided', async (t) => {
+tap.test('No groupId provided', async (t) => {
   const fastify = Fastify()
 
   // Register rate limit plugin without groupId
@@ -112,7 +113,7 @@ test('No groupId provided', async (t) => {
   )
 })
 
-test('With multiple routes and custom groupId', async (t) => {
+tap.test('With multiple routes and custom groupId', async (t) => {
   const fastify = Fastify()
 
   // Register rate limit plugin
@@ -224,7 +225,7 @@ test('With multiple routes and custom groupId', async (t) => {
   assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 })
 
-test('Invalid groupId type', async (t) => {
+tap.test('Invalid groupId type', async (t) => {
   const fastify = Fastify()
 
   // Register rate limit plugin with a route having an invalid groupId

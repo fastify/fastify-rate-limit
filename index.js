@@ -34,6 +34,36 @@ const defaultErrorResponse = (req, context) => {
   return err
 }
 
+const areHeadersMatching = (customHeaders) => {
+  for (const key in defaultHeaders) {
+    // Check if key exists in targetObj
+    if (!(key in customHeaders)) {
+      return false
+    }
+    // Check if value types are the same
+    if (typeof defaultHeaders[key] !== typeof customHeaders[key]) {
+      return false
+    }
+  }
+
+  return true
+}
+
+const getMergedHeaders = (customHeaders) => {
+  const mergedHeaders = {}
+
+  for (const key in defaultHeaders) {
+    // If the key exists in obj1 and the type matches with obj2, use the value from obj2 if available, otherwise use the value from obj1
+    if (key in customHeaders && typeof defaultHeaders[key] === typeof customHeaders[key]) {
+      mergedHeaders[key] = customHeaders[key]
+    } else {
+      mergedHeaders[key] = defaultHeaders[key]
+    }
+  }
+
+  return mergedHeaders
+}
+
 async function fastifyRateLimit (fastify, settings) {
   const globalParams = {
     global: (typeof settings.global === 'boolean') ? settings.global : true
@@ -44,7 +74,9 @@ async function fastifyRateLimit (fastify, settings) {
     globalParams.labels = draftSpecHeaders
   } else {
     globalParams.enableDraftSpec = false
-    globalParams.labels = defaultHeaders
+    if (settings.defaultHeaders && typeof settings.defaultHeaders === 'object' && areHeadersMatching(settings.defaultHeaders)) {
+      globalParams.labels = getMergedHeaders(settings.defaultHeaders)
+    } else globalParams.labels = defaultHeaders
   }
 
   globalParams.addHeaders = Object.assign({

@@ -1,10 +1,11 @@
 'use strict'
 
-const { test } = require('node:test')
+const tap = require('tap')
+const assert = require('node:assert')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
 
-test('Fastify close on local store', async (t) => {
+tap.test('Fastify close on local store', async (t) => {
   t.plan(1)
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
@@ -14,5 +15,5 @@ test('Fastify close on local store', async (t) => {
     done()
   })
   await fastify.close()
-  t.assert.deepStrictEqual(counter, 2)
+  assert.deepStrictEqual(counter, 2)
 })

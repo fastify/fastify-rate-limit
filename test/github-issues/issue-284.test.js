@@ -1,10 +1,12 @@
 'use strict'
 
-const { test, mock } = require('node:test')
+const { mock } = require('node:test')
+const tap = require('tap')
+const assert = require('node:assert')
 const Fastify = require('fastify')
 const rateLimit = require('../../index')
 
-test("issue #284 - don't set the reply code automatically", async (t) => {
+tap.test("issue #284 - don't set the reply code automatically", async (t) => {
   const clock = mock.timers
   clock.enable()
   const fastify = Fastify()
@@ -14,8 +16,8 @@ test("issue #284 - don't set the reply code automatically", async (t) => {
   })
 
   fastify.setErrorHandler((err, req, res) => {
-    t.assert.deepStrictEqual(res.statusCode, 200)
-    t.assert.deepStrictEqual(err.statusCode, 429)
+    assert.deepStrictEqual(res.statusCode, 200)
+    assert.deepStrictEqual(err.statusCode, 429)
 
     res.redirect('/')
   })
@@ -53,22 +55,24 @@ test("issue #284 - don't set the reply code automatically", async (t) => {
     method: 'GET'
   })
 
-  t.assert.deepStrictEqual(firstOkResponse.statusCode, 200)
+  assert.deepStrictEqual(firstOkResponse.statusCode, 200)
 
-  t.assert.deepStrictEqual(firstRateLimitResponse.statusCode, 302)
-  t.assert.deepStrictEqual(
+  assert.deepStrictEqual(firstRateLimitResponse.statusCode, 302)
+  assert.deepStrictEqual(
     firstRateLimitResponse.headers['x-ratelimit-limit'],
     '1'
   )
-  t.assert.deepStrictEqual(
+  assert.deepStrictEqual(
     firstRateLimitResponse.headers['x-ratelimit-remaining'],
     '0'
   )
-  t.assert.deepStrictEqual(
+  assert.deepStrictEqual(
     firstRateLimitResponse.headers['x-ratelimit-reset'],
     '5'
   )
 
-  t.assert.deepStrictEqual(okResponseAfterRateLimitCompleted.statusCode, 200)
+  assert.deepStrictEqual(okResponseAfterRateLimitCompleted.statusCode, 200)
   clock.reset(0)
+
+  t.end()
 })

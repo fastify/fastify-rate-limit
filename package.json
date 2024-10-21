@@ -1,6 +1,6 @@
 {
-  "name": "@fastify/rate-limit",
-  "version": "10.1.1",
+  "name": "@driffle/fastify-watch-man",
+  "version": "${VERSION}",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "type": "commonjs",
@@ -10,12 +10,12 @@
     "lint:fix": "standard --fix",
     "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
     "test": "npm run test:unit && npm run test:typescript",
-    "test:unit": "c8 --100 node --test",
+    "test:unit": "c8 --100 tap 'test/**/*.js'",
     "test:typescript": "tsd"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fastify/fastify-rate-limit.git"
+    "url": "git+https://github.com/Driffle/fastify-watch-man.git"
   },
   "keywords": [
     "fastify",
@@ -25,9 +25,9 @@
   "author": "Tomas Della Vedova - @delvedor (http://delved.org)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fastify/fastify-rate-limit/issues"
+    "url": "https://github.com/Driffle/fastify-watch-man/issues"
   },
-  "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
+  "homepage": "https://github.com/Driffle/fastify-watch-man#readme",
   "devDependencies": {
     "@fastify/pre-commit": "^2.1.0",
     "@sinonjs/fake-timers": "^13.0.1",
@@ -38,6 +38,7 @@
     "knex": "^3.1.0",
     "sqlite3": "^5.1.7",
     "standard": "^17.1.0",
+    "tap": "^21.0.1",
     "tsd": "^0.31.1"
   },
   "dependencies": {
@@ -46,10 +47,9 @@
     "toad-cache": "^3.7.0"
   },
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com"
   },
   "pre-commit": [
-    "lint",
-    "test"
+    "lint"
   ]
 }
