@@ -160,6 +160,7 @@ await fastify.register(import('@fastify/rate-limit'), {
 - `onExceeding`: callback that will be executed before request limit has been reached. 
 - `onExceeded`: callback that will be executed after request limit has been reached.
 - `onBanReach`: callback that will be executed when the ban limit has been reached.
+- `exponentialBackoff`: Renew user limitation exponentially when user sends a request to the server when still limited
 
 `keyGenerator` example usage:
 ```js
