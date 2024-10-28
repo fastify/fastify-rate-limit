@@ -91,6 +91,7 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : defaultOnFn
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : defaultOnFn
   globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
+  globalParams.exponentialBackoff = typeof settings.exponentialBackoff === 'boolean' ? settings.exponentialBackoff : false
 
   globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
     ? settings.keyGenerator
@@ -116,9 +117,9 @@ async function fastifyRateLimit (fastify, settings) {
     pluginComponent.store = new Store(globalParams)
   } else {
     if (settings.redis) {
-      pluginComponent.store = new RedisStore(globalParams.continueExceeding, settings.redis, settings.nameSpace)
+      pluginComponent.store = new RedisStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.redis, settings.nameSpace)
     } else {
-      pluginComponent.store = new LocalStore(globalParams.continueExceeding, settings.cache)
+      pluginComponent.store = new LocalStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.cache)
     }
   }
 
@@ -252,6 +253,10 @@ function rateLimitRequestHandler (pluginComponent, params) {
       current = res.current
       ttl = res.ttl
       ttlInSeconds = Math.ceil(res.ttl / 1000)
+
+      if (params.exponentialBackoff) {
+        timeWindowString = ms.format(ttl, true)
+      }
     } catch (err) {
       if (!params.skipOnError) {
         throw err
