@@ -10,6 +10,9 @@ const lua = `
   -- Flag to determine if TTL should be reset after exceeding
   local continueExceeding = ARGV[3] == 'true'
 
+  --Flag to determine if exponential backoff should be applied
+  local exponentialBackoff = ARGV[4] == 'true'
+
   -- Increment the key's value
   local current = redis.call('INCR', key)
 
@@ -21,12 +24,20 @@ const lua = `
     redis.call('PEXPIRE', key, timeWindow)
     ttl = timeWindow
   end
+  
+  -- If the key is new or if its incremented value has exceeded the max value and exponential backoff is enabled then set its TTL
+  if ttl == -1 or (exponentialBackoff and current > max) then
+    local backoffExponent = current - max - 1
+    ttl = timeWindow*(2^backoffExponent)
+    redis.call('PEXPIRE', key, ttl)
+  end
 
   return {current, ttl}
 `
 
-function RedisStore (continueExceeding, redis, key = 'fastify-rate-limit-') {
+function RedisStore (continueExceeding, exponentialBackoff, redis, key = 'fastify-rate-limit-') {
   this.continueExceeding = continueExceeding
+  this.exponentialBackoff = exponentialBackoff
   this.redis = redis
   this.key = key
 
@@ -39,13 +50,13 @@ function RedisStore (continueExceeding, redis, key = 'fastify-rate-limit-') {
 }
 
 RedisStore.prototype.incr = function (ip, cb, timeWindow, max) {
-  this.redis.rateLimit(this.key + ip, timeWindow, max, this.continueExceeding, (err, result) => {
+  this.redis.rateLimit(this.key + ip, timeWindow, max, this.continueExceeding, this.exponentialBackoff, (err, result) => {
     err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
   })
 }
 
 RedisStore.prototype.child = function (routeOptions) {
-  return new RedisStore(routeOptions.continueExceeding, this.redis, `${this.key}${routeOptions.routeInfo.method}${routeOptions.routeInfo.url}-`)
+  return new RedisStore(routeOptions.continueExceeding, routeOptions.exponentialBackoff, this.redis, `${this.key}${routeOptions.routeInfo.method}${routeOptions.routeInfo.url}-`)
 }
 
 module.exports = RedisStore
