@@ -164,7 +164,7 @@ await fastify.register(import('@fastify/rate-limit'), {
 - `errorResponseBuilder`: a function to generate a custom response object. Defaults to `(request, context) => ({statusCode: 429, error: 'Too Many Requests', message: ``Rate limit exceeded, retry in ${context.after}``})`
 - `addHeadersOnExceeding`: define which headers should be added in the response when the limit is not reached. Defaults all the headers will be shown
 - `addHeaders`: define which headers should be added in the response when the limit is reached. Defaults all the headers will be shown
-- `enableDraftSpec`: if `true` it will change the HTTP rate limit headers following th IEFT draft document. More information at [draft-ietf-httpapi-ratelimit-headers.md](https://github.com/ietf-wg-httpapi/ratelimit-headers/blob/f6a7bc7560a776ea96d800cf5ed3752d6d397b06/draft-ietf-httpapi-ratelimit-headers.md).
+- `enableDraftSpec`: if `true` it will change the HTTP rate limit headers following the IEFT draft document. More information at [draft-ietf-httpapi-ratelimit-headers.md](https://github.com/ietf-wg-httpapi/ratelimit-headers/blob/f6a7bc7560a776ea96d800cf5ed3752d6d397b06/draft-ietf-httpapi-ratelimit-headers.md).
 - `onExceeding`: callback that will be executed before request limit has been reached.
 - `onExceeded`: callback that will be executed after request limit has been reached.
 - `onBanReach`: callback that will be executed when the ban limit has been reached.
