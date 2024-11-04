@@ -28,7 +28,7 @@ LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
     if (this.exponentialBackoff && current.current > max) {
       // Handle exponential backoff
       const backoffExponent = current.current - max - 1
-      const ttl = timeWindow * Math.pow(2, backoffExponent)
+      const ttl = timeWindow * (2 ** backoffExponent)
       current.ttl = Number.isSafeInteger(ttl) ? ttl : Number.MAX_SAFE_INTEGER
       current.iterationStartMs = nowInMs
     } else if (this.continueExceeding && current.current > max) {
