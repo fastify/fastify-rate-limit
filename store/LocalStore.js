@@ -25,14 +25,14 @@ LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
     ++current.current
 
     // Reset TLL if max has been exceeded and `continueExceeding` is enabled
-    if (this.exponentialBackoff && current.current > max) {
+    if (this.continueExceeding && current.current > max) {
+      current.ttl = timeWindow
+      current.iterationStartMs = nowInMs
+    } else if (this.exponentialBackoff && current.current > max) {
       // Handle exponential backoff
       const backoffExponent = current.current - max - 1
       const ttl = timeWindow * (2 ** backoffExponent)
       current.ttl = Number.isSafeInteger(ttl) ? ttl : Number.MAX_SAFE_INTEGER
-      current.iterationStartMs = nowInMs
-    } else if (this.continueExceeding && current.current > max) {
-      current.ttl = timeWindow
       current.iterationStartMs = nowInMs
     } else {
       current.ttl = timeWindow - (nowInMs - current.iterationStartMs)
