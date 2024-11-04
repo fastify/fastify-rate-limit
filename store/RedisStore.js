@@ -13,6 +13,9 @@ const lua = `
   --Flag to determine if exponential backoff should be applied
   local exponentialBackoff = ARGV[4] == 'true'
 
+  --Max safe integer
+  local MAX_SAFE_INTEGER = (2^53) - 1
+
   -- Increment the key's value
   local current = redis.call('INCR', key)
 
@@ -28,7 +31,7 @@ const lua = `
   -- If the key is new or if its incremented value has exceeded the max value and exponential backoff is enabled then set its TTL
   if ttl == -1 or (exponentialBackoff and current > max) then
     local backoffExponent = current - max - 1
-    ttl = timeWindow*(2^backoffExponent)
+    ttl = math.min(timeWindow * math.pow(2, backoffExponent), MAX_SAFE_INTEGER)
     redis.call('PEXPIRE', key, ttl)
   end
 

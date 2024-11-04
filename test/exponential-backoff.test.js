@@ -150,3 +150,83 @@ test('Global Exponential Backoff', async (t) => {
     JSON.parse(res.payload)
   )
 })
+
+test('MAx safe Exponential Backoff', async (t) => {
+  const fastify = Fastify()
+
+  // Register rate limit plugin with exponentialBackoff set to true in routeConfig
+  await fastify.register(rateLimit, { max: 2, timeWindow: 500, exponentialBackoff: true })
+
+  fastify.get(
+    '/expoential-backoff-global',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: '285421 years'
+        }
+      }
+    },
+    async (req, reply) => 'exponential backoff applied!'
+  )
+
+  // Test
+  let res
+  res = await fastify.inject({ url: '/expoential-backoff-global', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+
+  res = await fastify.inject({ url: '/expoential-backoff-global', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+
+  res = await fastify.inject({ url: '/expoential-backoff-global', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 429)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(
+    {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 285421 years'
+    },
+    JSON.parse(res.payload)
+  )
+
+  res = await fastify.inject({ url: '/expoential-backoff-global', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 429)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(
+    {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 285421 years'
+    },
+    JSON.parse(res.payload)
+  )
+
+  res = await fastify.inject({ url: '/expoential-backoff-global', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 429)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(
+    {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 285421 years'
+    },
+    JSON.parse(res.payload)
+  )
+
+  res = await fastify.inject({ url: '/expoential-backoff-global', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 429)
+  assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+  assert.deepStrictEqual(
+    {
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded, retry in 285421 years'
+    },
+    JSON.parse(res.payload)
+  )
+})
