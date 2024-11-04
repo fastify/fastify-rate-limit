@@ -31,7 +31,7 @@ const lua = `
   -- If the key is new or if its incremented value has exceeded the max value and exponential backoff is enabled then set its TTL
   if ttl == -1 or (exponentialBackoff and current > max) then
     local backoffExponent = current - max - 1
-    ttl = math.min(timeWindow * math.pow(2, backoffExponent), MAX_SAFE_INTEGER)
+    ttl = math.min(timeWindow * (2 ^ backoffExponent), MAX_SAFE_INTEGER)
     redis.call('PEXPIRE', key, ttl)
   end
 
