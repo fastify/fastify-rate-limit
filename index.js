@@ -124,16 +124,17 @@ async function fastifyRateLimit (fastify, settings) {
 
   fastify.decorateRequest(pluginComponent.rateLimitRan, false)
 
+  if (!fastify.hasDecorator('createRateLimit')) {
+    fastify.decorate('createRateLimit', (options) => {
+      const args = createLimiterArgs(pluginComponent, globalParams, options)
+      return (req) => applyRateLimit(...args, req)
+    })
+  }
+
   if (!fastify.hasDecorator('rateLimit')) {
     fastify.decorate('rateLimit', (options) => {
-      if (typeof options === 'object') {
-        const newPluginComponent = Object.create(pluginComponent)
-        const mergedRateLimitParams = mergeParams(globalParams, options, { routeInfo: {} })
-        newPluginComponent.store = newPluginComponent.store.child(mergedRateLimitParams)
-        return rateLimitRequestHandler(newPluginComponent, mergedRateLimitParams)
-      }
-
-      return rateLimitRequestHandler(pluginComponent, globalParams)
+      const args = createLimiterArgs(pluginComponent, globalParams, options)
+      return rateLimitRequestHandler(...args)
     })
   }
 
@@ -189,6 +190,17 @@ function mergeParams (...params) {
   return result
 }
 
+function createLimiterArgs (pluginComponent, globalParams, options) {
+  if (typeof options === 'object') {
+    const newPluginComponent = Object.create(pluginComponent)
+    const mergedRateLimitParams = mergeParams(globalParams, options, { routeInfo: {} })
+    newPluginComponent.store = newPluginComponent.store.child(mergedRateLimitParams)
+    return [newPluginComponent, mergedRateLimitParams]
+  }
+
+  return [pluginComponent, globalParams]
+}
+
 function addRouteRateHook (pluginComponent, params, routeOptions) {
   const hook = params.hook
   const hookHandler = rateLimitRequestHandler(pluginComponent, params)
@@ -201,8 +213,72 @@ function addRouteRateHook (pluginComponent, params, routeOptions) {
   }
 }
 
+async function applyRateLimit (pluginComponent, params, req) {
+  const { store } = pluginComponent
+
+  // Retrieve the key from the generator (the global one or the one defined in the endpoint)
+  let key = await params.keyGenerator(req)
+  const groupId = req.routeOptions.config?.rateLimit?.groupId
+
+  if (groupId) {
+    key += groupId
+  }
+
+  // Don't apply any rate limiting if in the allow list
+  if (params.allowList) {
+    if (typeof params.allowList === 'function') {
+      if (await params.allowList(req, key)) {
+        return {
+          isAllowed: true,
+          key
+        }
+      }
+    } else if (params.allowList.indexOf(key) !== -1) {
+      return {
+        isAllowed: true,
+        key
+      }
+    }
+  }
+
+  const max = typeof params.max === 'number' ? params.max : await params.max(req, key)
+  const timeWindow = typeof params.timeWindow === 'number' ? params.timeWindow : await params.timeWindow(req, key)
+  let current = 0
+  let ttl = 0
+  let ttlInSeconds = 0
+
+  // We increment the rate limit for the current request
+  try {
+    const res = await new Promise((resolve, reject) => {
+      store.incr(key, (err, res) => {
+        err ? reject(err) : resolve(res)
+      }, timeWindow, max)
+    })
+
+    current = res.current
+    ttl = res.ttl
+    ttlInSeconds = Math.ceil(res.ttl / 1000)
+  } catch (err) {
+    if (!params.skipOnError) {
+      throw err
+    }
+  }
+
+  return {
+    isAllowed: false,
+    key,
+    max,
+    timeWindow,
+    remaining: Math.max(0, max - current),
+    ttl,
+    ttlInSeconds,
+    isExceeded: current > max,
+    isBanned: params.ban !== -1 && current - max > params.ban
+  }
+}
+
 function rateLimitRequestHandler (pluginComponent, params) {
-  const { rateLimitRan, store } = pluginComponent
+  const { rateLimitRan } = pluginComponent
 
   let timeWindowString
   if (typeof params.timeWindow === 'number') {
@@ -216,51 +292,25 @@ function rateLimitRequestHandler (pluginComponent, params) {
 
     req[rateLimitRan] = true
 
-    // Retrieve the key from the generator (the global one or the one defined in the endpoint)
-    let key = await params.keyGenerator(req)
-    const groupId = req.routeOptions.config?.rateLimit?.groupId
-
-    if (groupId) {
-      key += groupId
+    const rateLimit = await applyRateLimit(pluginComponent, params, req)
+    if (rateLimit.isAllowed) {
+      return
     }
 
-    // Don't apply any rate limiting if in the allow list
-    if (params.allowList) {
-      if (typeof params.allowList === 'function') {
-        if (await params.allowList(req, key)) {
-          return
-        }
-      } else if (params.allowList.indexOf(key) !== -1) {
-        return
-      }
-    }
+    const {
+      key,
+      max,
+      timeWindow,
+      remaining,
+      ttl,
+      ttlInSeconds,
+      isExceeded,
+      isBanned
+    } = rateLimit
 
-    const max = typeof params.max === 'number' ? params.max : await params.max(req, key)
-    const timeWindow = typeof params.timeWindow === 'number' ? params.timeWindow : await params.timeWindow(req, key)
-    let current = 0
-    let ttl = 0
-    let ttlInSeconds = 0
-
-    // We increment the rate limit for the current request
-    try {
-      const res = await new Promise((resolve, reject) => {
-        store.incr(key, (err, res) => {
-          err ? reject(err) : resolve(res)
-        }, timeWindow, max)
-      })
-
-      current = res.current
-      ttl = res.ttl
-      ttlInSeconds = Math.ceil(res.ttl / 1000)
-    } catch (err) {
-      if (!params.skipOnError) {
-        throw err
-      }
-    }
-
-    if (current <= max) {
+    if (!isExceeded) {
       if (params.addHeadersOnExceeding[params.labels.rateLimit]) { res.header(params.labels.rateLimit, max) }
-      if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, max - current) }
+      if (params.addHeadersOnExceeding[params.labels.rateRemaining]) { res.header(params.labels.rateRemaining, remaining) }
       if (params.addHeadersOnExceeding[params.labels.rateReset]) { res.header(params.labels.rateReset, ttlInSeconds) }
 
       params.onExceeding(req, key)
@@ -283,7 +333,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       after: timeWindowString ?? ms.format(timeWindow, true)
     }
 
-    if (params.ban !== -1 && current - max > params.ban) {
+    if (isBanned) {
       respCtx.statusCode = 403
       respCtx.ban = true
       params.onBanReach(req, key)
