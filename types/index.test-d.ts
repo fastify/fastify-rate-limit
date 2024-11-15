@@ -132,9 +132,19 @@ const options8: RateLimitPluginOptions = {
   hook: 'preValidation'
 }
 
+const options9: RateLimitPluginOptions = {
+  global: true,
+  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => Promise.resolve(42),
+  timeWindow: (req: FastifyRequest<RequestGenericInterface>, key: string) => 5000,
+  store: CustomStore,
+  hook: 'preValidation',
+  exponentialBackoff: true
+}
+
 appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
 appWithImplicitHttp.register(fastifyRateLimit, options5)
+appWithImplicitHttp.register(fastifyRateLimit,options9)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   const preHandler1: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
@@ -164,6 +174,8 @@ appWithHttp2.register(fastifyRateLimit, options3)
 appWithHttp2.register(fastifyRateLimit, options5)
 appWithHttp2.register(fastifyRateLimit, options7)
 appWithHttp2.register(fastifyRateLimit, options8)
+appWithHttp2.register(fastifyRateLimit, options9)
+
 
 appWithHttp2.get('/public', {
   config: {
