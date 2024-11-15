@@ -126,6 +126,8 @@ declare namespace fastifyRateLimit {
     enableDraftSpec?: boolean;
     onExceeding?: (req: FastifyRequest, key: string) => void;
     onExceeded?: (req: FastifyRequest, key: string) => void;
+    exponentialBackoff?: boolean;
+
   }
 
   export interface RateLimitPluginOptions extends RateLimitOptions {
