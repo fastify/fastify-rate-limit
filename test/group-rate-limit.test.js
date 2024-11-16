@@ -140,7 +140,7 @@ test('With multiple routes and custom groupId', async (t) => {
       config: {
         rateLimit: {
           max: 2,
-          timeWindow: 500,
+          timeWindow: 1000,
           groupId: 'group2'
         }
       }
@@ -203,7 +203,7 @@ test('With multiple routes and custom groupId', async (t) => {
     {
       statusCode: 429,
       error: 'Too Many Requests',
-      message: 'Rate limit exceeded, retry in 500 ms'
+      message: 'Rate limit exceeded, retry in 1 second'
     },
     JSON.parse(res.payload)
   )

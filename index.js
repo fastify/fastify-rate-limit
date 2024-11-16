@@ -145,15 +145,7 @@ async function fastifyRateLimit (fastify, settings) {
         const mergedRateLimitParams = mergeParams(globalParams, routeOptions.config.rateLimit, { routeInfo: routeOptions })
         newPluginComponent.store = pluginComponent.store.child(mergedRateLimitParams)
 
-        if (routeOptions.config.rateLimit.groupId) {
-          if (typeof routeOptions.config.rateLimit.groupId !== 'string') {
-            throw new Error('groupId must be a string')
-          }
-
-          addRouteRateHook(pluginComponent, globalParams, routeOptions)
-        } else {
-          addRouteRateHook(newPluginComponent, mergedRateLimitParams, routeOptions)
-        }
+        addRouteRateHook(newPluginComponent, mergedRateLimitParams, routeOptions)
       } else if (routeOptions.config.rateLimit !== false) {
         throw new Error('Unknown value for route rate-limit configuration')
       }
@@ -185,6 +177,10 @@ function mergeParams (...params) {
     result.ban = Math.trunc(result.ban)
   } else {
     result.ban = -1
+  }
+
+  if (result.groupId !== undefined && typeof result.groupId !== 'string') {
+    throw new Error('groupId must be a string')
   }
 
   return result
