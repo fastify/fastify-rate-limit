@@ -45,7 +45,7 @@ test('Exponential Backoff', async (t) => {
     {
       statusCode: 429,
       error: 'Too Many Requests',
-      message: 'Rate limit exceeded, retry in 500 ms'
+      message: 'Rate limit exceeded, retry in 1 second'
     },
     JSON.parse(res3.payload)
   )
@@ -109,7 +109,7 @@ test('Global Exponential Backoff', async (t) => {
     {
       statusCode: 429,
       error: 'Too Many Requests',
-      message: 'Rate limit exceeded, retry in 500 ms'
+      message: 'Rate limit exceeded, retry in 1 second'
     },
     JSON.parse(res.payload)
   )
