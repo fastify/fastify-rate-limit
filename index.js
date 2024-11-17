@@ -1,7 +1,7 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const ms = require('@lukeed/ms')
+const { parse, format } = require('@lukeed/ms')
 
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
@@ -75,7 +75,7 @@ async function fastifyRateLimit (fastify, settings) {
   if (Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0) {
     globalParams.timeWindow = Math.trunc(settings.timeWindow)
   } else if (typeof settings.timeWindow === 'string') {
-    globalParams.timeWindow = ms.parse(settings.timeWindow)
+    globalParams.timeWindow = parse(settings.timeWindow)
   } else if (
     typeof settings.timeWindow === 'function'
   ) {
@@ -162,7 +162,7 @@ function mergeParams (...params) {
   if (Number.isFinite(result.timeWindow) && result.timeWindow >= 0) {
     result.timeWindow = Math.trunc(result.timeWindow)
   } else if (typeof result.timeWindow === 'string') {
-    result.timeWindow = ms.parse(result.timeWindow)
+    result.timeWindow = parse(result.timeWindow)
   } else if (typeof result.timeWindow !== 'function') {
     result.timeWindow = defaultTimeWindow
   }
@@ -201,11 +201,6 @@ function addRouteRateHook (pluginComponent, params, routeOptions) {
 function rateLimitRequestHandler (pluginComponent, params) {
   const { rateLimitRan, store } = pluginComponent
 
-  let timeWindowString
-  if (typeof params.timeWindow === 'number') {
-    timeWindowString = ms.format(params.timeWindow, true)
-  }
-
   return async (req, res) => {
     if (req[rateLimitRan]) {
       return
@@ -216,7 +211,6 @@ function rateLimitRequestHandler (pluginComponent, params) {
     // Retrieve the key from the generator (the global one or the one defined in the endpoint)
     let key = await params.keyGenerator(req)
     const groupId = req.routeOptions.config?.rateLimit?.groupId
-
     if (groupId) {
       key += groupId
     }
@@ -249,10 +243,6 @@ function rateLimitRequestHandler (pluginComponent, params) {
       current = res.current
       ttl = res.ttl
       ttlInSeconds = Math.ceil(res.ttl / 1000)
-
-      if (params.exponentialBackoff) {
-        timeWindowString = ms.format(ttl, true)
-      }
     } catch (err) {
       if (!params.skipOnError) {
         throw err
@@ -281,7 +271,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       ban: false,
       max,
       ttl,
-      after: timeWindowString ?? ms.format(timeWindow, true)
+      after: format(ttlInSeconds * 1000, true)
     }
 
     if (params.ban !== -1 && current - max > params.ban) {
