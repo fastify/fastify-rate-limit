@@ -8,17 +8,17 @@ function LocalStore (cache = 5000, timeWindow, continueExceeding) {
   this.continueExceeding = continueExceeding
 }
 
-LocalStore.prototype.incr = function (ip, cb, max, ban) {
+LocalStore.prototype.incr = function (ip, cb, timeWindow, max, ban) {
   const nowInMs = Date.now()
   let current = this.lru.get(ip)
 
   if (!current) {
     // Item doesn't exist
-    current = { current: 1, ttl: this.timeWindow, ban: false, iterationStartMs: nowInMs }
-  } else if (current.iterationStartMs + this.timeWindow <= nowInMs) {
+    current = { current: 1, ttl: timeWindow, ban: false, iterationStartMs: nowInMs }
+  } else if (current.iterationStartMs + timeWindow <= nowInMs) {
     // Item has expired
     current.current = 1
-    current.ttl = this.timeWindow
+    current.ttl = timeWindow
     current.ban = false
     current.iterationStartMs = nowInMs
   } else {
@@ -27,10 +27,10 @@ LocalStore.prototype.incr = function (ip, cb, max, ban) {
 
     // Reset TLL if max has been exceeded and `continueExceeding` is enabled
     if (this.continueExceeding && current.current > max) {
-      current.ttl = this.timeWindow
+      current.ttl = timeWindow
       current.iterationStartMs = nowInMs
     } else {
-      current.ttl = this.timeWindow - (nowInMs - current.iterationStartMs)
+      current.ttl = timeWindow - (nowInMs - current.iterationStartMs)
     }
   }
 

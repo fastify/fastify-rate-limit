@@ -41,8 +41,8 @@ function RedisStore (redis, timeWindow, continueExceeding, key) {
   }
 }
 
-RedisStore.prototype.incr = function (ip, cb, max, ban) {
-  this.redis.rateLimit(this.key + ip, this.timeWindow, max, ban, this.continueExceeding, (err, result) => {
+RedisStore.prototype.incr = function (ip, cb, timeWindow, max, ban) {
+  this.redis.rateLimit(this.key + ip, timeWindow, max, ban, this.continueExceeding, (err, result) => {
     err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1], ban: result[2] })
   })
 }
