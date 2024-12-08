@@ -6,7 +6,7 @@ import fastify, {
   RouteOptions
 } from 'fastify'
 import * as http2 from 'http2'
-import { default as ioredis } from 'ioredis'
+import { default as IORedis } from 'ioredis'
 import pino from 'pino'
 import fastifyRateLimit, {
   errorResponseBuilderContext,
@@ -14,9 +14,15 @@ import fastifyRateLimit, {
   FastifyRateLimitStore,
   RateLimitPluginOptions
 } from '..'
+import { expectAssignable, expectType } from 'tsd'
 
 class CustomStore implements FastifyRateLimitStore {
-  constructor (options: FastifyRateLimitOptions) {}
+  options: FastifyRateLimitOptions
+
+  constructor (options: FastifyRateLimitOptions) {
+    this.options = options
+  }
+
   incr (
     key: string,
     callback: (
@@ -37,7 +43,7 @@ const options1: RateLimitPluginOptions = {
   timeWindow: 5000,
   cache: 10000,
   allowList: ['127.0.0.1'],
-  redis: new ioredis({ host: '127.0.0.1' }),
+  redis: new IORedis({ host: '127.0.0.1' }),
   skipOnError: true,
   ban: 10,
   continueExceeding: false,
@@ -104,7 +110,7 @@ const options5: RateLimitPluginOptions = {
   max: 3,
   timeWindow: 5000,
   cache: 10000,
-  redis: new ioredis({ host: '127.0.0.1' }),
+  redis: new IORedis({ host: '127.0.0.1' }),
   nameSpace: 'my-namespace'
 }
 
@@ -148,11 +154,16 @@ appWithImplicitHttp.register(fastifyRateLimit, options5)
 appWithImplicitHttp.register(fastifyRateLimit, options9)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
-  const preHandler1: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
-  const preHandler2: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options1)
-  const preHandler3: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options2)
-  const preHandler4: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options3)
-  const preHandler5: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options4)
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit())
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options1))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options2))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options3))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options4))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options5))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options6))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options7))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options8))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options9))
   // The following test is dependent on https://github.com/fastify/fastify/pull/2929
   // appWithImplicitHttp.setNotFoundHandler({
   //   preHandler: appWithImplicitHttp.rateLimit()
@@ -173,6 +184,7 @@ appWithHttp2.register(fastifyRateLimit, options1)
 appWithHttp2.register(fastifyRateLimit, options2)
 appWithHttp2.register(fastifyRateLimit, options3)
 appWithHttp2.register(fastifyRateLimit, options5)
+appWithHttp2.register(fastifyRateLimit, options6)
 appWithHttp2.register(fastifyRateLimit, options7)
 appWithHttp2.register(fastifyRateLimit, options8)
 appWithHttp2.register(fastifyRateLimit, options9)
@@ -185,13 +197,13 @@ appWithHttp2.get('/public', {
   reply.send({ hello: 'from ... public' })
 })
 
-const errorResponseContext: errorResponseBuilderContext = {
+expectAssignable<errorResponseBuilderContext>({
   statusCode: 429,
   ban: true,
   after: '123',
   max: 1000,
   ttl: 123
-}
+})
 
 const appWithCustomLogger = fastify({
   loggerInstance: pino(),
