@@ -8,14 +8,14 @@ import {
   preHandlerAsyncHookHandler,
   RouteGenericInterface,
   RouteOptions
-} from 'fastify';
+} from 'fastify'
 
 declare module 'fastify' {
   interface FastifyInstance<RawServer, RawRequest, RawReply, Logger, TypeProvider> {
     rateLimit<
       RouteGeneric extends RouteGenericInterface = RouteGenericInterface,
       ContextConfig = ContextConfigDefault,
-      SchemaCompiler extends FastifySchema = FastifySchema,
+      SchemaCompiler extends FastifySchema = FastifySchema
     >(options?: fastifyRateLimit.RateLimitOptions): preHandlerAsyncHookHandler<
       RawServer,
       RawRequest,
@@ -32,7 +32,7 @@ declare module 'fastify' {
   }
 }
 
-type FastifyRateLimit = FastifyPluginCallback<fastifyRateLimit.RateLimitPluginOptions>;
+type FastifyRateLimit = FastifyPluginCallback<fastifyRateLimit.RateLimitPluginOptions>
 
 declare namespace fastifyRateLimit {
 
@@ -144,5 +144,5 @@ declare namespace fastifyRateLimit {
   export { fastifyRateLimit as default }
 }
 
-declare function fastifyRateLimit(...params: Parameters<FastifyRateLimit>): ReturnType<FastifyRateLimit>
+declare function fastifyRateLimit (...params: Parameters<FastifyRateLimit>): ReturnType<FastifyRateLimit>
 export = fastifyRateLimit

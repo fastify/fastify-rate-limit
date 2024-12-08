@@ -6,8 +6,8 @@
   "type": "commonjs",
   "types": "types/index.d.ts",
   "scripts": {
-    "lint": "standard",
-    "lint:fix": "standard --fix",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
     "test": "npm run test:unit && npm run test:typescript",
     "test:unit": "c8 --100 node --test",
@@ -36,8 +36,8 @@
     "fastify": "^5.0.0",
     "ioredis": "^5.4.1",
     "knex": "^3.1.0",
+    "neostandard": "^0.11.9",
     "sqlite3": "^5.1.7",
-    "standard": "^17.1.0",
     "tsd": "^0.31.1"
   },
   "dependencies": {
