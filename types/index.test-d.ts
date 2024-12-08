@@ -7,7 +7,7 @@ import fastify, {
 } from 'fastify'
 import * as http2 from 'http2'
 import { default as ioredis } from 'ioredis'
-import pino from 'pino';
+import pino from 'pino'
 import fastifyRateLimit, {
   errorResponseBuilderContext,
   FastifyRateLimitOptions,
@@ -16,15 +16,16 @@ import fastifyRateLimit, {
 } from '..'
 
 class CustomStore implements FastifyRateLimitStore {
-  constructor(options: FastifyRateLimitOptions) {}
-  incr(
+  constructor (options: FastifyRateLimitOptions) {}
+  incr (
     key: string,
     callback: (
       error: Error | null,
       result?: { current: number; ttl: number }
     ) => void
   ) {}
-  child(routeOptions: RouteOptions & { path: string; prefix: string }) {
+
+  child (routeOptions: RouteOptions & { path: string; prefix: string }) {
     return <CustomStore>(<FastifyRateLimitOptions>{})
   }
 }
@@ -49,13 +50,13 @@ const options1: RateLimitPluginOptions = {
     if (context.ban) {
       return {
         statusCode: 403,
-        error: "Forbidden",
+        error: 'Forbidden',
         message: `You can not access this service as you have sent too many requests that exceed your rate limit. Your IP: ${req.ip} and Limit: ${context.max}`,
       }
     } else {
       return {
         statusCode: 429,
-        error: "Too Many Requests",
+        error: 'Too Many Requests',
         message: `You hit the rate limit, please slow down! You can retry in ${context.after}`,
       }
     }
@@ -144,7 +145,7 @@ const options9: RateLimitPluginOptions = {
 appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
 appWithImplicitHttp.register(fastifyRateLimit, options5)
-appWithImplicitHttp.register(fastifyRateLimit,options9)
+appWithImplicitHttp.register(fastifyRateLimit, options9)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   const preHandler1: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
@@ -160,7 +161,7 @@ appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   // })
 })
 
-appWithImplicitHttp.get('/', { config: { rateLimit: { max: 10, timeWindow: "60s" } } }, () => { return "limited" })
+appWithImplicitHttp.get('/', { config: { rateLimit: { max: 10, timeWindow: '60s' } } }, () => { return 'limited' })
 
 const appWithHttp2: FastifyInstance<
   http2.Http2Server,
@@ -175,7 +176,6 @@ appWithHttp2.register(fastifyRateLimit, options5)
 appWithHttp2.register(fastifyRateLimit, options7)
 appWithHttp2.register(fastifyRateLimit, options8)
 appWithHttp2.register(fastifyRateLimit, options9)
-
 
 appWithHttp2.get('/public', {
   config: {
