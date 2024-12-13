@@ -6,7 +6,7 @@ import fastify, {
   RouteOptions
 } from 'fastify'
 import * as http2 from 'http2'
-import { default as IORedis } from 'ioredis'
+import IORedis from 'ioredis'
 import pino from 'pino'
 import fastifyRateLimit, {
   errorResponseBuilderContext,
