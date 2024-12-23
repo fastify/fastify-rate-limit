@@ -478,6 +478,5 @@ npm run redis
 
 <a name="license"></a>
 ## License
-**[MIT](https://github.com/fastify/fastify-rate-limit/blob/master/LICENSE)**<br>
 
-Copyright © 2018 Tomas Della Vedova
+Licensed under [MIT](./LICENSE).
