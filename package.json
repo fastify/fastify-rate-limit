@@ -23,11 +23,41 @@
     "limit"
   ],
   "author": "Tomas Della Vedova - @delvedor (http://delved.org)",
+  "contributors": [
+    {
+      "name": "Matteo Collina",
+      "email": "hello@matteocollina.com"
+    },
+    {
+      "name": "Manuel Spigolon",
+      "email": "behemoth89@gmail.com"
+    },
+    {
+      "name": "Gürgün Dayıoğlu",
+      "email": "hey@gurgun.day",
+      "url": "https://heyhey.to/G"
+    },
+    {
+      "name": "Frazer Smith",
+      "email": "frazer.dev@icloud.com",
+      "url": "https://github.com/fdawgs"
+    }
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/fastify/fastify-rate-limit/issues"
   },
   "homepage": "https://github.com/fastify/fastify-rate-limit#readme",
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/fastify"
+    },
+    {
+      "type": "opencollective",
+      "url": "https://opencollective.com/fastify"
+    }
+  ],
   "devDependencies": {
     "@fastify/pre-commit": "^2.1.0",
     "@sinonjs/fake-timers": "^14.0.0",
