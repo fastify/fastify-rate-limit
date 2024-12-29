@@ -100,7 +100,7 @@ fastify.setNotFoundHandler({
 })
 ```
 
-Note that you can customize the behaviour of the preHandler in the same way you would for specific routes:
+Note that you can customize the behavior of the preHandler in the same way you would for specific routes:
 
 ```js
 const fastify = Fastify()
