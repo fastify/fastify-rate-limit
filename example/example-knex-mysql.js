@@ -66,8 +66,8 @@ KnexStore.prototype.incr = async function (key, cb) {
       process.nextTick(cb, null, { current: d.count + 1, ttl: d.ttl })
     } else {
       await trx
-        .raw('INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?', [cond.route, key, (d && d.ttl) || ttl, ttl])
-      process.nextTick(cb, null, { current: 1, ttl: (d && d.ttl) || ttl })
+        .raw('INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?', [cond.route, key, d?.ttl || ttl, ttl])
+      process.nextTick(cb, null, { current: 1, ttl: d?.ttl || ttl })
     }
     await trx.commit()
   } catch (err) {
@@ -104,7 +104,7 @@ fastify.get('/', {
       timeWindow: '1 minute'
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from ... root' })
 })
 
@@ -115,10 +115,10 @@ fastify.get('/private', {
       timeWindow: '1 minute'
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from ... private' })
 })
 
-fastify.get('/public', (req, reply) => {
+fastify.get('/public', (_req, reply) => {
   reply.send({ hello: 'from ... public' })
 })

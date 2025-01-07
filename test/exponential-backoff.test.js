@@ -6,7 +6,7 @@ const rateLimit = require('../index')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-test('Exponential Backoff', async (t) => {
+test('Exponential Backoff', async () => {
   const fastify = Fastify()
 
   // Register rate limit plugin with exponentialBackoff set to true in routeConfig
@@ -23,7 +23,7 @@ test('Exponential Backoff', async (t) => {
         }
       }
     },
-    async (req, reply) => 'exponential backoff applied!'
+    async () => 'exponential backoff applied!'
   )
 
   // Test
@@ -71,7 +71,7 @@ test('Exponential Backoff', async (t) => {
   assert.deepStrictEqual(res5.headers['x-ratelimit-remaining'], '1')
 })
 
-test('Global Exponential Backoff', async (t) => {
+test('Global Exponential Backoff', async () => {
   const fastify = Fastify()
 
   // Register rate limit plugin with exponentialBackoff set to true in routeConfig
@@ -87,7 +87,7 @@ test('Global Exponential Backoff', async (t) => {
         }
       }
     },
-    async (req, reply) => 'exponential backoff applied!'
+    async () => 'exponential backoff applied!'
   )
 
   // Test
@@ -151,7 +151,7 @@ test('Global Exponential Backoff', async (t) => {
   )
 })
 
-test('MAx safe Exponential Backoff', async (t) => {
+test('MAx safe Exponential Backoff', async () => {
   const fastify = Fastify()
 
   // Register rate limit plugin with exponentialBackoff set to true in routeConfig
@@ -167,7 +167,7 @@ test('MAx safe Exponential Backoff', async (t) => {
         }
       }
     },
-    async (req, reply) => 'exponential backoff applied!'
+    async () => 'exponential backoff applied!'
   )
 
   // Test

@@ -9,7 +9,7 @@ test('Fastify close on local store', async (t) => {
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
   let counter = 1
-  fastify.addHook('onClose', (instance, done) => {
+  fastify.addHook('onClose', (_instance, done) => {
     counter++
     done()
   })

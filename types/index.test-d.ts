@@ -24,14 +24,14 @@ class CustomStore implements FastifyRateLimitStore {
   }
 
   incr (
-    key: string,
-    callback: (
+    _key: string,
+    _callback: (
       error: Error | null,
       result?: { current: number; ttl: number }
     ) => void
   ) {}
 
-  child (routeOptions: RouteOptions & { path: string; prefix: string }) {
+  child (_routeOptions: RouteOptions & { path: string; prefix: string }) {
     return <CustomStore>(<FastifyRateLimitOptions>{})
   }
 }
@@ -78,21 +78,21 @@ const options1: RateLimitPluginOptions = {
     'x-ratelimit-reset': false,
     'retry-after': false
   },
-  onExceeding: (req: FastifyRequest<RequestGenericInterface>, key: string) => ({}),
-  onExceeded: (req: FastifyRequest<RequestGenericInterface>, key: string) => ({}),
-  onBanReach: (req: FastifyRequest<RequestGenericInterface>, key: string) => ({})
+  onExceeding: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => ({}),
+  onExceeded: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => ({}),
+  onBanReach: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => ({})
 }
 const options2: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
-  allowList: (req: FastifyRequest<RequestGenericInterface>, key: string) => false,
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
+  allowList: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => false,
   timeWindow: 5000,
   hook: 'preParsing'
 }
 
 const options3: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
   timeWindow: 5000,
   store: CustomStore,
   hook: 'preValidation'
@@ -100,7 +100,7 @@ const options3: RateLimitPluginOptions = {
 
 const options4: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => Promise.resolve(42),
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(42),
   timeWindow: 5000,
   store: CustomStore,
   hook: 'preHandler'
@@ -116,8 +116,8 @@ const options5: RateLimitPluginOptions = {
 
 const options6: RateLimitPluginOptions = {
   global: true,
-  allowList: async (req, key) => true,
-  keyGenerator: async (req) => '',
+  allowList: async (_req, _key) => true,
+  keyGenerator: async (_req) => '',
   timeWindow: 5000,
   store: CustomStore,
   hook: 'preHandler'
@@ -125,24 +125,24 @@ const options6: RateLimitPluginOptions = {
 
 const options7: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
-  timeWindow: (req: FastifyRequest<RequestGenericInterface>, key: string) => 5000,
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 5000,
   store: CustomStore,
   hook: 'preValidation'
 }
 
 const options8: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
-  timeWindow: (req: FastifyRequest<RequestGenericInterface>, key: string) => Promise.resolve(5000),
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(5000),
   store: CustomStore,
   hook: 'preValidation'
 }
 
 const options9: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => Promise.resolve(42),
-  timeWindow: (req: FastifyRequest<RequestGenericInterface>, key: string) => 5000,
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(42),
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 5000,
   store: CustomStore,
   hook: 'preValidation',
   exponentialBackoff: true
@@ -193,7 +193,7 @@ appWithHttp2.get('/public', {
   config: {
     rateLimit: false
   }
-}, (request, reply) => {
+}, (_request, reply) => {
   reply.send({ hello: 'from ... public' })
 })
 
