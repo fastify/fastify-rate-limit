@@ -16,7 +16,7 @@ test('Set not found handler can be rate limited', async (t) => {
     {
       preHandler: fastify.rateLimit()
     },
-    function (request, reply) {
+    function (_request, reply) {
       t.assert.ok('Error handler has been called')
       reply.status(404).send(new Error('Not found'))
     }
@@ -67,7 +67,7 @@ test('Set not found handler can be rate limited with specific options', async (t
         timeWindow: 2000
       })
     },
-    function (request, reply) {
+    function (_request, reply) {
       t.assert.ok('Error handler has been called')
       reply.status(404).send(new Error('Not found'))
     }

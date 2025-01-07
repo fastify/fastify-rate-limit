@@ -93,7 +93,7 @@ fastify.get('/', {
       timeWindow: '1 minute'
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from ... root' })
 })
 
@@ -104,11 +104,11 @@ fastify.get('/private', {
       timeWindow: '1 minute'
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from ... private' })
 })
 
-fastify.get('/public', (req, reply) => {
+fastify.get('/public', (_req, reply) => {
   reply.send({ hello: 'from ... public' })
 })
 

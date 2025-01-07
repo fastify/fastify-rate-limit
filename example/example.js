@@ -30,7 +30,7 @@ fastify.get('/', {
       timeWindow: '1 minute'
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from ... root' })
 })
 
@@ -42,11 +42,11 @@ fastify.get('/private', {
       timeWindow: '1 minute'
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from ... private' })
 })
 
-fastify.get('/public', (req, reply) => {
+fastify.get('/public', (_req, reply) => {
   reply.send({ hello: 'from ... public' })
 })
 
@@ -55,15 +55,15 @@ fastify.get('/public/sub-rated-1', {
     rateLimit: {
       timeWindow: '1 minute',
       allowList: ['127.0.2.1'],
-      onExceeding: function (req) {
+      onExceeding: function () {
         console.log('callback on exceededing ... executed before response to client. req is give as argument')
       },
-      onExceeded: function (req) {
+      onExceeded: function () {
         console.log('callback on exceeded ... to black ip in security group for example, req is give as argument')
       }
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from sub-rated-1 ... using default max value ... ' })
 })
 
@@ -72,15 +72,15 @@ fastify.get('/public/sub-rated-2', {
     rateLimit: {
       max: 3,
       timeWindow: '1 minute',
-      onExceeding: function (req) {
+      onExceeding: function () {
         console.log('callback on exceededing ... executed before response to client. req is give as argument')
       },
-      onExceeded: function (req) {
+      onExceeded: function () {
         console.log('callback on exceeded ... to black ip in security group for example, req is give as argument')
       }
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from ... sub-rated-2' })
 })
 
@@ -91,7 +91,7 @@ fastify.get('/home', {
       timeWindow: '1 minute'
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'toto' })
 })
 
@@ -100,10 +100,10 @@ fastify.get('/customerrormessage', {
     rateLimit: {
       max: 2,
       timeWindow: '1 minute',
-      errorResponseBuilder: (req, context) => ({ code: 429, timeWindow: context.after, limit: context.max })
+      errorResponseBuilder: (_req, context) => ({ code: 429, timeWindow: context.after, limit: context.max })
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'toto' })
 })
 

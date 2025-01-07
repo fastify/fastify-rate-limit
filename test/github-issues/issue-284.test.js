@@ -13,7 +13,7 @@ test("issue #284 - don't set the reply code automatically", async (t) => {
     global: false
   })
 
-  fastify.setErrorHandler((err, req, res) => {
+  fastify.setErrorHandler((err, _req, res) => {
     t.assert.deepStrictEqual(res.statusCode, 200)
     t.assert.deepStrictEqual(err.statusCode, 429)
 

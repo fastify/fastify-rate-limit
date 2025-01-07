@@ -20,7 +20,7 @@ describe('Global rate limit', () => {
       redis
     })
 
-    fastify.get('/', async (req, reply) => 'hello!')
+    fastify.get('/', async () => 'hello!')
 
     let res
 
@@ -84,7 +84,7 @@ describe('Global rate limit', () => {
       redis
     })
 
-    fastify.get('/', async (req, reply) => 'hello!')
+    fastify.get('/', async () => 'hello!')
 
     let res
 
@@ -144,7 +144,7 @@ describe('Global rate limit', () => {
       skipOnError: true
     })
 
-    fastify.get('/', async (req, reply) => 'hello!')
+    fastify.get('/', async () => 'hello!')
 
     let res
 
@@ -178,7 +178,7 @@ describe('Global rate limit', () => {
       skipOnError: false
     })
 
-    fastify.get('/', async (req, reply) => 'hello!')
+    fastify.get('/', async () => 'hello!')
 
     let res
 
@@ -209,7 +209,7 @@ describe('Global rate limit', () => {
       continueExceeding: true
     })
 
-    fastify.get('/', async (req, reply) => 'hello!')
+    fastify.get('/', async () => 'hello!')
 
     const first = await fastify.inject({
       url: '/',
@@ -242,7 +242,7 @@ describe('Global rate limit', () => {
       redis
     })
 
-    fastify.get('/', async (req, reply) => 'hello!')
+    fastify.get('/', async () => 'hello!')
 
     let res
 
@@ -306,7 +306,7 @@ describe('Global rate limit', () => {
       keyGenerator: (req) => req.headers['x-my-header']
     })
 
-    fastify.get('/', async (req, reply) => 'hello!')
+    fastify.get('/', async () => 'hello!')
 
     const allowListHeader = {
       method: 'GET',
@@ -384,7 +384,7 @@ describe('Route rate limit', () => {
           someValue: 1
         }
       }
-    }, async (req, reply) => 'hello!')
+    }, async () => 'hello!')
 
     let res
 
@@ -446,7 +446,7 @@ describe('Route rate limit', () => {
           }
         }
       },
-      async (req, reply) => 'hello!'
+      async () => 'hello!'
     )
 
     let res
@@ -488,7 +488,7 @@ describe('Route rate limit', () => {
           }
         }
       },
-      async (req, reply) => 'hello!'
+      async () => 'hello!'
     )
 
     let res
@@ -532,7 +532,7 @@ describe('Route rate limit', () => {
           }
         }
       },
-      async (req, reply) => 'hello!'
+      async () => 'hello!'
     )
 
     const first = await fastify.inject({
@@ -576,7 +576,7 @@ describe('Route rate limit', () => {
           }
         }
       },
-      async (req, reply) => 'hello!'
+      async () => 'hello!'
     )
 
     const first = await fastify.inject({

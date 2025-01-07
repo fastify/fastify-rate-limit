@@ -28,7 +28,7 @@ const defaultOnFn = () => {}
 
 const defaultKeyGenerator = (req) => req.ip
 
-const defaultErrorResponse = (req, context) => {
+const defaultErrorResponse = (_req, context) => {
   const err = new Error(`Rate limit exceeded, retry in ${context.after}`)
   err.statusCode = context.statusCode
   return err
