@@ -712,7 +712,7 @@ test('limit reset per Local storage', { skip: true }, async (t) => {
         }
       }
     },
-    (reply) => {
+    (_req, reply) => {
       reply.send('hello!')
     }
   )
@@ -1465,7 +1465,7 @@ test('should consider routes allow list', async (t) => {
         rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 }
       }
     },
-    (reply) => {
+    (_req, reply) => {
       reply.send('hello!')
     }
   )
@@ -1636,7 +1636,7 @@ test("child's allowList should not crash the app", async (t) => {
         rateLimit: { allowList: ['127.0.0.1'], max: 2, timeWindow: 10000 }
       }
     },
-    (reply) => {
+    (_req, reply) => {
       reply.send('hello!')
     }
   )
@@ -1665,7 +1665,7 @@ test("child's allowList function should not crash and should override parent", a
         rateLimit: { allowList: () => false, max: 2, timeWindow: 10000 }
       }
     },
-    (reply) => {
+    (_req, reply) => {
       reply.send('hello!')
     }
   )
@@ -1695,7 +1695,7 @@ test('rateLimit decorator should work when a property other than timeWindow is m
         max: 1
       })
     },
-    (reply) => {
+    (_req, reply) => {
       reply.send('hello!')
     }
   )
