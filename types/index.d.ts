@@ -12,6 +12,23 @@ import {
 
 declare module 'fastify' {
   interface FastifyInstance<RawServer, RawRequest, RawReply, Logger, TypeProvider> {
+    createRateLimit(options?: fastifyRateLimit.CreateRateLimitOptions): (req: FastifyRequest) => Promise<
+      | {
+        isAllowed: true;
+        key: string;
+      }
+      | {
+        isAllowed: false;
+        key: string;
+        max: number;
+        timeWindow: number;
+        remaining: number;
+        ttl: number;
+        ttlInSeconds: number
+        isExceeded: boolean
+        isBanned: boolean
+      }
+    >
     rateLimit<
       RouteGeneric extends RouteGenericInterface = RouteGenericInterface,
       ContextConfig = ContextConfigDefault,
@@ -89,13 +106,9 @@ declare namespace fastifyRateLimit {
     'ratelimit-reset'?: boolean;
   }
 
-  export type RateLimitHook =
-    | 'onRequest'
-    | 'preParsing'
-    | 'preValidation'
-    | 'preHandler'
-
-  export interface RateLimitOptions {
+  export interface CreateRateLimitOptions {
+    store?: FastifyRateLimitStoreCtor;
+    skipOnError?: boolean;
     max?:
       | number
       | ((req: FastifyRequest, key: string) => number)
@@ -105,19 +118,26 @@ declare namespace fastifyRateLimit {
       | string
       | ((req: FastifyRequest, key: string) => number)
       | ((req: FastifyRequest, key: string) => Promise<number>);
-    hook?: RateLimitHook;
-    cache?: number;
-    store?: FastifyRateLimitStoreCtor;
     /**
      * @deprecated Use `allowList` property
      */
     whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
     allowList?: string[] | ((req: FastifyRequest, key: string) => boolean | Promise<boolean>);
-    continueExceeding?: boolean;
-    skipOnError?: boolean;
-    ban?: number;
-    onBanReach?: (req: FastifyRequest, key: string) => void;
     keyGenerator?: (req: FastifyRequest) => string | number | Promise<string | number>;
+    ban?: number;
+  }
+
+  export type RateLimitHook =
+    | 'onRequest'
+    | 'preParsing'
+    | 'preValidation'
+    | 'preHandler'
+
+  export interface RateLimitOptions extends CreateRateLimitOptions {
+    hook?: RateLimitHook;
+    cache?: number;
+    continueExceeding?: boolean;
+    onBanReach?: (req: FastifyRequest, key: string) => void;
     groupId?: string;
     errorResponseBuilder?: (
       req: FastifyRequest,
@@ -127,7 +147,6 @@ declare namespace fastifyRateLimit {
     onExceeding?: (req: FastifyRequest, key: string) => void;
     onExceeded?: (req: FastifyRequest, key: string) => void;
     exponentialBackoff?: boolean;
-
   }
 
   export interface RateLimitPluginOptions extends RateLimitOptions {
