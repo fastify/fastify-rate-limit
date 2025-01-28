@@ -12,7 +12,8 @@ import fastifyRateLimit, {
   errorResponseBuilderContext,
   FastifyRateLimitOptions,
   FastifyRateLimitStore,
-  RateLimitPluginOptions
+  RateLimitPluginOptions,
+  CreateRateLimitOptions,
 } from '..'
 import { expectAssignable, expectType } from 'tsd'
 
@@ -203,6 +204,26 @@ expectAssignable<errorResponseBuilderContext>({
   after: '123',
   max: 1000,
   ttl: 123
+})
+
+const options10: CreateRateLimitOptions = {
+  max: 0,
+  timeWindow: 5000,
+  allowList: ['127.0.0.1'],
+  skipOnError: true,
+  ban: 10,
+  keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
+}
+
+const appForCreateRateLimit = fastify()
+appForCreateRateLimit.register(fastifyRateLimit, { global: false })
+const checkRateLimit = appForCreateRateLimit.createRateLimit(options10)
+appForCreateRateLimit.route({
+  method: 'GET',
+  url: '/',
+  handler: async (req, reply) => {
+    await checkRateLimit(req)
+  },
 })
 
 const appWithCustomLogger = fastify({
