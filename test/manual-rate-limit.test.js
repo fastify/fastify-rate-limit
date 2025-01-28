@@ -25,7 +25,7 @@ describe('Manual check rate limit', () => {
       } else {
         t.assert.deepStrictEqual(limit.isExceeded, false)
       }
-      reply
+      return reply
         .code(limit.isExceeded ? 429 : 200)
         .header('x-ratelimit-limit', limit.max)
         .header('x-ratelimit-remaining', limit.remaining)
