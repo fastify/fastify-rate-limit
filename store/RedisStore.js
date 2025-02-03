@@ -10,6 +10,12 @@ const lua = `
   -- Flag to determine if TTL should be reset after exceeding
   local continueExceeding = ARGV[3] == 'true'
 
+  --Flag to determine if exponential backoff should be applied
+  local exponentialBackoff = ARGV[4] == 'true'
+
+  --Max safe integer
+  local MAX_SAFE_INTEGER = (2^53) - 1
+
   -- Increment the key's value
   local current = redis.call('INCR', key)
 
@@ -20,13 +26,20 @@ const lua = `
   if ttl == -1 or (continueExceeding and current > max) then
     redis.call('PEXPIRE', key, timeWindow)
     ttl = timeWindow
+  
+  -- If the key is new or if its incremented value has exceeded the max value and exponential backoff is enabled then set its TTL
+  elseif exponentialBackoff and current > max then
+    local backoffExponent = current - max - 1
+    ttl = math.min(timeWindow * (2.0 ^ backoffExponent), MAX_SAFE_INTEGER)
+    redis.call('PEXPIRE', key, ttl)
   end
 
   return {current, ttl}
 `
 
-function RedisStore (continueExceeding, redis, key = 'fastify-rate-limit-') {
+function RedisStore (continueExceeding, exponentialBackoff, redis, key = 'fastify-rate-limit-') {
   this.continueExceeding = continueExceeding
+  this.exponentialBackoff = exponentialBackoff
   this.redis = redis
   this.key = key
 
@@ -39,13 +52,13 @@ function RedisStore (continueExceeding, redis, key = 'fastify-rate-limit-') {
 }
 
 RedisStore.prototype.incr = function (ip, cb, timeWindow, max) {
-  this.redis.rateLimit(this.key + ip, timeWindow, max, this.continueExceeding, (err, result) => {
+  this.redis.rateLimit(this.key + ip, timeWindow, max, this.continueExceeding, this.exponentialBackoff, (err, result) => {
     err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
   })
 }
 
 RedisStore.prototype.child = function (routeOptions) {
-  return new RedisStore(routeOptions.continueExceeding, this.redis, `${this.key}${routeOptions.routeInfo.method}${routeOptions.routeInfo.url}-`)
+  return new RedisStore(routeOptions.continueExceeding, routeOptions.exponentialBackoff, this.redis, `${this.key}${routeOptions.routeInfo.method}${routeOptions.routeInfo.url}-`)
 }
 
 module.exports = RedisStore

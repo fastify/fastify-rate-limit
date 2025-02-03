@@ -1,7 +1,7 @@
 'use strict'
 
 const fp = require('fastify-plugin')
-const ms = require('@lukeed/ms')
+const { parse, format } = require('@lukeed/ms')
 
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
@@ -28,7 +28,7 @@ const defaultOnFn = () => {}
 
 const defaultKeyGenerator = (req) => req.ip
 
-const defaultErrorResponse = (req, context) => {
+const defaultErrorResponse = (_req, context) => {
   const err = new Error(`Rate limit exceeded, retry in ${context.after}`)
   err.statusCode = context.statusCode
   return err
@@ -75,7 +75,7 @@ async function fastifyRateLimit (fastify, settings) {
   if (Number.isFinite(settings.timeWindow) && settings.timeWindow >= 0) {
     globalParams.timeWindow = Math.trunc(settings.timeWindow)
   } else if (typeof settings.timeWindow === 'string') {
-    globalParams.timeWindow = ms.parse(settings.timeWindow)
+    globalParams.timeWindow = parse(settings.timeWindow)
   } else if (
     typeof settings.timeWindow === 'function'
   ) {
@@ -91,6 +91,7 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : defaultOnFn
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : defaultOnFn
   globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
+  globalParams.exponentialBackoff = typeof settings.exponentialBackoff === 'boolean' ? settings.exponentialBackoff : false
 
   globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
     ? settings.keyGenerator
@@ -116,9 +117,9 @@ async function fastifyRateLimit (fastify, settings) {
     pluginComponent.store = new Store(globalParams)
   } else {
     if (settings.redis) {
-      pluginComponent.store = new RedisStore(globalParams.continueExceeding, settings.redis, settings.nameSpace)
+      pluginComponent.store = new RedisStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.redis, settings.nameSpace)
     } else {
-      pluginComponent.store = new LocalStore(globalParams.continueExceeding, settings.cache)
+      pluginComponent.store = new LocalStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.cache)
     }
   }
 
@@ -145,15 +146,7 @@ async function fastifyRateLimit (fastify, settings) {
         const mergedRateLimitParams = mergeParams(globalParams, routeOptions.config.rateLimit, { routeInfo: routeOptions })
         newPluginComponent.store = pluginComponent.store.child(mergedRateLimitParams)
 
-        if (routeOptions.config.rateLimit.groupId) {
-          if (typeof routeOptions.config.rateLimit.groupId !== 'string') {
-            throw new Error('groupId must be a string')
-          }
-
-          addRouteRateHook(pluginComponent, globalParams, routeOptions)
-        } else {
-          addRouteRateHook(newPluginComponent, mergedRateLimitParams, routeOptions)
-        }
+        addRouteRateHook(newPluginComponent, mergedRateLimitParams, routeOptions)
       } else if (routeOptions.config.rateLimit !== false) {
         throw new Error('Unknown value for route rate-limit configuration')
       }
@@ -170,7 +163,7 @@ function mergeParams (...params) {
   if (Number.isFinite(result.timeWindow) && result.timeWindow >= 0) {
     result.timeWindow = Math.trunc(result.timeWindow)
   } else if (typeof result.timeWindow === 'string') {
-    result.timeWindow = ms.parse(result.timeWindow)
+    result.timeWindow = parse(result.timeWindow)
   } else if (typeof result.timeWindow !== 'function') {
     result.timeWindow = defaultTimeWindow
   }
@@ -185,6 +178,10 @@ function mergeParams (...params) {
     result.ban = Math.trunc(result.ban)
   } else {
     result.ban = -1
+  }
+
+  if (result.groupId !== undefined && typeof result.groupId !== 'string') {
+    throw new Error('groupId must be a string')
   }
 
   return result
@@ -280,11 +277,6 @@ async function applyRateLimit (pluginComponent, params, req) {
 function rateLimitRequestHandler (pluginComponent, params) {
   const { rateLimitRan } = pluginComponent
 
-  let timeWindowString
-  if (typeof params.timeWindow === 'number') {
-    timeWindowString = ms.format(params.timeWindow, true)
-  }
-
   return async (req, res) => {
     if (req[rateLimitRan]) {
       return
@@ -330,7 +322,7 @@ function rateLimitRequestHandler (pluginComponent, params) {
       ban: false,
       max,
       ttl,
-      after: timeWindowString ?? ms.format(timeWindow, true)
+      after: format(ttlInSeconds * 1000, true)
     }
 
     if (isBanned) {

@@ -5,26 +5,33 @@ import fastify, {
   RequestGenericInterface,
   RouteOptions
 } from 'fastify'
-import * as http2 from 'http2'
-import { default as ioredis } from 'ioredis'
-import pino from 'pino';
+import * as http2 from 'node:http2'
+import IORedis from 'ioredis'
+import pino from 'pino'
 import fastifyRateLimit, {
   errorResponseBuilderContext,
   FastifyRateLimitOptions,
   FastifyRateLimitStore,
   RateLimitPluginOptions
 } from '..'
+import { expectAssignable, expectType } from 'tsd'
 
 class CustomStore implements FastifyRateLimitStore {
-  constructor(options: FastifyRateLimitOptions) {}
-  incr(
-    key: string,
-    callback: (
+  options: FastifyRateLimitOptions
+
+  constructor (options: FastifyRateLimitOptions) {
+    this.options = options
+  }
+
+  incr (
+    _key: string,
+    _callback: (
       error: Error | null,
       result?: { current: number; ttl: number }
     ) => void
   ) {}
-  child(routeOptions: RouteOptions & { path: string; prefix: string }) {
+
+  child (_routeOptions: RouteOptions & { path: string; prefix: string }) {
     return <CustomStore>(<FastifyRateLimitOptions>{})
   }
 }
@@ -36,7 +43,7 @@ const options1: RateLimitPluginOptions = {
   timeWindow: 5000,
   cache: 10000,
   allowList: ['127.0.0.1'],
-  redis: new ioredis({ host: '127.0.0.1' }),
+  redis: new IORedis({ host: '127.0.0.1' }),
   skipOnError: true,
   ban: 10,
   continueExceeding: false,
@@ -49,13 +56,13 @@ const options1: RateLimitPluginOptions = {
     if (context.ban) {
       return {
         statusCode: 403,
-        error: "Forbidden",
+        error: 'Forbidden',
         message: `You can not access this service as you have sent too many requests that exceed your rate limit. Your IP: ${req.ip} and Limit: ${context.max}`,
       }
     } else {
       return {
         statusCode: 429,
-        error: "Too Many Requests",
+        error: 'Too Many Requests',
         message: `You hit the rate limit, please slow down! You can retry in ${context.after}`,
       }
     }
@@ -71,21 +78,21 @@ const options1: RateLimitPluginOptions = {
     'x-ratelimit-reset': false,
     'retry-after': false
   },
-  onExceeding: (req: FastifyRequest<RequestGenericInterface>, key: string) => ({}),
-  onExceeded: (req: FastifyRequest<RequestGenericInterface>, key: string) => ({}),
-  onBanReach: (req: FastifyRequest<RequestGenericInterface>, key: string) => ({})
+  onExceeding: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => ({}),
+  onExceeded: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => ({}),
+  onBanReach: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => ({})
 }
 const options2: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
-  allowList: (req: FastifyRequest<RequestGenericInterface>, key: string) => false,
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
+  allowList: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => false,
   timeWindow: 5000,
   hook: 'preParsing'
 }
 
 const options3: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
   timeWindow: 5000,
   store: CustomStore,
   hook: 'preValidation'
@@ -93,7 +100,7 @@ const options3: RateLimitPluginOptions = {
 
 const options4: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => Promise.resolve(42),
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(42),
   timeWindow: 5000,
   store: CustomStore,
   hook: 'preHandler'
@@ -103,14 +110,14 @@ const options5: RateLimitPluginOptions = {
   max: 3,
   timeWindow: 5000,
   cache: 10000,
-  redis: new ioredis({ host: '127.0.0.1' }),
+  redis: new IORedis({ host: '127.0.0.1' }),
   nameSpace: 'my-namespace'
 }
 
 const options6: RateLimitPluginOptions = {
   global: true,
-  allowList: async (req, key) => true,
-  keyGenerator: async (req) => '',
+  allowList: async (_req, _key) => true,
+  keyGenerator: async (_req) => '',
   timeWindow: 5000,
   store: CustomStore,
   hook: 'preHandler'
@@ -118,30 +125,45 @@ const options6: RateLimitPluginOptions = {
 
 const options7: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
-  timeWindow: (req: FastifyRequest<RequestGenericInterface>, key: string) => 5000,
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 5000,
   store: CustomStore,
   hook: 'preValidation'
 }
 
 const options8: RateLimitPluginOptions = {
   global: true,
-  max: (req: FastifyRequest<RequestGenericInterface>, key: string) => 42,
-  timeWindow: (req: FastifyRequest<RequestGenericInterface>, key: string) => Promise.resolve(5000),
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(5000),
   store: CustomStore,
   hook: 'preValidation'
+}
+
+const options9: RateLimitPluginOptions = {
+  global: true,
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(42),
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 5000,
+  store: CustomStore,
+  hook: 'preValidation',
+  exponentialBackoff: true
 }
 
 appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
 appWithImplicitHttp.register(fastifyRateLimit, options5)
+appWithImplicitHttp.register(fastifyRateLimit, options9)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
-  const preHandler1: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit()
-  const preHandler2: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options1)
-  const preHandler3: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options2)
-  const preHandler4: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options3)
-  const preHandler5: preHandlerAsyncHookHandler = appWithImplicitHttp.rateLimit(options4)
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit())
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options1))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options2))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options3))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options4))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options5))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options6))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options7))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options8))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options9))
   // The following test is dependent on https://github.com/fastify/fastify/pull/2929
   // appWithImplicitHttp.setNotFoundHandler({
   //   preHandler: appWithImplicitHttp.rateLimit()
@@ -150,7 +172,7 @@ appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   // })
 })
 
-appWithImplicitHttp.get('/', { config: { rateLimit: { max: 10, timeWindow: "60s" } } }, () => { return "limited" })
+appWithImplicitHttp.get('/', { config: { rateLimit: { max: 10, timeWindow: '60s' } } }, () => { return 'limited' })
 
 const appWithHttp2: FastifyInstance<
   http2.Http2Server,
@@ -162,24 +184,26 @@ appWithHttp2.register(fastifyRateLimit, options1)
 appWithHttp2.register(fastifyRateLimit, options2)
 appWithHttp2.register(fastifyRateLimit, options3)
 appWithHttp2.register(fastifyRateLimit, options5)
+appWithHttp2.register(fastifyRateLimit, options6)
 appWithHttp2.register(fastifyRateLimit, options7)
 appWithHttp2.register(fastifyRateLimit, options8)
+appWithHttp2.register(fastifyRateLimit, options9)
 
 appWithHttp2.get('/public', {
   config: {
     rateLimit: false
   }
-}, (request, reply) => {
+}, (_request, reply) => {
   reply.send({ hello: 'from ... public' })
 })
 
-const errorResponseContext: errorResponseBuilderContext = {
+expectAssignable<errorResponseBuilderContext>({
   statusCode: 429,
   ban: true,
   after: '123',
   max: 1000,
   ttl: 123
-}
+})
 
 const appWithCustomLogger = fastify({
   loggerInstance: pino(),

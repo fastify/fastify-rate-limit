@@ -9,7 +9,7 @@ await server.register(fastifyRateLimit, {
   timeWindow: '1 minute'
 })
 
-server.get('/', (request, reply) => {
+server.get('/', (_request, reply) => {
   reply.send('Hello, world!')
 })
 

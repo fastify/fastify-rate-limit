@@ -120,13 +120,13 @@ RateLimiterStore.prototype.incr = async function incr (key, cb) {
     sequelize.query(
             `INSERT INTO "RateLimits"("Route", "Source", "Count", "TTL")
             VALUES('${this.route}', '${key}', 1,
-            ${(RateLimit && RateLimit.TTL) || ttl})
+            ${RateLimit?.TTL || ttl})
             ON CONFLICT("Route", "Source") DO UPDATE SET "Count"=1, "TTL"=${ttl}`
     )
       .then(() => {
         cb(null, {
           current: 1,
-          ttl: (RateLimit && RateLimit.TTL) || ttl
+          ttl: RateLimit?.TTL || ttl
         })
       })
       .catch(err => {
@@ -160,7 +160,7 @@ fastify.get('/', {
       timeWindow: '1 minute'
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from ... root' })
 })
 
@@ -171,11 +171,11 @@ fastify.get('/private', {
       timeWindow: '1 minute'
     }
   }
-}, (req, reply) => {
+}, (_req, reply) => {
   reply.send({ hello: 'from ... private' })
 })
 
-fastify.get('/public', (req, reply) => {
+fastify.get('/public', (_req, reply) => {
   reply.send({ hello: 'from ... public' })
 })
 

@@ -1,12 +1,12 @@
 'use strict'
 const { test } = require('node:test')
-const assert = require('assert')
+const assert = require('node:assert')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-test('GroupId from routeConfig', async (t) => {
+test('GroupId from routeConfig', async () => {
   const fastify = Fastify()
 
   // Register rate limit plugin with groupId in routeConfig
@@ -23,7 +23,7 @@ test('GroupId from routeConfig', async (t) => {
         }
       }
     },
-    async (req, reply) => 'hello from route with groupId!'
+    async () => 'hello from route with groupId!'
   )
 
   // Test: Request should have the correct groupId in response
@@ -33,7 +33,7 @@ test('GroupId from routeConfig', async (t) => {
   assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 })
 
-test('GroupId from routeOptions', async (t) => {
+test('GroupId from routeOptions', async () => {
   const fastify = Fastify()
 
   // Register rate limit plugin with groupId in routeOptions
@@ -50,7 +50,7 @@ test('GroupId from routeOptions', async (t) => {
         }
       }
     },
-    async (req, reply) => 'hello from route with groupId from options!'
+    async () => 'hello from route with groupId from options!'
   )
 
   // Test: Request should have the correct groupId from routeOptions
@@ -60,7 +60,7 @@ test('GroupId from routeOptions', async (t) => {
   assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 })
 
-test('No groupId provided', async (t) => {
+test('No groupId provided', async () => {
   const fastify = Fastify()
 
   // Register rate limit plugin without groupId
@@ -77,7 +77,7 @@ test('No groupId provided', async (t) => {
         }
       }
     },
-    async (req, reply) => 'hello from no groupId route!'
+    async () => 'hello from no groupId route!'
   )
 
   let res
@@ -106,13 +106,13 @@ test('No groupId provided', async (t) => {
     {
       statusCode: 429,
       error: 'Too Many Requests',
-      message: 'Rate limit exceeded, retry in 500 ms'
+      message: 'Rate limit exceeded, retry in 1 second'
     },
     JSON.parse(res.payload)
   )
 })
 
-test('With multiple routes and custom groupId', async (t) => {
+test('With multiple routes and custom groupId', async () => {
   const fastify = Fastify()
 
   // Register rate limit plugin
@@ -130,7 +130,7 @@ test('With multiple routes and custom groupId', async (t) => {
         }
       }
     },
-    async (req, reply) => 'hello from route 1!'
+    async () => 'hello from route 1!'
   )
 
   // Route 2 with groupId 'group2'
@@ -140,12 +140,12 @@ test('With multiple routes and custom groupId', async (t) => {
       config: {
         rateLimit: {
           max: 2,
-          timeWindow: 500,
+          timeWindow: 1000,
           groupId: 'group2'
         }
       }
     },
-    async (req, reply) => 'hello from route 2!'
+    async () => 'hello from route 2!'
   )
 
   let res
@@ -174,7 +174,7 @@ test('With multiple routes and custom groupId', async (t) => {
     {
       statusCode: 429,
       error: 'Too Many Requests',
-      message: 'Rate limit exceeded, retry in 500 ms'
+      message: 'Rate limit exceeded, retry in 1 second'
     },
     JSON.parse(res.payload)
   )
@@ -203,7 +203,7 @@ test('With multiple routes and custom groupId', async (t) => {
     {
       statusCode: 429,
       error: 'Too Many Requests',
-      message: 'Rate limit exceeded, retry in 500 ms'
+      message: 'Rate limit exceeded, retry in 1 second'
     },
     JSON.parse(res.payload)
   )
@@ -224,7 +224,7 @@ test('With multiple routes and custom groupId', async (t) => {
   assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 })
 
-test('Invalid groupId type', async (t) => {
+test('Invalid groupId type', async () => {
   const fastify = Fastify()
 
   // Register rate limit plugin with a route having an invalid groupId
@@ -242,7 +242,7 @@ test('Invalid groupId type', async (t) => {
           }
         }
       },
-      async (req, reply) => 'hello with invalid groupId!'
+      async () => 'hello with invalid groupId!'
     )
     assert.fail('should throw')
     console.log('HER')

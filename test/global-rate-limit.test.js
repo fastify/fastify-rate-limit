@@ -13,7 +13,7 @@ test('Basic', async (t) => {
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: 1000 })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -65,7 +65,7 @@ test('With text timeWindow', async (t) => {
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: '1s' })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -117,7 +117,7 @@ test('With function timeWindow', async (t) => {
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: (_, __) => 1000 })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -171,7 +171,7 @@ test('When passing NaN to the timeWindow property then the timeWindow should be 
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 1, timeWindow: NaN })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -212,7 +212,7 @@ test('With ips allowList, allowed ips should not result in rate limiting', async
     allowList: ['127.0.0.1']
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -235,7 +235,7 @@ test('With ips allowList, not allowed ips should result in rate limiting', async
     allowList: ['1.1.1.1']
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -258,7 +258,7 @@ test('With ips whitelist', async (t) => {
     whitelist: ['127.0.0.1']
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -288,7 +288,7 @@ test('With function allowList', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   const allowListHeader = {
     method: 'GET',
@@ -337,7 +337,7 @@ test('With async/await function allowList', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   const allowListHeader = {
     method: 'GET',
@@ -379,7 +379,7 @@ test('With onExceeding option', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -404,7 +404,7 @@ test('With onExceeded option', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -430,7 +430,7 @@ test('With onBanReach option', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -458,7 +458,7 @@ test('With keyGenerator', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   const payload = {
     method: 'GET',
@@ -520,7 +520,7 @@ test('With async/await keyGenerator', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   const payload = {
     method: 'GET',
@@ -592,7 +592,7 @@ test('With CustomStore', async (t) => {
     store: CustomStore
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -625,7 +625,7 @@ test('With CustomStore', async (t) => {
     {
       statusCode: 429,
       error: 'Too Many Requests',
-      message: 'Rate limit exceeded, retry in 10 seconds'
+      message: 'Rate limit exceeded, retry in 7 seconds'
     },
     JSON.parse(res.payload)
   )
@@ -647,7 +647,7 @@ test('does not override the onRequest', async (t) => {
         next()
       }
     },
-    async (req, reply) => 'hello!'
+    async () => 'hello!'
   )
 
   const res = await fastify.inject('/')
@@ -674,7 +674,7 @@ test('does not override the onRequest as an array', async (t) => {
         }
       ]
     },
-    async (req, reply) => 'hello!'
+    async () => 'hello!'
   )
 
   const res = await fastify.inject('/')
@@ -688,14 +688,14 @@ test('variable max', async (t) => {
   t.plan(4)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
-    max: (req, key) => {
+    max: (req) => {
       t.assert.ok(req)
       return +req.headers['secret-max']
     },
     timeWindow: 1000
   })
 
-  fastify.get('/', async (req, res) => 'hello')
+  fastify.get('/', async () => 'hello')
 
   const res = await fastify.inject({ url: '/', headers: { 'secret-max': 50 } })
 
@@ -713,7 +713,7 @@ test('variable max contenders', async (t) => {
     timeWindow: 10000
   })
 
-  fastify.get('/', async (req, res) => 'hello')
+  fastify.get('/', async () => 'hello')
 
   const requestSequence = [
     { headers: { 'api-key': 'pro' }, status: 200, url: '/' },
@@ -742,7 +742,7 @@ test('when passing NaN to max variable then it should use the default max - 1000
     timeWindow: 10000
   })
 
-  fastify.get('/', async (req, res) => 'hello')
+  fastify.get('/', async () => 'hello')
 
   for (let i = 0; i < defaultMax; i++) {
     const res = await fastify.inject('/')
@@ -771,7 +771,7 @@ test('hide rate limit headers', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, res) => 'hello')
+  fastify.get('/', async () => 'hello')
 
   let res
 
@@ -832,7 +832,7 @@ test('hide rate limit headers on exceeding', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, res) => 'hello')
+  fastify.get('/', async () => 'hello')
 
   let res
 
@@ -905,7 +905,7 @@ test('hide rate limit headers at all times', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, res) => 'hello')
+  fastify.get('/', async () => 'hello')
 
   let res
 
@@ -977,7 +977,7 @@ test('With ban', async (t) => {
     ban: 1
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -1007,7 +1007,7 @@ test('stops fastify lifecycle after onRequest and before preValidation', async (
         next()
       }
     },
-    async (req, reply) => 'hello!'
+    async () => 'hello!'
   )
 
   let res
@@ -1038,7 +1038,7 @@ test('With enabled IETF Draft Spec', async (t) => {
     })
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -1109,7 +1109,7 @@ test('hide IETF draft spec headers', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, res) => 'hello')
+  fastify.get('/', async () => 'hello')
 
   let res
 
@@ -1167,7 +1167,7 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
     enableDraftSpec: true
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   const res = await fastify.inject('/')
 
@@ -1196,7 +1196,7 @@ test('afterReset and Rate Limit remain the same when enableDraftSpec is enabled'
   clock.reset()
 })
 
-test('Before async in "max"', async (t) => {
+test('Before async in "max"', async () => {
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     keyGenerator: (req) => req.headers['api-key'],
@@ -1204,7 +1204,7 @@ test('Before async in "max"', async (t) => {
     timeWindow: 10000
   })
 
-  await fastify.get('/', async (req, res) => 'hello')
+  await fastify.get('/', async () => 'hello')
 
   const requestSequence = async (key) => ((await key) === 'pro' ? 5 : 2)
 })
@@ -1217,7 +1217,7 @@ test('exposeHeadRoutes', async (t) => {
     max: 10,
     timeWindow: 1000
   })
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   const res = await fastify.inject({
     url: '/',
@@ -1267,7 +1267,7 @@ test('When continue exceeding is on (Local)', async (t) => {
     continueExceeding: true
   })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   const first = await fastify.inject({
     url: '/',
@@ -1306,7 +1306,7 @@ test('on preHandler hook', async (t) => {
     }
   })
 
-  fastify.get('/', async (req, reply) => 'fastify is awesome !')
+  fastify.get('/', async () => 'fastify is awesome !')
 
   const send = (userId) => {
     let query
@@ -1341,7 +1341,7 @@ test('ban directly', async (t) => {
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, ban: 0, timeWindow: '1s' })
 
-  fastify.get('/', async (req, reply) => 'hello!')
+  fastify.get('/', async () => 'hello!')
 
   let res
 
@@ -1404,7 +1404,7 @@ test('wrong timewindow', async (t) => {
         }
       }
     },
-    async (req, reply) => 'hello!'
+    async () => 'hello!'
   )
 
   let res
