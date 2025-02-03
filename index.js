@@ -292,7 +292,6 @@ function rateLimitRequestHandler (pluginComponent, params) {
     const {
       key,
       max,
-      timeWindow,
       remaining,
       ttl,
       ttlInSeconds,
