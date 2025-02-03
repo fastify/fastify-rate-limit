@@ -9,6 +9,7 @@ import * as http2 from 'node:http2'
 import IORedis from 'ioredis'
 import pino from 'pino'
 import fastifyRateLimit, {
+  CreateRateLimitOptions,
   errorResponseBuilderContext,
   FastifyRateLimitOptions,
   FastifyRateLimitStore,
@@ -217,3 +218,60 @@ appWithCustomLogger.route({
   preHandler: appWithCustomLogger.rateLimit({}),
   handler: () => {},
 })
+
+const options10: CreateRateLimitOptions = {
+  store: CustomStore,
+  skipOnError: true,
+  max: 0,
+  timeWindow: 5000,
+  allowList: ['127.0.0.1'],
+  keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
+  ban: 10
+}
+
+appWithImplicitHttp.register(fastifyRateLimit, { global: false })
+const checkRateLimit = appWithImplicitHttp.createRateLimit(options10)
+appWithImplicitHttp.route({
+  method: 'GET',
+  url: '/',
+  handler: async (req, _reply) => {
+    const limit = await checkRateLimit(req)
+    expectType<{
+      isAllowed: true;
+      key: string;
+    } | {
+      isAllowed: false;
+      key: string;
+      max: number;
+      timeWindow: number;
+      remaining: number;
+      ttl: number;
+      ttlInSeconds: number;
+      isExceeded: boolean;
+      isBanned: boolean;
+    }>(limit)
+  },
+})
+
+const options11: CreateRateLimitOptions = {
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
+  timeWindow: '10s',
+  allowList: (_req: FastifyRequest<RequestGenericInterface>) => true,
+  keyGenerator: (_req: FastifyRequest<RequestGenericInterface>) => 42,
+}
+
+const options12: CreateRateLimitOptions = {
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(42),
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 5000,
+  allowList: (_req: FastifyRequest<RequestGenericInterface>) => Promise.resolve(true),
+  keyGenerator: (_req: FastifyRequest<RequestGenericInterface>) => Promise.resolve(42),
+}
+
+const options13: CreateRateLimitOptions = {
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(5000),
+  keyGenerator: (_req: FastifyRequest<RequestGenericInterface>) => Promise.resolve('key'),
+}
+
+expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options11))
+expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options12))
+expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options13))
