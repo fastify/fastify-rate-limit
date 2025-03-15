@@ -362,6 +362,72 @@ describe('Global rate limit', () => {
     await redis.flushall()
     await redis.quit()
   })
+
+  test('With redis store and exponential backoff', async (t) => {
+    t.plan(20)
+    const fastify = Fastify()
+    const redis = await new Redis({ host: REDIS_HOST })
+    await fastify.register(rateLimit, {
+      max: 2,
+      timeWindow: 1000,
+      redis,
+      exponentialBackoff: true
+    })
+
+    fastify.get('/', async () => 'hello!')
+
+    let res
+
+    res = await fastify.inject('/')
+    t.assert.deepStrictEqual(res.statusCode, 200)
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+
+    res = await fastify.inject('/')
+    t.assert.deepStrictEqual(res.statusCode, 200)
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+
+    // First attempt over the limit should have the normal timeWindow (1000ms)
+    res = await fastify.inject('/')
+    t.assert.deepStrictEqual(res.statusCode, 429)
+    t.assert.deepStrictEqual(
+      res.headers['content-type'],
+      'application/json; charset=utf-8'
+    )
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+    t.assert.deepStrictEqual(res.headers['retry-after'], '1')
+    t.assert.deepStrictEqual(
+      {
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Rate limit exceeded, retry in 1 second'
+      },
+      JSON.parse(res.payload)
+    )
+
+    // Second attempt over the limit should have doubled timeWindow (2000ms)
+    res = await fastify.inject('/')
+    t.assert.deepStrictEqual(res.statusCode, 429)
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    t.assert.deepStrictEqual(res.headers['retry-after'], '2')
+    t.assert.deepStrictEqual(
+      {
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Rate limit exceeded, retry in 2 seconds'
+      },
+      JSON.parse(res.payload)
+    )
+
+    await redis.flushall()
+    await redis.quit()
+  })
 })
 
 describe('Route rate limit', () => {
@@ -606,6 +672,80 @@ describe('Route rate limit', () => {
     t.assert.deepStrictEqual(third.headers['x-ratelimit-limit'], '1')
     t.assert.deepStrictEqual(third.headers['x-ratelimit-remaining'], '0')
     t.assert.deepStrictEqual(third.headers['x-ratelimit-reset'], '3')
+
+    await redis.flushall()
+    await redis.quit()
+  })
+
+  test('Route-specific exponential backoff with redis store', async (t) => {
+    t.plan(17)
+    const fastify = Fastify()
+    const redis = await new Redis({ host: REDIS_HOST })
+    await fastify.register(rateLimit, {
+      global: false,
+      redis
+    })
+
+    fastify.get('/', {
+      config: {
+        rateLimit: {
+          max: 1,
+          timeWindow: 1000,
+          exponentialBackoff: true
+        }
+      }
+    }, async () => 'hello!')
+
+    let res
+
+    res = await fastify.inject('/')
+    t.assert.deepStrictEqual(res.statusCode, 200)
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+
+    // First attempt over the limit should have the normal timeWindow (1000ms)
+    res = await fastify.inject('/')
+    t.assert.deepStrictEqual(res.statusCode, 429)
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    t.assert.deepStrictEqual(res.headers['retry-after'], '1')
+    t.assert.deepStrictEqual(
+      {
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Rate limit exceeded, retry in 1 second'
+      },
+      JSON.parse(res.payload)
+    )
+
+    // Second attempt over the limit should have doubled timeWindow (2000ms)
+    res = await fastify.inject('/')
+    t.assert.deepStrictEqual(res.statusCode, 429)
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '1')
+    t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+    t.assert.deepStrictEqual(res.headers['retry-after'], '2')
+    t.assert.deepStrictEqual(
+      {
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Rate limit exceeded, retry in 2 seconds'
+      },
+      JSON.parse(res.payload)
+    )
+
+    // Third attempt over the limit should have quadrupled timeWindow (4000ms)
+    res = await fastify.inject('/')
+    t.assert.deepStrictEqual(res.statusCode, 429)
+    t.assert.deepStrictEqual(res.headers['retry-after'], '4')
+    t.assert.deepStrictEqual(
+      {
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Rate limit exceeded, retry in 4 seconds'
+      },
+      JSON.parse(res.payload)
+    )
 
     await redis.flushall()
     await redis.quit()

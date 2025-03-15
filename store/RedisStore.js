@@ -9,7 +9,6 @@ const lua = `
   local max = tonumber(ARGV[2])
   -- Flag to determine if TTL should be reset after exceeding
   local continueExceeding = ARGV[3] == 'true'
-
   --Flag to determine if exponential backoff should be applied
   local exponentialBackoff = ARGV[4] == 'true'
 
@@ -19,22 +18,17 @@ const lua = `
   -- Increment the key's value
   local current = redis.call('INCR', key)
 
-  -- Check the TTL of the key
-  local ttl = redis.call('PTTL', key)
-
-  -- If the key is new or if its incremented value has exceeded the max value then set its TTL
-  if ttl == -1 or (continueExceeding and current > max) then
+  if current == 1 or (continueExceeding and current > max) then
     redis.call('PEXPIRE', key, timeWindow)
-    ttl = timeWindow
-  
-  -- If the key is new or if its incremented value has exceeded the max value and exponential backoff is enabled then set its TTL
   elseif exponentialBackoff and current > max then
     local backoffExponent = current - max - 1
-    ttl = math.min(timeWindow * (2.0 ^ backoffExponent), MAX_SAFE_INTEGER)
-    redis.call('PEXPIRE', key, ttl)
+    timeWindow = math.min(timeWindow * (2 ^ backoffExponent), MAX_SAFE_INTEGER)
+    redis.call('PEXPIRE', key, timeWindow)
+  else
+    timeWindow = redis.call('PTTL', key)
   end
 
-  return {current, ttl}
+  return {current, timeWindow}
 `
 
 function RedisStore (continueExceeding, exponentialBackoff, redis, key = 'fastify-rate-limit-') {
