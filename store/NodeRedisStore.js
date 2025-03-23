@@ -18,7 +18,7 @@ const rateLimitScript = defineScript({
   NUMBER_OF_KEYS: 1,
   SCRIPT: lua,
   transformArguments (key, timeWindow, max, continueExceeding, exponentialBackoff) {
-    return [key, timeWindow.toString(), max.toString(), continueExceeding.toString(), exponentialBackoff.toString()]
+    return [key, String(timeWindow), String(max), String(continueExceeding), String(exponentialBackoff)]
   },
   transformReply (reply) {
     return reply
