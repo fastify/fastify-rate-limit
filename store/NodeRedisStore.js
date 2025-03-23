@@ -30,6 +30,13 @@ function NodeRedisStore (continueExceeding, exponentialBackoff, redis, key = 'fa
   this.exponentialBackoff = exponentialBackoff
   this.redis = redis
   this.key = key
+
+  if (!this.redis.rateLimit) {
+    throw new Error(
+      'rateLimit script missing on Redis instance. Add it when creating client: ' +
+      'const redis = createClient({ scripts: { rateLimit: rateLimit.NodeRedisStore.rateLimitScript }})'
+    )
+  }
 }
 
 NodeRedisStore.prototype.incr = function (ip, cb, timeWindow, max) {

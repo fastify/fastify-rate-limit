@@ -10,6 +10,33 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 // Use Redis database 1 to avoid conflicts with ioredis test suite
 const REDIS_HOST = 'redis://127.0.0.1:6379/1'
 
+describe('NodeRedisStore initialization', () => {
+  test('Throw useful error when redis initialised without rateLimit script', async (t) => {
+    const redis = createClient({
+      url: REDIS_HOST,
+      scripts: {
+        // Missing rateLimit
+      }
+    })
+    await redis.connect()
+
+    const fastify = Fastify()
+
+    try {
+      await fastify.register(rateLimit, {
+        max: 2,
+        timeWindow: 1000,
+        redis
+      })
+      t.assert(false, 'This statements should not be reached')
+    } catch (e) {
+      t.assert.match(e.message, /rateLimit script missing/)
+    } finally {
+      await redis.quit()
+    }
+  })
+})
+
 describe('Global rate limit (node-redis)', () => {
   let redis
 
