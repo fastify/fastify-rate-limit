@@ -7,9 +7,10 @@ const { createClient } = require('@redis/client')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-const REDIS_HOST = 'redis://127.0.0.1'
+// Use Redis database 1 to avoid conflicts with ioredis test suite
+const REDIS_HOST = 'redis://127.0.0.1:6379/1'
 
-describe('Global rate limit', () => {
+describe('Global rate limit (node-redis)', () => {
   let redis
 
   beforeEach(async () => {
@@ -369,11 +370,12 @@ describe('Global rate limit', () => {
   })
 })
 
-describe('Route rate limit', () => {
+describe('node-redis: Route rate limit (node-redis)', () => {
   let redis
 
   beforeEach(async () => {
     redis = createClient({
+      url: REDIS_HOST,
       scripts: {
         rateLimit: rateLimit.NodeRedisStore.rateLimitScript
       }

@@ -10,7 +10,7 @@
     "lint:fix": "eslint --fix",
     "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
     "test": "npm run test:unit && npm run test:typescript",
-    "test:unit": "c8 --100 node --test --test-concurrency=1",
+    "test:unit": "c8 --100 node --test",
     "test:typescript": "tsd"
   },
   "repository": {
