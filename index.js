@@ -128,7 +128,7 @@ async function fastifyRateLimit (fastify, settings) {
   if (!fastify.hasDecorator('createRateLimit')) {
     fastify.decorate('createRateLimit', (options) => {
       const args = createLimiterArgs(pluginComponent, globalParams, options)
-      return (req) => applyRateLimit(...args, req)
+      return (req) => applyRateLimit.apply(this, args.concat(req))
     })
   }
 
