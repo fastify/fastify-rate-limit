@@ -504,7 +504,7 @@ fastify.get("/custom", async (request, reply) => {
 
 A custom limiter function created with `fastify.createRateLimit()` only requires a `FastifyRequest` as the first parameter:
 
-```ts
+```js
 const checkRateLimit = fastify.createRateLimit();
 const limit = await checkRateLimit(request);
 ```
