@@ -461,7 +461,7 @@ The following options can be overridden: `store`, `skipOnError`, `max`, `timeWin
 
 The next example demonstrates the usage of a custom rate limiter:
 
-```ts
+```js
 import Fastify from 'fastify'
 
 const fastify = Fastify()
