@@ -452,14 +452,12 @@ fastify.get('/private', {
 
 ### Manual Rate Limit
 
-In some situations, the default behavior of this plugin may not be sufficient and you want to implement your own rate limit strategy.
-This might be the case as well if you want to integrate it with other technologies such as [GraphQL](https://graphql.org/) or [tRPC](https://trpc.io/).
-You can create your own limiter function with `fastify.createRateLimit()`.
-By default, this limiter function uses the global [options](#options) you defined during plugin registration.
-You can override some or all of your global options by passing them to `createRateLimit()`.
-The following options can be overridden: `store`, `skipOnError`, `max`, `timeWindow`, `allowList`, `keyGenerator`, and `ban`.
+A custom limiter function can be created with `fastify.createRateLimit()`, which is handy when needing to integrate with
+technologies like [GraphQL](https://graphql.org/) or [tRPC](https://trpc.io/). This function uses the global [options](#options) set
+during plugin registration, but you can override options such as `store`, `skipOnError`, `max`, `timeWindow`,
+`allowList`, `keyGenerator`, and `ban`.
 
-The next example demonstrates the usage of a custom rate limiter:
+Example usage:
 
 ```js
 import Fastify from 'fastify'
