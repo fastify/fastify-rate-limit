@@ -470,7 +470,7 @@ await fastify.register(import('@fastify/rate-limit'), {
   timeWindow: '1 minute'
 })
 
- // checkRateLimit will use the global options provided above when called
+// checkRateLimit will use the global options provided above when called
 const checkRateLimit = fastify.createRateLimit();
 
 fastify.get("/", async (request, reply) => {
