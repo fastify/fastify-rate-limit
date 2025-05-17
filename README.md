@@ -466,6 +466,7 @@ const fastify = Fastify()
 
 // register with global options
 await fastify.register(import('@fastify/rate-limit'), {
+  global : false,
   max: 100,
   timeWindow: '1 minute'
 })
