@@ -445,6 +445,79 @@ fastify.get('/private', {
 })
 ```
 
+### Manual Rate Limit
+
+A custom limiter function can be created with `fastify.createRateLimit()`, which is handy when needing to integrate with
+technologies like [GraphQL](https://graphql.org/) or [tRPC](https://trpc.io/). This function uses the global [options](#options) set
+during plugin registration, but you can override options such as `store`, `skipOnError`, `max`, `timeWindow`,
+`allowList`, `keyGenerator`, and `ban`.
+
+Example usage:
+
+```js
+import Fastify from 'fastify'
+
+const fastify = Fastify()
+
+// register with global options
+await fastify.register(import('@fastify/rate-limit'), {
+  global : false,
+  max: 100,
+  timeWindow: '1 minute'
+})
+
+// checkRateLimit will use the global options provided above when called
+const checkRateLimit = fastify.createRateLimit();
+
+fastify.get("/", async (request, reply) => {
+  // manually check the rate limit (using global options)
+  const limit = await checkRateLimit(request);
+
+  if(!limit.isAllowed && limit.isExceeded) {
+    return reply.code(429).send("Limit exceeded");
+  }
+
+  return reply.send("Hello world");
+});
+
+// override global max option
+const checkCustomRateLimit = fastify.createRateLimit({ max: 100 }); 
+
+fastify.get("/custom", async (request, reply) => {
+  // manually check the rate limit (using global options and overridden max option)
+  const limit = await checkCustomRateLimit(request);
+
+  // manually handle limit exceedance
+  if(!limit.isAllowed && limit.isExceeded) {
+    return reply.code(429).send("Limit exceeded");
+  }
+
+  return reply.send("Hello world");
+});
+```
+
+A custom limiter function created with `fastify.createRateLimit()` only requires a `FastifyRequest` as the first parameter:
+
+```js
+const checkRateLimit = fastify.createRateLimit();
+const limit = await checkRateLimit(request);
+```
+
+The returned `limit` is an object containing the following properties for the `request` passed to `checkRateLimit`.
+
+- `isAllowed`: if `true`, the request was excluded from rate limiting according to the configured `allowList`.
+- `key`: the generated key as returned by the `keyGenerator` function.
+
+If `isAllowed` is `false` the object also contains these additional properties:
+
+- `max`: the configured `max` option as a number. If a `max` function was supplied as global option or to `fastify.createRateLimit()`, this property will correspond to the function's return type for the given `request`.
+- `timeWindow`: the configured `timeWindow` option in milliseconds. If a function was supplied to `timeWindow`, similar to the `max` property above, this property will be equal to the function's return type.
+- `remaining`: the remaining amount of requests before the limit is exceeded.
+- `ttl`: the remaining time until the limit will be reset in milliseconds.
+- `ttlInSeconds`: `ttl` in seconds.
+- `isExceeded`: `true` if the limit was exceeded.
+- `isBanned`: `true` if the request was banned according to the `ban` option.
+
 ### Examples of Custom Store
 
 These examples show an overview of the `store` feature and you should take inspiration from it and tweak as you need:
