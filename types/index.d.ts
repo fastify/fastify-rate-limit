@@ -74,7 +74,9 @@ declare namespace fastifyRateLimit {
       callback: (
         error: Error | null,
         result?: { current: number; ttl: number }
-      ) => void
+      ) => void,
+      timeWindow: number,
+      max: number
     ): void;
     child(
       routeOptions: RouteOptions & { path: string; prefix: string }
