@@ -244,8 +244,7 @@ function CustomStore (options) {
   this.current = 0
 }
 
-CustomStore.prototype.incr = function (key, cb) {
-  const timeWindow = this.options.timeWindow
+CustomStore.prototype.incr = function (key, cb, timeWindow, max) {
   this.current++
   cb(null, { current: this.current, ttl: timeWindow - (this.current * 1000) })
 }

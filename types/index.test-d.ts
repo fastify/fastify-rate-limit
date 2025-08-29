@@ -29,7 +29,9 @@ class CustomStore implements FastifyRateLimitStore {
     _callback: (
       error: Error | null,
       result?: { current: number; ttl: number }
-    ) => void
+    ) => void,
+    _timeWindow: number,
+    _max: number
   ) {}
 
   child (_routeOptions: RouteOptions & { path: string; prefix: string }) {
