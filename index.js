@@ -5,6 +5,7 @@ const { parse, format } = require('@lukeed/ms')
 
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
+const NodeRedisStore = require('./store/NodeRedisStore')
 
 const defaultMax = 1000
 const defaultTimeWindow = 60000
@@ -117,7 +118,11 @@ async function fastifyRateLimit (fastify, settings) {
     pluginComponent.store = new Store(globalParams)
   } else {
     if (settings.redis) {
-      pluginComponent.store = new RedisStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.redis, settings.nameSpace)
+      if (settings.redis.constructor.name === 'Commander') {
+        pluginComponent.store = new NodeRedisStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.redis, settings.nameSpace)
+      } else {
+        pluginComponent.store = new RedisStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.redis, settings.nameSpace)
+      }
     } else {
       pluginComponent.store = new LocalStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.cache)
     }
@@ -340,3 +345,4 @@ module.exports = fp(fastifyRateLimit, {
 })
 module.exports.default = fastifyRateLimit
 module.exports.fastifyRateLimit = fastifyRateLimit
+module.exports.NodeRedisStore = NodeRedisStore
