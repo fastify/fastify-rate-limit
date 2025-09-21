@@ -59,7 +59,6 @@
     }
   ],
   "devDependencies": {
-    "@fastify/pre-commit": "^2.1.0",
     "@sinonjs/fake-timers": "^14.0.0",
     "@types/node": "^24.0.10",
     "c8": "^10.1.2",
@@ -78,9 +77,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "pre-commit": [
-    "lint",
-    "test"
-  ]
+  }
 }
