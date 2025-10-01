@@ -59,7 +59,7 @@
     }
   ],
   "devDependencies": {
-    "@sinonjs/fake-timers": "^14.0.0",
+    "@sinonjs/fake-timers": "^15.0.0",
     "@types/node": "^24.0.10",
     "c8": "^10.1.2",
     "eslint": "^9.17.0",
