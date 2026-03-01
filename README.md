@@ -480,7 +480,7 @@ fastify.get("/", async (request, reply) => {
 });
 
 // override global max option
-const checkCustomRateLimit = fastify.createRateLimit({ max: 100 }); 
+const checkCustomRateLimit = fastify.createRateLimit({ max: 100 });
 
 fastify.get("/custom", async (request, reply) => {
   // manually check the rate limit (using global options and overridden max option)
