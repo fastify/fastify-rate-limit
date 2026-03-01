@@ -61,7 +61,7 @@
   "devDependencies": {
     "@sinonjs/fake-timers": "^15.0.0",
     "@types/node": "^25.0.3",
-    "c8": "^10.1.2",
+    "c8": "^11.0.0",
     "eslint": "^9.17.0",
     "fastify": "^5.0.0",
     "ioredis": "^5.4.1",
