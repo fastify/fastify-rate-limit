@@ -9,6 +9,7 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
+    "valkey": "docker run -p 6380:6379 --name rate-limit-valkey -d --rm valkey/valkey:latest",
     "test": "npm run test:unit && npm run test:typescript",
     "test:unit": "c8 --100 node --test",
     "test:typescript": "tsd"
@@ -61,6 +62,7 @@
   "devDependencies": {
     "@sinonjs/fake-timers": "^15.0.0",
     "@types/node": "^25.0.3",
+    "@valkey/valkey-glide": "^2.0.0",
     "c8": "^11.0.0",
     "eslint": "^9.17.0",
     "fastify": "^5.0.0",
@@ -74,6 +76,14 @@
     "@lukeed/ms": "^2.0.2",
     "fastify-plugin": "^5.0.0",
     "toad-cache": "^3.7.0"
+  },
+  "peerDependencies": {
+    "@valkey/valkey-glide": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@valkey/valkey-glide": {
+      "optional": true
+    }
   },
   "publishConfig": {
     "access": "public"
