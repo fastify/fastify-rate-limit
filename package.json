@@ -8,7 +8,7 @@
   "scripts": {
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
+    "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis:latest",
     "valkey": "docker run -p 6380:6379 --name rate-limit-valkey -d --rm valkey/valkey:latest",
     "test": "npm run test:unit && npm run test:typescript",
     "test:unit": "c8 --100 node --test",
