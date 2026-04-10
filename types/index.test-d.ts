@@ -1,17 +1,19 @@
 import fastify, {
-  FastifyInstance,
-  FastifyRequest,
-  preHandlerAsyncHookHandler,
-  RequestGenericInterface,
-  RouteOptions
+  type FastifyInstance,
+  type FastifyRequest,
+  type preHandlerAsyncHookHandler,
+  type RequestGenericInterface,
+  type RouteOptions
 } from 'fastify'
-import * as http2 from 'node:http2'
+import type * as http2 from 'node:http2'
 import IORedis from 'ioredis'
 import pino from 'pino'
-import fastifyRateLimit, {
+import fastifyRateLimit from '..'
+import type {
   CreateRateLimitOptions,
   errorResponseBuilderContext,
   FastifyRateLimitOptions,
+  FastifyRateLimitValkeyClient,
   FastifyRateLimitStore,
   RateLimitPluginOptions
 } from '..'
@@ -35,7 +37,7 @@ class CustomStore implements FastifyRateLimitStore {
   ) {}
 
   child (_routeOptions: RouteOptions & { path: string; prefix: string }) {
-    return <CustomStore>(<FastifyRateLimitOptions>{})
+    return new CustomStore({})
   }
 }
 
@@ -151,10 +153,23 @@ const options9: RateLimitPluginOptions = {
   exponentialBackoff: true
 }
 
+const valkeyClient: FastifyRateLimitValkeyClient = {
+  invokeScript: async (_script, _options) => ['1', 1000]
+}
+
+const options14: RateLimitPluginOptions = {
+  global: true,
+  max: 3,
+  timeWindow: 5000,
+  valkey: valkeyClient,
+  nameSpace: 'valkey-namespace'
+}
+
 appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
 appWithImplicitHttp.register(fastifyRateLimit, options5)
 appWithImplicitHttp.register(fastifyRateLimit, options9)
+appWithImplicitHttp.register(fastifyRateLimit, options14)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit())
@@ -167,6 +182,7 @@ appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options7))
   expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options8))
   expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options9))
+  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options14))
   // The following test is dependent on https://github.com/fastify/fastify/pull/2929
   // appWithImplicitHttp.setNotFoundHandler({
   //   preHandler: appWithImplicitHttp.rateLimit()
@@ -191,6 +207,7 @@ appWithHttp2.register(fastifyRateLimit, options6)
 appWithHttp2.register(fastifyRateLimit, options7)
 appWithHttp2.register(fastifyRateLimit, options8)
 appWithHttp2.register(fastifyRateLimit, options9)
+appWithHttp2.register(fastifyRateLimit, options14)
 
 appWithHttp2.get('/public', {
   config: {
@@ -206,6 +223,10 @@ expectAssignable<errorResponseBuilderContext>({
   after: '123',
   max: 1000,
   ttl: 123
+})
+
+expectAssignable<FastifyRateLimitValkeyClient>({
+  invokeScript: async (_script: unknown, _options?: { keys?: ReadonlyArray<string | Buffer>; args?: ReadonlyArray<string | Buffer> }) => ['1', 1000]
 })
 
 const appWithCustomLogger = fastify({

@@ -5,6 +5,7 @@ const { parse, format } = require('@lukeed/ms')
 
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
+const ValkeyStore = require('./store/ValkeyStore')
 
 const defaultMax = 1000
 const defaultTimeWindow = 60000
@@ -35,6 +36,8 @@ const defaultErrorResponse = (_req, context) => {
 }
 
 async function fastifyRateLimit (fastify, settings) {
+  validateStoreOptions(settings)
+
   const globalParams = {
     global: (typeof settings.global === 'boolean') ? settings.global : true
   }
@@ -116,7 +119,9 @@ async function fastifyRateLimit (fastify, settings) {
     const Store = settings.store
     pluginComponent.store = new Store(globalParams)
   } else {
-    if (settings.redis) {
+    if (settings.valkey) {
+      pluginComponent.store = new ValkeyStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.valkey, settings.nameSpace)
+    } else if (settings.redis) {
       pluginComponent.store = new RedisStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.redis, settings.nameSpace)
     } else {
       pluginComponent.store = new LocalStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.cache)
@@ -155,6 +160,16 @@ async function fastifyRateLimit (fastify, settings) {
       addRouteRateHook(pluginComponent, globalParams, routeOptions)
     }
   })
+}
+
+function validateStoreOptions (settings) {
+  if (settings.store && (settings.redis || settings.valkey)) {
+    throw new Error('store cannot be used together with redis or valkey')
+  }
+
+  if (settings.redis && settings.valkey) {
+    throw new Error('redis and valkey cannot be used together')
+  }
 }
 
 function mergeParams (...params) {

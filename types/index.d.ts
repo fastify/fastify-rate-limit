@@ -1,6 +1,6 @@
 /// <reference types='node' />
 
-import {
+import type {
   ContextConfigDefault,
   FastifyPluginCallback,
   FastifyRequest,
@@ -54,7 +54,17 @@ type FastifyRateLimit = FastifyPluginCallback<fastifyRateLimit.RateLimitPluginOp
 
 declare namespace fastifyRateLimit {
 
-  export interface FastifyRateLimitOptions { }
+  export type FastifyRateLimitOptions = Record<string, unknown>
+
+  export interface FastifyRateLimitValkeyClient {
+    invokeScript(
+      script: unknown,
+      options?: {
+        keys?: ReadonlyArray<string | Buffer>;
+        args?: ReadonlyArray<string | Buffer>;
+      }
+    ): Promise<Array<string | number>>;
+  }
 
   export interface errorResponseBuilderContext {
     statusCode: number;
@@ -156,7 +166,8 @@ declare namespace fastifyRateLimit {
   export interface RateLimitPluginOptions extends RateLimitOptions {
     global?: boolean;
     cache?: number;
-    redis?: any;
+    redis?: unknown;
+    valkey?: FastifyRateLimitValkeyClient;
     nameSpace?: string;
     addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
     addHeadersOnExceeding?:
