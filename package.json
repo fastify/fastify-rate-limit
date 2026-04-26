@@ -75,11 +75,6 @@
     "fastify-plugin": "^5.0.0",
     "toad-cache": "^3.7.0"
   },
-  "tstyche": {
-    "testFileMatch": [
-      "types/*.tst.ts"
-    ]
-  },
   "publishConfig": {
     "access": "public"
   }

@@ -60,13 +60,13 @@ const options1: RateLimitPluginOptions = {
       return {
         statusCode: 403,
         error: 'Forbidden',
-        message: `You can not access this service as you have sent too many requests that exceed your rate limit. Your IP: ${req.ip} and Limit: ${context.max}`
+        message: `You can not access this service as you have sent too many requests that exceed your rate limit. Your IP: ${req.ip} and Limit: ${context.max}`,
       }
     } else {
       return {
         statusCode: 429,
         error: 'Too Many Requests',
-        message: `You hit the rate limit, please slow down! You can retry in ${context.after}`
+        message: `You hit the rate limit, please slow down! You can retry in ${context.after}`,
       }
     }
   },
@@ -246,13 +246,13 @@ appWithHttp2.get(
   }
 )
 
-expect({
+expect<errorResponseBuilderContext>().type.toBeAssignableFrom({
   statusCode: 429,
   ban: true,
   after: '123',
   max: 1000,
   ttl: 123
-}).type.toBeAssignableTo<errorResponseBuilderContext>()
+})
 
 const appWithCustomLogger = fastify({
   loggerInstance: pino()
