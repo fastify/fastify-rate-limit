@@ -15,7 +15,7 @@ import fastifyRateLimit, {
   FastifyRateLimitStore,
   RateLimitPluginOptions
 } from '..'
-import { expectAssignable, expectType } from 'tsd'
+import { expect } from 'tstyche'
 
 class CustomStore implements FastifyRateLimitStore {
   options: FastifyRateLimitOptions
@@ -81,14 +81,25 @@ const options1: RateLimitPluginOptions = {
     'x-ratelimit-reset': false,
     'retry-after': false
   },
-  onExceeding: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => ({}),
-  onExceeded: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => ({}),
-  onBanReach: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => ({})
+  onExceeding: (
+    _req: FastifyRequest<RequestGenericInterface>,
+    _key: string
+  ) => ({}),
+  onExceeded: (
+    _req: FastifyRequest<RequestGenericInterface>,
+    _key: string
+  ) => ({}),
+  onBanReach: (
+    _req: FastifyRequest<RequestGenericInterface>,
+    _key: string
+  ) => ({})
 }
+
 const options2: RateLimitPluginOptions = {
   global: true,
   max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
-  allowList: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => false,
+  allowList: (_req: FastifyRequest<RequestGenericInterface>, _key: string) =>
+    false,
   timeWindow: 5000,
   hook: 'preParsing'
 }
@@ -103,7 +114,8 @@ const options3: RateLimitPluginOptions = {
 
 const options4: RateLimitPluginOptions = {
   global: true,
-  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(42),
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) =>
+    Promise.resolve(42),
   timeWindow: 5000,
   store: CustomStore,
   hook: 'preHandler'
@@ -129,7 +141,8 @@ const options6: RateLimitPluginOptions = {
 const options7: RateLimitPluginOptions = {
   global: true,
   max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
-  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 5000,
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) =>
+    5000,
   store: CustomStore,
   hook: 'preValidation'
 }
@@ -137,15 +150,18 @@ const options7: RateLimitPluginOptions = {
 const options8: RateLimitPluginOptions = {
   global: true,
   max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
-  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(5000),
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) =>
+    Promise.resolve(5000),
   store: CustomStore,
   hook: 'preValidation'
 }
 
 const options9: RateLimitPluginOptions = {
   global: true,
-  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(42),
-  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 5000,
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) =>
+    Promise.resolve(42),
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) =>
+    5000,
   store: CustomStore,
   hook: 'preValidation',
   exponentialBackoff: true
@@ -157,25 +173,51 @@ appWithImplicitHttp.register(fastifyRateLimit, options5)
 appWithImplicitHttp.register(fastifyRateLimit, options9)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit())
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options1))
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options2))
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options3))
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options4))
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options5))
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options6))
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options7))
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options8))
-  expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options9))
-  // The following test is dependent on https://github.com/fastify/fastify/pull/2929
-  // appWithImplicitHttp.setNotFoundHandler({
-  //   preHandler: appWithImplicitHttp.rateLimit()
-  // }, function (request:FastifyRequest<RequestGenericInterface>, reply: FastifyReply<ReplyGenericInterface>) {
-  //   reply.status(404).send(new Error('Not found'))
-  // })
+  expect(
+    appWithImplicitHttp.rateLimit()
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options1)
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options2)
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options3)
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options4)
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options5)
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options6)
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options7)
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options8)
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options9)
+  ).type.toBe<preHandlerAsyncHookHandler>()
 })
+// The following test is dependent on https://github.com/fastify/fastify/pull/2929
+// appWithImplicitHttp.setNotFoundHandler({
+//   preHandler: appWithImplicitHttp.rateLimit()
+// }, function (request:FastifyRequest<RequestGenericInterface>, reply: FastifyReply<ReplyGenericInterface>) {
+//   reply.status(404).send(new Error('Not found'))
+// })
 
-appWithImplicitHttp.get('/', { config: { rateLimit: { max: 10, timeWindow: '60s' } } }, () => { return 'limited' })
+appWithImplicitHttp.get(
+  '/',
+  { config: { rateLimit: { max: 10, timeWindow: '60s' } } },
+  () => {
+    return 'limited'
+  }
+)
 
 const appWithHttp2: FastifyInstance<
   http2.Http2Server,
@@ -192,15 +234,19 @@ appWithHttp2.register(fastifyRateLimit, options7)
 appWithHttp2.register(fastifyRateLimit, options8)
 appWithHttp2.register(fastifyRateLimit, options9)
 
-appWithHttp2.get('/public', {
-  config: {
-    rateLimit: false
+appWithHttp2.get(
+  '/public',
+  {
+    config: {
+      rateLimit: false
+    }
+  },
+  (_request, reply) => {
+    reply.send({ hello: 'from ... public' })
   }
-}, (_request, reply) => {
-  reply.send({ hello: 'from ... public' })
-})
+)
 
-expectAssignable<errorResponseBuilderContext>({
+expect<errorResponseBuilderContext>().type.toBeAssignableFrom({
   statusCode: 429,
   ban: true,
   after: '123',
@@ -209,7 +255,7 @@ expectAssignable<errorResponseBuilderContext>({
 })
 
 const appWithCustomLogger = fastify({
-  loggerInstance: pino(),
+  loggerInstance: pino()
 }).withTypeProvider()
 
 appWithCustomLogger.register(fastifyRateLimit, options1)
@@ -218,7 +264,7 @@ appWithCustomLogger.route({
   method: 'GET',
   url: '/',
   preHandler: appWithCustomLogger.rateLimit({}),
-  handler: () => {},
+  handler: () => {}
 })
 
 const options10: CreateRateLimitOptions = {
@@ -233,47 +279,63 @@ const options10: CreateRateLimitOptions = {
 
 appWithImplicitHttp.register(fastifyRateLimit, { global: false })
 const checkRateLimit = appWithImplicitHttp.createRateLimit(options10)
+
 appWithImplicitHttp.route({
   method: 'GET',
   url: '/',
   handler: async (req, _reply) => {
     const limit = await checkRateLimit(req)
-    expectType<{
-      isAllowed: true;
-      key: string;
-    } | {
-      isAllowed: false;
-      key: string;
-      max: number;
-      timeWindow: number;
-      remaining: number;
-      ttl: number;
-      ttlInSeconds: number;
-      isExceeded: boolean;
-      isBanned: boolean;
-    }>(limit)
-  },
+    expect(limit).type.toBe<
+      | {
+        isAllowed: true;
+        key: string;
+      }
+      | {
+        isAllowed: false;
+        key: string;
+        max: number;
+        timeWindow: number;
+        remaining: number;
+        ttl: number;
+        ttlInSeconds: number;
+        isExceeded: boolean;
+        isBanned: boolean;
+      }
+    >()
+  }
 })
 
 const options11: CreateRateLimitOptions = {
   max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 42,
   timeWindow: '10s',
   allowList: (_req: FastifyRequest<RequestGenericInterface>) => true,
-  keyGenerator: (_req: FastifyRequest<RequestGenericInterface>) => 42,
+  keyGenerator: (_req: FastifyRequest<RequestGenericInterface>) => 42
 }
 
 const options12: CreateRateLimitOptions = {
-  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(42),
-  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => 5000,
-  allowList: (_req: FastifyRequest<RequestGenericInterface>) => Promise.resolve(true),
-  keyGenerator: (_req: FastifyRequest<RequestGenericInterface>) => Promise.resolve(42),
+  max: (_req: FastifyRequest<RequestGenericInterface>, _key: string) =>
+    Promise.resolve(42),
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) =>
+    5000,
+  allowList: (_req: FastifyRequest<RequestGenericInterface>) =>
+    Promise.resolve(true),
+  keyGenerator: (_req: FastifyRequest<RequestGenericInterface>) =>
+    Promise.resolve(42)
 }
 
 const options13: CreateRateLimitOptions = {
-  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) => Promise.resolve(5000),
-  keyGenerator: (_req: FastifyRequest<RequestGenericInterface>) => Promise.resolve('key'),
+  timeWindow: (_req: FastifyRequest<RequestGenericInterface>, _key: string) =>
+    Promise.resolve(5000),
+  keyGenerator: (_req: FastifyRequest<RequestGenericInterface>) =>
+    Promise.resolve('key')
 }
 
-expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options11))
-expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options12))
-expectType<preHandlerAsyncHookHandler>(appWithImplicitHttp.rateLimit(options13))
+expect(
+  appWithImplicitHttp.rateLimit(options11)
+).type.toBe<preHandlerAsyncHookHandler>()
+expect(
+  appWithImplicitHttp.rateLimit(options12)
+).type.toBe<preHandlerAsyncHookHandler>()
+expect(
+  appWithImplicitHttp.rateLimit(options13)
+).type.toBe<preHandlerAsyncHookHandler>()

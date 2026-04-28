@@ -11,7 +11,7 @@
     "redis": "docker run -p 6379:6379 --name rate-limit-redis -d --rm redis",
     "test": "npm run test:unit && npm run test:typescript",
     "test:unit": "c8 --100 node --test",
-    "test:typescript": "tsd"
+    "test:typescript": "tstyche"
   },
   "repository": {
     "type": "git",
@@ -68,7 +68,7 @@
     "knex": "^3.1.0",
     "neostandard": "^0.13.0",
     "sqlite3": "^6.0.1",
-    "tsd": "^0.33.0"
+    "tstyche": "^7.1.0"
   },
   "dependencies": {
     "@lukeed/ms": "^2.0.2",
