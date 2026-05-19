@@ -85,7 +85,7 @@ async function fastifyRateLimit (fastify, settings) {
   }
 
   globalParams.hook = settings.hook || defaultHook
-  globalParams.allowList = settings.allowList || settings.whitelist || null
+  globalParams.allowList = settings.allowList || null
   globalParams.ban = Number.isFinite(settings.ban) && settings.ban >= 0 ? Math.trunc(settings.ban) : -1
   globalParams.onBanReach = typeof settings.onBanReach === 'function' ? settings.onBanReach : defaultOnFn
   globalParams.onExceeding = typeof settings.onExceeding === 'function' ? settings.onExceeding : defaultOnFn
