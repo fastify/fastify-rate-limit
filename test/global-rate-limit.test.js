@@ -249,13 +249,13 @@ test('With ips allowList, not allowed ips should result in rate limiting', async
   t.assert.deepStrictEqual(res.statusCode, 429)
 })
 
-test('With ips whitelist', async (t) => {
+test('With ips allowList', async (t) => {
   t.plan(3)
   const fastify = Fastify()
   await fastify.register(rateLimit, {
     max: 2,
     timeWindow: '2s',
-    whitelist: ['127.0.0.1']
+    allowList: ['127.0.0.1']
   })
 
   fastify.get('/', async () => 'hello!')

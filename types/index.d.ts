@@ -121,10 +121,6 @@ declare namespace fastifyRateLimit {
       | string
       | ((req: FastifyRequest, key: string) => number)
       | ((req: FastifyRequest, key: string) => Promise<number>);
-    /**
-    * @deprecated Use `allowList` property
-    */
-    whitelist?: string[] | ((req: FastifyRequest, key: string) => boolean);
     allowList?: string[] | ((req: FastifyRequest, key: string) => boolean | Promise<boolean>);
     keyGenerator?: (req: FastifyRequest) => string | number | Promise<string | number>;
     ban?: number;

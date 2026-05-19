@@ -1201,13 +1201,13 @@ test('Allow multiple different rate limiter registrations', async (t) => {
   await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
-    whitelist: (req) => req.url !== '/test'
+    allowList: (req) => req.url !== '/test'
   })
 
   await fastify.register(rateLimit, {
     max: 1,
     timeWindow: 1000,
-    whitelist: (req) => req.url === '/test'
+    allowList: (req) => req.url === '/test'
   })
 
   fastify.get('/', async () => 'hello!')
