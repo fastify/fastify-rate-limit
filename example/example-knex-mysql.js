@@ -54,19 +54,26 @@ KnexStore.prototype.incr = async function (key, cb) {
   try {
     // NOTE: MySQL syntax FOR UPDATE for read lock on counter stats in row
     const row = await trx('rate_limits')
-      .whereRaw('route = ? AND source = ? FOR UPDATE', [cond.route || '', cond.source]) // Create read lock
+      .where('route', cond.route || '')
+      .andWhere('source', cond.source)
+      .forUpdate()
+      .select()
     const d = row[0]
     if (d && d.ttl > now) {
       // Optimization - no need to UPDATE if max has been reached.
       if (d.count < max) {
-        await trx
-          .raw('UPDATE rate_limits SET count = ? WHERE route = ? AND source = ?', [d.count + 1, cond.route, key])
+        await trx('rate_limits')
+          .where('route', cond.route)
+          .andWhere('source', key)
+          .update({ count: d.count + 1 })
       }
       // If we were already at max no need to UPDATE but we must still send d.count + 1 to trigger rate limit.
       process.nextTick(cb, null, { current: d.count + 1, ttl: d.ttl })
     } else {
-      await trx
-        .raw('INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?', [cond.route, key, d?.ttl || ttl, ttl])
+      await trx.raw(
+        'INSERT INTO rate_limits(route, source, count, ttl) VALUES(?,?,1,?) ON DUPLICATE KEY UPDATE count = 1, ttl = ?',
+        [cond.route, key, d?.ttl || ttl, ttl]
+      )
       process.nextTick(cb, null, { current: 1, ttl: d?.ttl || ttl })
     }
     await trx.commit()
