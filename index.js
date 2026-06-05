@@ -128,7 +128,7 @@ async function fastifyRateLimit (fastify, settings) {
   if (!fastify.hasDecorator('createRateLimit')) {
     fastify.decorate('createRateLimit', (options) => {
       const args = createLimiterArgs(pluginComponent, globalParams, options)
-      return (req) => applyRateLimit.apply(this, args.concat(req))
+      return (req, callOptions) => applyRateLimit.apply(this, args.concat(req, callOptions))
     })
   }
 
@@ -210,7 +210,7 @@ function addRouteRateHook (pluginComponent, params, routeOptions) {
   }
 }
 
-async function applyRateLimit (pluginComponent, params, req) {
+async function applyRateLimit (pluginComponent, params, req, callOptions) {
   const { store } = pluginComponent
 
   // Retrieve the key from the generator (the global one or the one defined in the endpoint)
@@ -244,10 +244,10 @@ async function applyRateLimit (pluginComponent, params, req) {
   let ttl = 0
   let ttlInSeconds = 0
 
-  // We increment the rate limit for the current request
+  const storeMethod = callOptions?.increment === false ? 'read' : 'incr'
   try {
     const res = await new Promise((resolve, reject) => {
-      store.incr(key, (err, res) => {
+      store[storeMethod](key, (err, res) => {
         err ? reject(err) : resolve(res)
       }, timeWindow, max)
     })

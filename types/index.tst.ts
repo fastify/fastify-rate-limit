@@ -302,6 +302,9 @@ appWithImplicitHttp.route({
         isBanned: boolean;
       }
     >()
+
+    // The limiter function accepts an optional second argument
+    expect(checkRateLimit).type.toBeCallableWith(req, { increment: false })
   }
 })
 

@@ -221,4 +221,104 @@ test('With allow list', async t => {
     isAllowed: true,
     key: '127.0.0.1'
   })
+
+  clock.reset()
+})
+
+test('With { increment: false } it reads the state without consuming it', async t => {
+  t.plan(10)
+  const clock = mock.timers
+  clock.enable(0)
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    max: 2,
+    timeWindow: 1000
+  })
+
+  const checkRateLimit = fastify.createRateLimit()
+
+  fastify.get('/peek', async (req) => checkRateLimit(req, { increment: false }))
+  fastify.get('/consume', async (req) => checkRateLimit(req))
+
+  let res
+
+  // Peek before any request: clean state, nothing consumed
+  res = await fastify.inject('/peek')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.json(), {
+    isAllowed: false,
+    key: '127.0.0.1',
+    max: 2,
+    timeWindow: 1000,
+    remaining: 2,
+    ttl: 0,
+    ttlInSeconds: 0,
+    isExceeded: false,
+    isBanned: false
+  })
+
+  // Consume one request
+  res = await fastify.inject('/consume')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.json(), {
+    isAllowed: false,
+    key: '127.0.0.1',
+    max: 2,
+    timeWindow: 1000,
+    remaining: 1,
+    ttl: 1000,
+    ttlInSeconds: 1,
+    isExceeded: false,
+    isBanned: false
+  })
+
+  // Peek again: reads the active window without consuming (remaining stays 1)
+  res = await fastify.inject('/peek')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.json(), {
+    isAllowed: false,
+    key: '127.0.0.1',
+    max: 2,
+    timeWindow: 1000,
+    remaining: 1,
+    ttl: 1000,
+    ttlInSeconds: 1,
+    isExceeded: false,
+    isBanned: false
+  })
+
+  // Consume again: now the limit is reached
+  res = await fastify.inject('/consume')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.json(), {
+    isAllowed: false,
+    key: '127.0.0.1',
+    max: 2,
+    timeWindow: 1000,
+    remaining: 0,
+    ttl: 1000,
+    ttlInSeconds: 1,
+    isExceeded: false,
+    isBanned: false
+  })
+
+  // After the window expires, peek reports a clean state again
+  clock.tick(1100)
+
+  res = await fastify.inject('/peek')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.json(), {
+    isAllowed: false,
+    key: '127.0.0.1',
+    max: 2,
+    timeWindow: 1000,
+    remaining: 2,
+    ttl: 0,
+    ttlInSeconds: 0,
+    isExceeded: false,
+    isBanned: false
+  })
+
+  clock.reset()
 })

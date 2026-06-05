@@ -43,6 +43,21 @@ LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
   cb(null, current)
 }
 
+LocalStore.prototype.read = function (ip, cb, timeWindow) {
+  const nowInMs = Date.now()
+  const current = this.lru.get(ip)
+
+  if (!current || current.iterationStartMs + timeWindow <= nowInMs) {
+    // Item doesn't exist or has expired: report a clean state without mutating
+    cb(null, { current: 0, ttl: 0 })
+    return
+  }
+
+  // Item is alive: report the current state without mutating
+  const ttl = timeWindow - (nowInMs - current.iterationStartMs)
+  cb(null, { current: current.current, ttl })
+}
+
 LocalStore.prototype.child = function (routeOptions) {
   return new LocalStore(routeOptions.continueExceeding, routeOptions.exponentialBackoff, routeOptions.cache)
 }

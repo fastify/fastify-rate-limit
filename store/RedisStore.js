@@ -31,6 +31,28 @@ const lua = `
   return {current, timeWindow}
 `
 
+const luaRead = `
+  -- Key to operate on
+  local key = KEYS[1]
+
+  -- Read the counter without mutating it
+  local current = redis.call('GET', key)
+
+  if current == false then
+    -- Key doesn't exist: clean state
+    return {0, 0}
+  end
+
+  -- Read the remaining TTL in milliseconds
+  local ttl = redis.call('PTTL', key)
+  if ttl < 0 then
+    -- -2 (no key) or -1 (no expiry): report no active window
+    ttl = 0
+  end
+
+  return {tonumber(current), ttl}
+`
+
 function RedisStore (continueExceeding, exponentialBackoff, redis, key = 'fastify-rate-limit-') {
   this.continueExceeding = continueExceeding
   this.exponentialBackoff = exponentialBackoff
@@ -43,10 +65,23 @@ function RedisStore (continueExceeding, exponentialBackoff, redis, key = 'fastif
       lua
     })
   }
+
+  if (!this.redis.rateLimitRead) {
+    this.redis.defineCommand('rateLimitRead', {
+      numberOfKeys: 1,
+      lua: luaRead
+    })
+  }
 }
 
 RedisStore.prototype.incr = function (ip, cb, timeWindow, max) {
   this.redis.rateLimit(this.key + ip, timeWindow, max, this.continueExceeding, this.exponentialBackoff, (err, result) => {
+    err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
+  })
+}
+
+RedisStore.prototype.read = function (ip, cb) {
+  this.redis.rateLimitRead(this.key + ip, (err, result) => {
     err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
   })
 }

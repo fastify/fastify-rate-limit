@@ -517,6 +517,29 @@ If `isAllowed` is `false` the object also contains these additional properties:
 - `isExceeded`: `true` if the limit was exceeded.
 - `isBanned`: `true` if the request was banned according to the `ban` option.
 
+The limiter function accepts an optional second argument `{ increment: boolean }`. When `increment` is `false`, the current rate limit status is returned **without consuming a request**. This is useful when a limit should only be enforced on certain outcomes (e.g. failed login attempts) while still checking the status before processing.
+
+```js
+const checkRateLimit = fastify.createRateLimit({ max: 5, timeWindow: '1 minute' });
+
+fastify.post('/login', async (request, reply) => {
+  // Peek at the current status without consuming a request
+  const status = await checkRateLimit(request, { increment: false });
+  if (status.isExceeded) {
+    return reply.code(429).send({ error: 'Too many attempts' });
+  }
+
+  const success = await tryLogin(request.body);
+  if (!success) {
+    // Only consume a request when the login fails
+    await checkRateLimit(request);
+    return reply.code(401).send({ error: 'Invalid credentials' });
+  }
+
+  return { ok: true };
+});
+```
+
 ### Examples of Custom Store
 
 These examples show an overview of the `store` feature and you should take inspiration from it and tweak as you need:
