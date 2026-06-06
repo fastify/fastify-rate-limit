@@ -517,7 +517,7 @@ If `isAllowed` is `false` the object also contains these additional properties:
 - `isExceeded`: `true` if the limit was exceeded.
 - `isBanned`: `true` if the request was banned according to the `ban` option.
 
-The limiter function accepts an optional second argument `{ increment: boolean }`. When `increment` is `false`, the current rate limit status is returned **without consuming a request**. This is useful when a limit should only be enforced on certain outcomes (e.g. failed login attempts) while still checking the status before processing.
+The limiter function accepts an optional second argument `{ increment?: boolean }`. The `increment` flag defaults to `true`, so omitting the argument keeps the original behavior (the request is consumed). When `increment` is `false`, the current rate limit status is returned **without consuming a request**. This is useful when a limit should only be enforced on certain outcomes (e.g. failed login attempts) while still checking the status before processing.
 
 ```js
 const checkRateLimit = fastify.createRateLimit({ max: 5, timeWindow: '1 minute' });
@@ -539,6 +539,12 @@ fastify.post('/login', async (request, reply) => {
   return { ok: true };
 });
 ```
+
+A few things to keep in mind when using `{ increment: false }`:
+
+- **It is a non-mutating snapshot.** A peek never increments the counter, resets the window, or advances the `ban`/`continueExceeding`/`exponentialBackoff` side effects that a real request triggers. The returned `isExceeded`/`isBanned` therefore reflect the *current* counters, but a peek will not, by itself, escalate a ban or extend a backoff window.
+- **`ttl` reflects the store's current window.** With the Redis store, `ttl` is the raw server `PTTL` (the same value `incr` reports), so it can exceed the configured `timeWindow` when `continueExceeding`/`exponentialBackoff` has extended it.
+- **Custom stores must implement `read`.** The flag relies on a non-mutating `read(ip, cb, timeWindow, max)` method, which mirrors the `incr` signature. The built-in local and Redis stores provide it; a custom store that does not will throw a clear error when called with `{ increment: false }`.
 
 ### Examples of Custom Store
 

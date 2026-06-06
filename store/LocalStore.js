@@ -43,7 +43,25 @@ LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
   cb(null, current)
 }
 
-LocalStore.prototype.read = function (ip, cb, timeWindow) {
+/**
+ * Read the current rate-limit state for `ip` without mutating it.
+ *
+ * Stores expose `read` with the same argument contract as `incr`
+ * (`ip, cb, timeWindow, max`) so the two are interchangeable; an
+ * implementation may ignore the arguments it does not need (`max` here).
+ *
+ * `read` is a non-mutating snapshot: it never increments the counter, resets
+ * the window, or advances the `continueExceeding`/`exponentialBackoff`/`ban`
+ * side effects that `incr` applies. It mirrors `incr`'s window-expiry
+ * detection, so a peek and a real request agree on whether the window is
+ * still active.
+ *
+ * @param {string} ip
+ * @param {(err: Error | null, res: { current: number, ttl: number }) => void} cb
+ * @param {number} timeWindow
+ * @param {number} [max]
+ */
+LocalStore.prototype.read = function (ip, cb, timeWindow, max) {
   const nowInMs = Date.now()
   const current = this.lru.get(ip)
 

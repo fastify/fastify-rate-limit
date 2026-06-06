@@ -322,3 +322,149 @@ test('With { increment: false } it reads the state without consuming it', async 
 
   clock.reset()
 })
+
+test('With { increment: false } and continueExceeding the peek mirrors the active window', async t => {
+  t.plan(4)
+  const clock = mock.timers
+  clock.enable(0)
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    max: 1,
+    timeWindow: 1000,
+    continueExceeding: true
+  })
+
+  const checkRateLimit = fastify.createRateLimit()
+  fastify.get('/peek', async (req) => checkRateLimit(req, { increment: false }))
+  fastify.get('/consume', async (req) => checkRateLimit(req))
+
+  let res
+
+  await fastify.inject('/consume') // current = 1
+  clock.tick(100)
+  await fastify.inject('/consume') // current = 2 -> continueExceeding resets the window
+  clock.tick(100)
+
+  // Peek inside the active window: shows the exceeded state, does not reset it
+  res = await fastify.inject('/peek')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.json(), {
+    isAllowed: false,
+    key: '127.0.0.1',
+    max: 1,
+    timeWindow: 1000,
+    remaining: 0,
+    ttl: 900,
+    ttlInSeconds: 1,
+    isExceeded: true,
+    isBanned: false
+  })
+
+  // Once the window elapses, the peek reports a clean state again (matching incr)
+  clock.tick(1000)
+  res = await fastify.inject('/peek')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.json(), {
+    isAllowed: false,
+    key: '127.0.0.1',
+    max: 1,
+    timeWindow: 1000,
+    remaining: 1,
+    ttl: 0,
+    ttlInSeconds: 0,
+    isExceeded: false,
+    isBanned: false
+  })
+
+  clock.reset()
+})
+
+test('With { increment: false } and exponentialBackoff the peek reports the base window without escalating it', async t => {
+  t.plan(4)
+  const clock = mock.timers
+  clock.enable(0)
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    max: 1,
+    timeWindow: 1000,
+    exponentialBackoff: true
+  })
+
+  const checkRateLimit = fastify.createRateLimit()
+  fastify.get('/peek', async (req) => checkRateLimit(req, { increment: false }))
+  fastify.get('/consume', async (req) => checkRateLimit(req))
+
+  let res
+
+  await fastify.inject('/consume') // current = 1
+  clock.tick(100)
+  await fastify.inject('/consume') // current = 2 -> backoff window doubles
+  clock.tick(100)
+  await fastify.inject('/consume') // current = 3 -> backoff window doubles again
+  clock.tick(100)
+
+  // Peek reports the current count and the base-window ttl, without escalating
+  // the backoff window the way a real (incrementing) request would.
+  res = await fastify.inject('/peek')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.json(), {
+    isAllowed: false,
+    key: '127.0.0.1',
+    max: 1,
+    timeWindow: 1000,
+    remaining: 0,
+    ttl: 900,
+    ttlInSeconds: 1,
+    isExceeded: true,
+    isBanned: false
+  })
+
+  // Once the base window elapses, the peek reports a clean state
+  clock.tick(1000)
+  res = await fastify.inject('/peek')
+  t.assert.deepStrictEqual(res.statusCode, 200)
+  t.assert.deepStrictEqual(res.json(), {
+    isAllowed: false,
+    key: '127.0.0.1',
+    max: 1,
+    timeWindow: 1000,
+    remaining: 1,
+    ttl: 0,
+    ttlInSeconds: 0,
+    isExceeded: false,
+    isBanned: false
+  })
+
+  clock.reset()
+})
+
+test('With { increment: false } it throws a clear error when the store has no read method', async t => {
+  t.plan(2)
+
+  class NoReadStore {
+    incr (ip, cb, timeWindow) {
+      cb(null, { current: 1, ttl: timeWindow })
+    }
+
+    child () {
+      return this
+    }
+  }
+
+  const fastify = Fastify()
+  await fastify.register(rateLimit, {
+    global: false,
+    max: 2,
+    timeWindow: 1000,
+    store: NoReadStore
+  })
+
+  const checkRateLimit = fastify.createRateLimit()
+  fastify.get('/peek', async (req) => checkRateLimit(req, { increment: false }))
+
+  const res = await fastify.inject('/peek')
+  t.assert.deepStrictEqual(res.statusCode, 500)
+  t.assert.ok(res.json().message.includes('read'))
+})

@@ -245,6 +245,14 @@ async function applyRateLimit (pluginComponent, params, req, callOptions) {
   let ttlInSeconds = 0
 
   const storeMethod = callOptions?.increment === false ? 'read' : 'incr'
+
+  // `{ increment: false }` requires the store to implement a non-mutating
+  // `read` method. Custom stores may not, so fail fast with a clear message
+  // instead of a cryptic "store[storeMethod] is not a function" TypeError.
+  if (storeMethod === 'read' && typeof store.read !== 'function') {
+    throw new Error('The configured rate-limit store does not implement a `read` method, which is required to use `{ increment: false }`')
+  }
+
   try {
     const res = await new Promise((resolve, reject) => {
       store[storeMethod](key, (err, res) => {

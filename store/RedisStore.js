@@ -38,7 +38,9 @@ const luaRead = `
   -- Read the counter without mutating it
   local current = redis.call('GET', key)
 
-  if current == false then
+  -- A missing key returns false from redis.call (and nil from redis.pcall);
+  -- "not current" covers both, so the clean-state branch is robust either way.
+  if not current then
     -- Key doesn't exist: clean state
     return {0, 0}
   end
@@ -80,7 +82,21 @@ RedisStore.prototype.incr = function (ip, cb, timeWindow, max) {
   })
 }
 
-RedisStore.prototype.read = function (ip, cb) {
+/**
+ * Read the current rate-limit state for `ip` without mutating it.
+ *
+ * Same argument contract as `incr` (`ip, cb, timeWindow, max`); the Redis
+ * implementation only needs the key, so `timeWindow`/`max` are ignored. The
+ * reported `ttl` is the raw server `PTTL` — the same source `incr` returns on
+ * its alive path — so it may exceed the configured `timeWindow` when
+ * `continueExceeding`/`exponentialBackoff` extended it.
+ *
+ * @param {string} ip
+ * @param {(err: Error | null, res: { current: number, ttl: number }) => void} cb
+ * @param {number} [timeWindow]
+ * @param {number} [max]
+ */
+RedisStore.prototype.read = function (ip, cb, timeWindow, max) {
   this.redis.rateLimitRead(this.key + ip, (err, result) => {
     err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
   })
