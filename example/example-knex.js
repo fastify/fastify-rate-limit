@@ -46,7 +46,7 @@ KnexStore.prototype.incr = function (key, cb) {
       .then(d => {
         if (d.TTL > now) {
           trx
-            .raw(`UPDATE RateLimits SET Count = 1 WHERE Route='${this.route}' AND Source='${key}'`)
+            .raw('UPDATE RateLimits SET Count = 1 WHERE Route = ? AND Source = ?', [this.route, key])
             .then(() => {
               cb(null, { current: 1, ttl: d.TTL })
             })
@@ -55,7 +55,7 @@ KnexStore.prototype.incr = function (key, cb) {
             })
         } else {
           trx
-            .raw(`INSERT INTO RateLimits(Route, Source, Count, TTL) VALUES('${this.route}', '${key}',1,${d.TTL || ttl}) ON CONFLICT(Route, Source) DO UPDATE SET Count=Count+1,TTL=${ttl}`)
+            .raw('INSERT INTO RateLimits(Route, Source, Count, TTL) VALUES(?,?,1,?) ON CONFLICT(Route, Source) DO UPDATE SET Count=Count+1,TTL=?', [this.route, key, d.TTL || ttl, ttl])
             .then(() => {
               cb(null, { current: d.Count ? d.Count + 1 : 1, ttl: d.TTL || ttl })
             })
