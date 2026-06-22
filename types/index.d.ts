@@ -153,6 +153,7 @@ declare namespace fastifyRateLimit {
     global?: boolean;
     cache?: number;
     redis?: any;
+    valkey?: any;
     nameSpace?: string;
     addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
     addHeadersOnExceeding?:
