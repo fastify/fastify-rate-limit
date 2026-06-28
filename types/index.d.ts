@@ -12,7 +12,7 @@ import {
 
 declare module 'fastify' {
   interface FastifyInstance<RawServer, RawRequest, RawReply, Logger, TypeProvider> {
-    createRateLimit(options?: fastifyRateLimit.CreateRateLimitOptions): (req: FastifyRequest) => Promise<
+    createRateLimit(options?: fastifyRateLimit.CreateRateLimitOptions): (req: FastifyRequest, callOptions?: { increment?: boolean }) => Promise<
       | {
         isAllowed: true
         key: string
