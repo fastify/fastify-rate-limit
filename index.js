@@ -5,6 +5,7 @@ const { parse, format } = require('@lukeed/ms')
 
 const LocalStore = require('./store/LocalStore')
 const RedisStore = require('./store/RedisStore')
+const ValkeyStore = require('./store/ValkeyStore')
 
 const defaultMax = 1000
 const defaultTimeWindow = 60000
@@ -118,6 +119,8 @@ async function fastifyRateLimit (fastify, settings) {
   } else {
     if (settings.redis) {
       pluginComponent.store = new RedisStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.redis, settings.nameSpace)
+    } else if (settings.valkey) {
+      pluginComponent.store = new ValkeyStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.valkey, settings.nameSpace)
     } else {
       pluginComponent.store = new LocalStore(globalParams.continueExceeding, globalParams.exponentialBackoff, settings.cache)
     }
