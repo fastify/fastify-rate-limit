@@ -73,6 +73,7 @@
   "dependencies": {
     "@lukeed/ms": "^2.0.2",
     "fastify-plugin": "^6.0.0",
+    "ip-address": "^10.2.0",
     "toad-cache": "^3.7.0"
   },
   "publishConfig": {

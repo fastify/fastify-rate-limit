@@ -123,6 +123,7 @@ declare namespace fastifyRateLimit {
       | ((req: FastifyRequest, key: string) => Promise<number>);
     allowList?: string[] | ((req: FastifyRequest, key: string) => boolean | Promise<boolean>);
     keyGenerator?: (req: FastifyRequest) => string | number | Promise<string | number>;
+    ipv6Subnet?: number;
     ban?: number;
   }
 
@@ -160,6 +161,7 @@ declare namespace fastifyRateLimit {
     | DraftSpecAddHeadersOnExceeding;
   }
   export const fastifyRateLimit: FastifyRateLimit
+  export function normalizeIP (ip: string, ipv6Subnet?: number): string
   export { fastifyRateLimit as default }
 }
 

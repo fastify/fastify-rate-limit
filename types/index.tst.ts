@@ -13,6 +13,7 @@ import fastifyRateLimit, {
   errorResponseBuilderContext,
   FastifyRateLimitOptions,
   FastifyRateLimitStore,
+  normalizeIP,
   RateLimitPluginOptions
 } from '..'
 import { expect } from 'tstyche'
@@ -51,6 +52,7 @@ const options1: RateLimitPluginOptions = {
   ban: 10,
   continueExceeding: false,
   keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
+  ipv6Subnet: 64,
   groupId: '42',
   errorResponseBuilder: (
     req: FastifyRequest<RequestGenericInterface>,
@@ -253,6 +255,8 @@ expect<errorResponseBuilderContext>().type.toBeAssignableFrom({
   max: 1000,
   ttl: 123
 })
+expect(normalizeIP).type.toBeCallableWith('2001:db8::1', 64)
+expect(normalizeIP('2001:db8::1')).type.toBe<string>()
 
 const appWithCustomLogger = fastify({
   loggerInstance: pino()
@@ -274,6 +278,7 @@ const options10: CreateRateLimitOptions = {
   timeWindow: 5000,
   allowList: ['127.0.0.1'],
   keyGenerator: (req: FastifyRequest<RequestGenericInterface>) => req.ip,
+  ipv6Subnet: 56,
   ban: 10
 }
 

@@ -1,5 +1,7 @@
 'use strict'
 
+const { isIPv6 } = require('node:net')
+const { Address6 } = require('ip-address')
 const fp = require('fastify-plugin')
 const { parse, format } = require('@lukeed/ms')
 
@@ -9,6 +11,7 @@ const RedisStore = require('./store/RedisStore')
 const defaultMax = 1000
 const defaultTimeWindow = 60000
 const defaultHook = 'onRequest'
+const defaultIPv6Subnet = 64
 
 const defaultHeaders = {
   rateLimit: 'x-ratelimit-limit',
@@ -26,7 +29,33 @@ const draftSpecHeaders = {
 
 const defaultOnFn = () => {}
 
-const defaultKeyGenerator = (req) => req.ip
+function normalizeIP (ip, ipv6Subnet = defaultIPv6Subnet) {
+  if (!isIPv6(ip)) {
+    return ip.toLowerCase()
+  }
+
+  const address = new Address6(ip)
+
+  if (address.isMapped4()) {
+    return address.to4().correctForm()
+  }
+
+  if (ipv6Subnet < 128) {
+    return new Address6(`${ip}/${ipv6Subnet}`).startAddress().correctForm()
+  }
+
+  return address.correctForm()
+}
+
+function normalizeIPv6Subnet (ipv6Subnet) {
+  if (Number.isFinite(ipv6Subnet) && ipv6Subnet >= 0 && ipv6Subnet <= 128) {
+    return Math.trunc(ipv6Subnet)
+  }
+
+  return defaultIPv6Subnet
+}
+
+const defaultKeyGenerator = (req, ipv6Subnet) => normalizeIP(req.ip, ipv6Subnet)
 
 const defaultErrorResponse = (_req, context) => {
   const err = new Error(`Rate limit exceeded, retry in ${context.after}`)
@@ -92,6 +121,7 @@ async function fastifyRateLimit (fastify, settings) {
   globalParams.onExceeded = typeof settings.onExceeded === 'function' ? settings.onExceeded : defaultOnFn
   globalParams.continueExceeding = typeof settings.continueExceeding === 'boolean' ? settings.continueExceeding : false
   globalParams.exponentialBackoff = typeof settings.exponentialBackoff === 'boolean' ? settings.exponentialBackoff : false
+  globalParams.ipv6Subnet = normalizeIPv6Subnet(settings.ipv6Subnet)
 
   globalParams.keyGenerator = typeof settings.keyGenerator === 'function'
     ? settings.keyGenerator
@@ -180,6 +210,8 @@ function mergeParams (...params) {
     result.ban = -1
   }
 
+  result.ipv6Subnet = normalizeIPv6Subnet(result.ipv6Subnet)
+
   if (result.groupId !== undefined && typeof result.groupId !== 'string') {
     throw new Error('groupId must be a string')
   }
@@ -214,7 +246,9 @@ async function applyRateLimit (pluginComponent, params, req, callOptions) {
   const { store } = pluginComponent
 
   // Retrieve the key from the generator (the global one or the one defined in the endpoint)
-  let key = await params.keyGenerator(req)
+  let key = params.keyGenerator === defaultKeyGenerator
+    ? defaultKeyGenerator(req, params.ipv6Subnet)
+    : await params.keyGenerator(req)
   const groupId = req.routeOptions.config?.rateLimit?.groupId
 
   if (groupId) {
@@ -348,3 +382,4 @@ module.exports = fp(fastifyRateLimit, {
 })
 module.exports.default = fastifyRateLimit
 module.exports.fastifyRateLimit = fastifyRateLimit
+module.exports.normalizeIP = normalizeIP
