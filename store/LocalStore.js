@@ -14,12 +14,13 @@ LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
 
   if (!current) {
     // Item doesn't exist
-    current = { current: 1, ttl: timeWindow, iterationStartMs: nowInMs }
-  } else if (current.iterationStartMs + timeWindow <= nowInMs) {
+    current = { current: 1, ttl: timeWindow, iterationStartMs: nowInMs, resetAtMs: nowInMs + timeWindow }
+  } else if (current.resetAtMs <= nowInMs) {
     // Item has expired
     current.current = 1
     current.ttl = timeWindow
     current.iterationStartMs = nowInMs
+    current.resetAtMs = nowInMs + timeWindow
   } else {
     // Item is alive
     ++current.current
@@ -28,14 +29,16 @@ LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
     if (this.continueExceeding && current.current > max) {
       current.ttl = timeWindow
       current.iterationStartMs = nowInMs
+      current.resetAtMs = nowInMs + timeWindow
     } else if (this.exponentialBackoff && current.current > max) {
       // Handle exponential backoff
       const backoffExponent = current.current - max - 1
       const ttl = timeWindow * (2 ** backoffExponent)
       current.ttl = Number.isSafeInteger(ttl) ? ttl : Number.MAX_SAFE_INTEGER
       current.iterationStartMs = nowInMs
+      current.resetAtMs = nowInMs + current.ttl
     } else {
-      current.ttl = timeWindow - (nowInMs - current.iterationStartMs)
+      current.ttl = current.resetAtMs - nowInMs
     }
   }
 
@@ -65,14 +68,14 @@ LocalStore.prototype.read = function (ip, cb, timeWindow, max) {
   const nowInMs = Date.now()
   const current = this.lru.get(ip)
 
-  if (!current || current.iterationStartMs + timeWindow <= nowInMs) {
+  if (!current || current.resetAtMs <= nowInMs) {
     // Item doesn't exist or has expired: report a clean state without mutating
     cb(null, { current: 0, ttl: 0 })
     return
   }
 
   // Item is alive: report the current state without mutating
-  const ttl = timeWindow - (nowInMs - current.iterationStartMs)
+  const ttl = current.resetAtMs - nowInMs
   cb(null, { current: current.current, ttl })
 }
 
