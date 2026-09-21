@@ -695,10 +695,9 @@ test('variable max contenders', async (t) => {
   }
 })
 
-// // TODO this test gets extremely flaky because of setTimeout
-// // rewrite using https://www.npmjs.com/package/@sinonjs/fake-timers
-test('limit reset per Local storage', { skip: true }, async (t) => {
-  t.plan(12)
+test('limit reset per Local storage', async (t) => {
+  const clock = mock.timers
+  clock.enable(0)
   const fastify = Fastify()
   await fastify.register(rateLimit, { global: false })
 
@@ -717,19 +716,28 @@ test('limit reset per Local storage', { skip: true }, async (t) => {
     }
   )
 
-  setTimeout(doRequest.bind(null, 4), 0)
-  setTimeout(doRequest.bind(null, 3), 1000)
-  setTimeout(doRequest.bind(null, 2), 2000)
-  setTimeout(doRequest.bind(null, 1), 3000)
-  setTimeout(doRequest.bind(null, 0), 4000)
-  setTimeout(doRequest.bind(null, 4), 4100)
+  let res
 
-  function doRequest (resetValue) {
-    fastify.inject('/', (err, res) => {
-      t.error(err)
-      t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], resetValue)
-    })
-  }
+  res = await fastify.inject('/')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '4')
+
+  clock.tick(1000)
+  res = await fastify.inject('/')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '3')
+
+  clock.tick(1000)
+  res = await fastify.inject('/')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '2')
+
+  clock.tick(1000)
+  res = await fastify.inject('/')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
+
+  clock.tick(1000)
+  res = await fastify.inject('/')
+  t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '4')
+
+  clock.reset()
 })
 
 test('hide rate limit headers', async (t) => {
