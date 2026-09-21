@@ -1,6 +1,6 @@
 {
   "name": "@fastify/rate-limit",
-  "version": "11.0.0",
+  "version": "11.2.0",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "type": "commonjs",
@@ -22,7 +22,7 @@
     "rate",
     "limit"
   ],
-  "author": "Tomas Della Vedova - @delvedor (http://delved.org)",
+  "author": "Tomas Della Vedova - @delvedor (https://delvedor.dev)",
   "contributors": [
     {
       "name": "Matteo Collina",
@@ -60,11 +60,11 @@
   ],
   "devDependencies": {
     "@sinonjs/fake-timers": "^15.0.0",
-    "@types/node": "^25.0.3",
-    "c8": "^11.0.0",
+    "@types/node": "^26.0.1",
+    "c8": "^12.0.0",
     "eslint": "^9.17.0",
     "fastify": "^5.0.0",
-    "ioredis": "^5.4.1",
+    "ioredis": "^6.0.0",
     "knex": "^3.1.0",
     "neostandard": "^0.13.0",
     "sqlite3": "^6.0.1",
@@ -73,6 +73,7 @@
   "dependencies": {
     "@lukeed/ms": "^2.0.2",
     "fastify-plugin": "^6.0.0",
+    "ip-address": "^10.2.0",
     "toad-cache": "^3.7.0"
   },
   "publishConfig": {

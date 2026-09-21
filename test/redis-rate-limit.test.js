@@ -428,6 +428,74 @@ describe('Global rate limit', () => {
     await redis.flushall()
     await redis.quit()
   })
+
+  test('With { increment: false } it reads the state without consuming it', async (t) => {
+    t.plan(5)
+    const fastify = Fastify()
+    const redis = await new Redis({ host: REDIS_HOST })
+    await redis.flushall()
+    await fastify.register(rateLimit, {
+      global: false,
+      max: 2,
+      timeWindow: 1000,
+      redis
+    })
+
+    const checkRateLimit = fastify.createRateLimit()
+
+    fastify.get('/peek', async (req) => checkRateLimit(req, { increment: false }))
+    fastify.get('/consume', async (req) => checkRateLimit(req))
+
+    let res
+
+    // Peek before any request: clean state, nothing consumed
+    res = await fastify.inject('/peek')
+    t.assert.deepStrictEqual(res.json().remaining, 2)
+
+    // Consume one request
+    res = await fastify.inject('/consume')
+    t.assert.deepStrictEqual(res.json().remaining, 1)
+
+    // Peek again: reads the active window without consuming (remaining stays 1)
+    res = await fastify.inject('/peek')
+    t.assert.deepStrictEqual(res.json().remaining, 1)
+
+    // Consume again: the limit is now reached
+    res = await fastify.inject('/consume')
+    t.assert.deepStrictEqual(res.json().remaining, 0)
+
+    // Peek once more: still 0, state was not mutated
+    res = await fastify.inject('/peek')
+    t.assert.deepStrictEqual(res.json().remaining, 0)
+
+    await redis.flushall()
+    await redis.quit()
+  })
+
+  test('With { increment: false } it throws on redis error', async (t) => {
+    t.plan(2)
+    const fastify = Fastify()
+    const redis = await new Redis({ host: REDIS_HOST })
+    await fastify.register(rateLimit, {
+      global: false,
+      max: 2,
+      timeWindow: 1000,
+      redis
+    })
+
+    const checkRateLimit = fastify.createRateLimit()
+    fastify.get('/peek', async (req) => checkRateLimit(req, { increment: false }))
+
+    await redis.flushall()
+    await redis.quit()
+
+    const res = await fastify.inject('/peek')
+    t.assert.deepStrictEqual(res.statusCode, 500)
+    t.assert.deepStrictEqual(
+      res.body,
+      '{"statusCode":500,"error":"Internal Server Error","message":"Connection is closed."}'
+    )
+  })
 })
 
 describe('Route rate limit', () => {
