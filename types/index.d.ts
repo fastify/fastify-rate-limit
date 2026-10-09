@@ -56,6 +56,16 @@ declare namespace fastifyRateLimit {
 
   export interface FastifyRateLimitOptions { }
 
+  export interface FastifyRateLimitValkeyClient {
+    invokeScript(
+      script: { getHash(): string },
+      options?: {
+        keys?: string[];
+        args?: string[];
+      }
+    ): Promise<unknown>;
+  }
+
   export interface errorResponseBuilderContext {
     statusCode: number;
     ban: boolean;
@@ -154,6 +164,7 @@ declare namespace fastifyRateLimit {
     global?: boolean;
     cache?: number;
     redis?: any;
+    valkey?: FastifyRateLimitValkeyClient;
     nameSpace?: string;
     addHeaders?: DefaultAddHeaders | DraftSpecAddHeaders;
     addHeadersOnExceeding?:

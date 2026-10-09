@@ -6,12 +6,14 @@ import fastify, {
   RouteOptions
 } from 'fastify'
 import * as http2 from 'node:http2'
+import type { GlideClient, GlideClusterClient } from '@valkey/valkey-glide'
 import IORedis from 'ioredis'
 import pino from 'pino'
 import fastifyRateLimit, {
   CreateRateLimitOptions,
   errorResponseBuilderContext,
   FastifyRateLimitOptions,
+  FastifyRateLimitValkeyClient,
   FastifyRateLimitStore,
   normalizeIP,
   RateLimitPluginOptions
@@ -169,10 +171,27 @@ const options9: RateLimitPluginOptions = {
   exponentialBackoff: true
 }
 
+declare const valkeyClient: GlideClient
+declare const valkeyClusterClient: GlideClusterClient
+
+const options14: RateLimitPluginOptions = {
+  global: true,
+  max: 3,
+  timeWindow: 5000,
+  valkey: valkeyClient,
+  nameSpace: 'valkey-namespace'
+}
+
+const options15: RateLimitPluginOptions = {
+  valkey: valkeyClusterClient
+}
+
 appWithImplicitHttp.register(fastifyRateLimit, options1)
 appWithImplicitHttp.register(fastifyRateLimit, options2)
 appWithImplicitHttp.register(fastifyRateLimit, options5)
 appWithImplicitHttp.register(fastifyRateLimit, options9)
+appWithImplicitHttp.register(fastifyRateLimit, options14)
+appWithImplicitHttp.register(fastifyRateLimit, options15)
 
 appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   expect(
@@ -205,6 +224,12 @@ appWithImplicitHttp.register(fastifyRateLimit, options3).then(() => {
   expect(
     appWithImplicitHttp.rateLimit(options9)
   ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options14)
+  ).type.toBe<preHandlerAsyncHookHandler>()
+  expect(
+    appWithImplicitHttp.rateLimit(options15)
+  ).type.toBe<preHandlerAsyncHookHandler>()
 })
 // The following test is dependent on https://github.com/fastify/fastify/pull/2929
 // appWithImplicitHttp.setNotFoundHandler({
@@ -235,6 +260,8 @@ appWithHttp2.register(fastifyRateLimit, options6)
 appWithHttp2.register(fastifyRateLimit, options7)
 appWithHttp2.register(fastifyRateLimit, options8)
 appWithHttp2.register(fastifyRateLimit, options9)
+appWithHttp2.register(fastifyRateLimit, options14)
+appWithHttp2.register(fastifyRateLimit, options15)
 
 appWithHttp2.get(
   '/public',
@@ -257,6 +284,9 @@ expect<errorResponseBuilderContext>().type.toBeAssignableFrom({
 })
 expect(normalizeIP).type.toBeCallableWith('2001:db8::1', 64)
 expect(normalizeIP('2001:db8::1')).type.toBe<string>()
+
+expect(valkeyClient).type.toBeAssignableTo<FastifyRateLimitValkeyClient>()
+expect(valkeyClusterClient).type.toBeAssignableTo<FastifyRateLimitValkeyClient>()
 
 const appWithCustomLogger = fastify({
   loggerInstance: pino()
