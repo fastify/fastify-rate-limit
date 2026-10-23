@@ -560,6 +560,36 @@ describe('Route rate limit', () => {
     await redis.quit()
   })
 
+  test('generated HEAD aliases share the route Redis store', async (t) => {
+    const fastify = Fastify()
+    const redis = new Redis({ host: REDIS_HOST })
+    t.after(async () => {
+      await redis.flushall()
+      await redis.quit()
+      await fastify.close()
+    })
+    await fastify.register(rateLimit, {
+      global: false,
+      redis
+    })
+
+    await fastify.register(async function routes (fastify) {
+      fastify.get('/', {
+        config: {
+          rateLimit: { max: 2, timeWindow: 60000 }
+        }
+      }, async () => 'ok')
+    }, { prefix: '/prefix' })
+
+    const get = await fastify.inject({ method: 'GET', url: '/prefix' })
+    const headWithSlash = await fastify.inject({ method: 'HEAD', url: '/prefix/' })
+    const headWithoutSlash = await fastify.inject({ method: 'HEAD', url: '/prefix' })
+
+    t.assert.strictEqual(get.statusCode, 200)
+    t.assert.strictEqual(headWithSlash.statusCode, 200)
+    t.assert.strictEqual(headWithoutSlash.statusCode, 429)
+  })
+
   test('Throw on redis error', async (t) => {
     t.plan(6)
     const fastify = Fastify()
