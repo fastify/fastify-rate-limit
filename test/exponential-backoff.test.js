@@ -1,5 +1,5 @@
 'use strict'
-const { test } = require('node:test')
+const { test, mock } = require('node:test')
 const assert = require('node:assert')
 const Fastify = require('fastify')
 const rateLimit = require('../index')
@@ -229,4 +229,32 @@ test('MAx safe Exponential Backoff', async () => {
     },
     JSON.parse(res.payload)
   )
+})
+
+test('Local exponential backoff keeps the extended window', async () => {
+  const clock = mock.timers
+  clock.enable(0)
+  const fastify = Fastify()
+
+  try {
+    await fastify.register(rateLimit, {
+      max: 1,
+      timeWindow: 100,
+      exponentialBackoff: true
+    })
+
+    fastify.get('/', async () => 'ok')
+
+    await fastify.inject('/')
+    await fastify.inject('/')
+    await fastify.inject('/')
+
+    clock.tick(150)
+
+    const res = await fastify.inject('/')
+    assert.deepStrictEqual(res.statusCode, 429)
+  } finally {
+    clock.reset()
+    await fastify.close()
+  }
 })
