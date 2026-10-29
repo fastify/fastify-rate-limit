@@ -77,6 +77,15 @@ LocalStore.prototype.read = function (ip, cb, timeWindow, max) {
 }
 
 LocalStore.prototype.child = function (routeOptions) {
+  if (routeOptions.groupId) {
+    // Share the parent's LRU so routes in the same group collide on the same key
+    const child = Object.create(LocalStore.prototype)
+    child.continueExceeding = routeOptions.continueExceeding
+    child.exponentialBackoff = routeOptions.exponentialBackoff
+    child.lru = this.lru // reuse parent's cache, not a new one
+    return child
+  }
+  // fallback: existing per-route behavior — fresh LRU
   return new LocalStore(routeOptions.continueExceeding, routeOptions.exponentialBackoff, routeOptions.cache)
 }
 
