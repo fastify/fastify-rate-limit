@@ -40,7 +40,7 @@ LocalStore.prototype.incr = function (ip, cb, timeWindow, max) {
   }
 
   this.lru.set(ip, current)
-  cb(null, current)
+  cb(null, { current: current.current, ttl: current.ttl })
 }
 
 /**
