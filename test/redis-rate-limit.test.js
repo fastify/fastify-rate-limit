@@ -818,4 +818,37 @@ describe('Route rate limit', () => {
     await redis.flushall()
     await redis.quit()
   })
+
+  test('Two routes sharing one groupId share counter with Redis store', async (t) => {
+    t.plan(7)
+    const fastify = Fastify()
+    const redis = await new Redis({ host: REDIS_HOST })
+    await fastify.register(rateLimit, {
+      max: 100,
+      timeWindow: 1000,
+      redis
+    })
+
+    const config = { rateLimit: { max: 3, timeWindow: 1000, groupId: 'OTP-redis' } }
+    fastify.get('/otp/send', { config }, async () => 'sent')
+    fastify.get('/otp/resend', { config }, async () => 'resent')
+
+    let res = await fastify.inject({ url: '/otp/send' })
+    t.assert.strictEqual(res.statusCode, 200)
+    t.assert.strictEqual(res.headers['x-ratelimit-remaining'], '2')
+
+    res = await fastify.inject({ url: '/otp/send' })
+    t.assert.strictEqual(res.statusCode, 200)
+    t.assert.strictEqual(res.headers['x-ratelimit-remaining'], '1')
+
+    res = await fastify.inject({ url: '/otp/send' })
+    t.assert.strictEqual(res.statusCode, 200)
+    t.assert.strictEqual(res.headers['x-ratelimit-remaining'], '0')
+
+    res = await fastify.inject({ url: '/otp/resend' })
+    t.assert.strictEqual(res.statusCode, 429)
+
+    await redis.flushall()
+    await redis.quit()
+  })
 })
