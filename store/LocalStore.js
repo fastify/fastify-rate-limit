@@ -77,6 +77,13 @@ LocalStore.prototype.read = function (ip, cb, timeWindow, max) {
 }
 
 LocalStore.prototype.child = function (routeOptions) {
+  if (routeOptions.groupId) {
+    const child = Object.create(LocalStore.prototype)
+    child.continueExceeding = routeOptions.continueExceeding
+    child.exponentialBackoff = routeOptions.exponentialBackoff
+    child.lru = this.lru
+    return child
+  }
   return new LocalStore(routeOptions.continueExceeding, routeOptions.exponentialBackoff, routeOptions.cache)
 }
 
