@@ -380,7 +380,7 @@ test('With { increment: false } and continueExceeding the peek mirrors the activ
   clock.reset()
 })
 
-test('With { increment: false } and exponentialBackoff the peek reports the base window without escalating it', async t => {
+test('With { increment: false } and exponentialBackoff the peek reports the current window without escalating it', async t => {
   t.plan(4)
   const clock = mock.timers
   clock.enable(0)
@@ -405,7 +405,7 @@ test('With { increment: false } and exponentialBackoff the peek reports the base
   await fastify.inject('/consume') // current = 3 -> backoff window doubles again
   clock.tick(100)
 
-  // Peek reports the current count and the base-window ttl, without escalating
+  // Peek reports the current count and active-window ttl, without escalating
   // the backoff window the way a real (incrementing) request would.
   res = await fastify.inject('/peek')
   t.assert.deepStrictEqual(res.statusCode, 200)
@@ -415,14 +415,14 @@ test('With { increment: false } and exponentialBackoff the peek reports the base
     max: 1,
     timeWindow: 1000,
     remaining: 0,
-    ttl: 900,
-    ttlInSeconds: 1,
+    ttl: 1900,
+    ttlInSeconds: 2,
     isExceeded: true,
     isBanned: false
   })
 
-  // Once the base window elapses, the peek reports a clean state
-  clock.tick(1000)
+  // Once the extended window elapses, the peek reports a clean state
+  clock.tick(1900)
   res = await fastify.inject('/peek')
   t.assert.deepStrictEqual(res.statusCode, 200)
   t.assert.deepStrictEqual(res.json(), {
