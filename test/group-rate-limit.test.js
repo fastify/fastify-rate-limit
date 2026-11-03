@@ -250,3 +250,35 @@ test('Invalid groupId type', async () => {
     assert.deepStrictEqual(err.message, 'groupId must be a string')
   }
 })
+
+test('two routes sharing one groupId share the counter', async (t) => {
+  const app = Fastify()
+  t.after(() => app.close())
+  await app.register(rateLimit, { max: 100, timeWindow: '1 minute' })
+
+  const config = { rateLimit: { max: 3, timeWindow: '1 minute', groupId: 'OTP' } }
+  app.get('/otp/send', { config }, async () => 'sent')
+  app.get('/otp/resend', { config }, async () => 'resent')
+
+  const urls = ['/otp/send', '/otp/send', '/otp/send', '/otp/resend']
+  let lastRes
+  for (const url of urls) {
+    lastRes = await app.inject({ url })
+  }
+  t.assert.strictEqual(lastRes.statusCode, 429)
+})
+
+test('two routes without groupId keep separate counters', async (t) => {
+  const app = Fastify()
+  t.after(() => app.close())
+  await app.register(rateLimit, { max: 100, timeWindow: '1 minute' })
+
+  const config = { rateLimit: { max: 3, timeWindow: '1 minute' } } // no groupId
+  app.get('/route-a', { config }, async () => 'a')
+  app.get('/route-b', { config }, async () => 'b')
+
+  const res1 = await app.inject({ url: '/route-a' })
+  const res2 = await app.inject({ url: '/route-b' })
+  t.assert.strictEqual(res1.statusCode, 200)
+  t.assert.strictEqual(res2.statusCode, 200)
+})
