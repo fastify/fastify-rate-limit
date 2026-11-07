@@ -169,12 +169,22 @@ async function fastifyRateLimit (fastify, settings) {
     })
   }
 
+  let headRouteStores = new WeakMap()
+  const serverOptions = {
+    exposeHeadRoutes: fastify.initialConfig.exposeHeadRoutes,
+    hasRoute: fastify.hasRoute.bind(fastify)
+  }
+
+  fastify.addHook('onReady', () => {
+    headRouteStores = new WeakMap()
+  })
+
   fastify.addHook('onRoute', (routeOptions) => {
     if (routeOptions.config?.rateLimit != null) {
       if (typeof routeOptions.config.rateLimit === 'object') {
         const newPluginComponent = Object.create(pluginComponent)
         const mergedRateLimitParams = mergeParams(globalParams, routeOptions.config.rateLimit, { routeInfo: routeOptions })
-        newPluginComponent.store = pluginComponent.store.child(mergedRateLimitParams)
+        newPluginComponent.store = getRouteStore(pluginComponent.store, mergedRateLimitParams, routeOptions, headRouteStores, serverOptions)
 
         addRouteRateHook(newPluginComponent, mergedRateLimitParams, routeOptions)
       } else if (routeOptions.config.rateLimit !== false) {
@@ -185,6 +195,112 @@ async function fastifyRateLimit (fastify, settings) {
       addRouteRateHook(pluginComponent, globalParams, routeOptions)
     }
   })
+}
+
+function getRouteStore (store, params, routeOptions, headRouteStores, serverOptions) {
+  const routeConfig = routeOptions.config.rateLimit
+  const methods = Array.isArray(routeOptions.method) ? routeOptions.method : [routeOptions.method]
+
+  if (routeOptions.constraints) {
+    routeOptions.constraints = { ...routeOptions.constraints }
+  }
+
+  if (methods.length === 1 && methods[0] === 'HEAD') {
+    const candidates = headRouteStores.get(routeConfig)
+    const hasGetRoute = serverOptions.hasRoute({
+      method: 'GET',
+      url: routeOptions.url,
+      constraints: routeOptions.constraints
+    })
+    let candidateIndex = -1
+    let isAlias = false
+
+    if (hasGetRoute && candidates) {
+      candidateIndex = candidates.findIndex(candidate =>
+        candidate.expectsHead &&
+        candidate.url === routeOptions.url &&
+        candidate.prefix === routeOptions.prefix &&
+        constraintsEqual(candidate.constraints, routeOptions.constraints)
+      )
+
+      if (candidateIndex === -1) {
+        candidateIndex = candidates.findIndex(candidate =>
+          candidate.url !== routeOptions.url &&
+          candidate.routeOptions.url === routeOptions.url &&
+          candidate.routeOptions.routePath === routeOptions.routePath &&
+          candidate.prefix === routeOptions.prefix &&
+          constraintsEqual(candidate.constraints, routeOptions.constraints)
+        )
+        isAlias = candidateIndex !== -1
+      }
+    }
+
+    if (candidateIndex !== -1) {
+      const candidate = candidates[candidateIndex]
+      candidate.expectsHead = false
+
+      if (isAlias) {
+        candidates.splice(candidateIndex, 1)
+        if (candidates.length === 0) {
+          headRouteStores.delete(routeConfig)
+        }
+      }
+
+      return createHeadRouteStore(store, params, candidate, routeOptions)
+    }
+  }
+
+  const routeStore = store.child(params)
+  const exposesHeadRoute = routeOptions.exposeHeadRoute ?? serverOptions.exposeHeadRoutes
+
+  if (methods.includes('GET') && !methods.includes('HEAD') && exposesHeadRoute) {
+    const candidates = headRouteStores.get(routeConfig) || []
+    candidates.push({
+      store: routeStore,
+      url: routeOptions.url,
+      prefix: routeOptions.prefix,
+      constraints: routeOptions.constraints,
+      routeOptions,
+      expectsHead: !serverOptions.hasRoute({
+        method: 'HEAD',
+        url: routeOptions.url,
+        constraints: routeOptions.constraints
+      })
+    })
+    headRouteStores.set(routeConfig, candidates)
+  }
+
+  return routeStore
+}
+
+function createHeadRouteStore (store, params, candidate, routeOptions) {
+  let routeStore
+
+  return {
+    incr (...args) {
+      if (constraintsEqual(candidate.routeOptions.constraints, routeOptions.constraints)) {
+        return candidate.store.incr(...args)
+      }
+
+      routeStore ||= store.child(params)
+      return routeStore.incr(...args)
+    }
+  }
+}
+
+function constraintsEqual (left, right) {
+  if (left === right) {
+    return true
+  }
+
+  if (left == null || right == null) {
+    return false
+  }
+
+  const leftKeys = Object.keys(left)
+  const rightKeys = Object.keys(right)
+
+  return leftKeys.length === rightKeys.length && leftKeys.every(key => right[key] === left[key])
 }
 
 function mergeParams (...params) {
