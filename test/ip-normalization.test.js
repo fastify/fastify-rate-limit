@@ -28,8 +28,10 @@ function requestFrom (ip) {
 }
 
 test('normalizeIP canonicalizes IP address strings', (t) => {
-  t.plan(7)
+  t.plan(9)
 
+  t.assert.deepStrictEqual(normalizeIP(undefined), '')
+  t.assert.deepStrictEqual(normalizeIP(null), '')
   t.assert.deepStrictEqual(normalizeIP('127.0.0.1'), '127.0.0.1')
   t.assert.deepStrictEqual(normalizeIP('Example.COM'), 'example.com')
   t.assert.deepStrictEqual(normalizeIP('::ffff:192.0.2.1'), '192.0.2.1')
@@ -88,4 +90,22 @@ test('invalid ipv6Subnet values fall back to /64', async (t) => {
 
   res = await fastify.inject(requestFrom('2001:db8:abcd:13::1'))
   t.assert.deepStrictEqual(res.statusCode, 200)
+})
+
+test('handles undefined req.ip gracefully without crashing', async (t) => {
+  t.plan(2)
+
+  const fastify = Fastify()
+  await fastify.register(rateLimit, { max: 2, timeWindow: 10000 })
+  fastify.get('/', async () => 'ok')
+  fastify.addHook('onRequest', async (req) => {
+    Object.defineProperty(req, 'ip', { get: () => undefined })
+  })
+  t.after(() => fastify.close())
+
+  const res1 = await fastify.inject({ method: 'GET', url: '/' })
+  t.assert.deepStrictEqual(res1.statusCode, 200)
+
+  const res2 = await fastify.inject({ method: 'GET', url: '/' })
+  t.assert.deepStrictEqual(res2.statusCode, 200)
 })
