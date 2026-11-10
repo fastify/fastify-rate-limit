@@ -93,7 +93,7 @@ test('invalid ipv6Subnet values fall back to /64', async (t) => {
 })
 
 test('handles undefined req.ip gracefully without crashing', async (t) => {
-  t.plan(2)
+  t.plan(3)
 
   const fastify = Fastify()
   await fastify.register(rateLimit, { max: 2, timeWindow: 10000 })
@@ -108,4 +108,7 @@ test('handles undefined req.ip gracefully without crashing', async (t) => {
 
   const res2 = await fastify.inject({ method: 'GET', url: '/' })
   t.assert.deepStrictEqual(res2.statusCode, 200)
+
+  const res3 = await fastify.inject({ method: 'GET', url: '/' })
+  t.assert.deepStrictEqual(res3.statusCode, 429)
 })
