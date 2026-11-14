@@ -103,6 +103,9 @@ RedisStore.prototype.read = function (ip, cb, timeWindow, max) {
 }
 
 RedisStore.prototype.child = function (routeOptions) {
+  if (routeOptions.groupId) {
+    return new RedisStore(routeOptions.continueExceeding, routeOptions.exponentialBackoff, this.redis, `${this.key}${routeOptions.groupId}-`)
+  }
   return new RedisStore(routeOptions.continueExceeding, routeOptions.exponentialBackoff, this.redis, `${this.key}${routeOptions.routeInfo.method}${routeOptions.routeInfo.url}-`)
 }
 

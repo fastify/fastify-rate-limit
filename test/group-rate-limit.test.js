@@ -250,3 +250,46 @@ test('Invalid groupId type', async () => {
     assert.deepStrictEqual(err.message, 'groupId must be a string')
   }
 })
+
+test('Routes sharing the same groupId share the rate limit counter', async () => {
+  const fastify = Fastify()
+
+  await fastify.register(rateLimit, { max: 100, timeWindow: 1000 })
+
+  const config = {
+    rateLimit: {
+      max: 3,
+      timeWindow: 1000,
+      groupId: 'OTP'
+    }
+  }
+
+  fastify.get('/otp/send', { config }, async () => 'sent')
+  fastify.get('/otp/resend', { config }, async () => 'resent')
+
+  let res
+
+  // Request 1 to /otp/send: remaining 2
+  res = await fastify.inject({ url: '/otp/send', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '2')
+
+  // Request 2 to /otp/resend: remaining 1
+  res = await fastify.inject({ url: '/otp/resend', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
+
+  // Request 3 to /otp/send: remaining 0
+  res = await fastify.inject({ url: '/otp/send', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 200)
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+
+  // Request 4 to /otp/resend: 429 Too Many Requests
+  res = await fastify.inject({ url: '/otp/resend', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 429)
+  assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
+
+  // Request 5 to /otp/send: 429 Too Many Requests
+  res = await fastify.inject({ url: '/otp/send', method: 'GET' })
+  assert.deepStrictEqual(res.statusCode, 429)
+})
