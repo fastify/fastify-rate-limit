@@ -255,6 +255,8 @@ expect<errorResponseBuilderContext>().type.toBeAssignableFrom({
   max: 1000,
   ttl: 123
 })
+expect(normalizeIP).type.toBeCallableWith()
+expect(normalizeIP).type.toBeCallableWith(undefined)
 expect(normalizeIP).type.toBeCallableWith('2001:db8::1', 64)
 expect(normalizeIP('2001:db8::1')).type.toBe<string>()
 

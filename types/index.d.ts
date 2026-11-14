@@ -161,7 +161,7 @@ declare namespace fastifyRateLimit {
     | DraftSpecAddHeadersOnExceeding;
   }
   export const fastifyRateLimit: FastifyRateLimit
-  export function normalizeIP (ip: string, ipv6Subnet?: number): string
+  export function normalizeIP (ip?: string, ipv6Subnet?: number): string
   export { fastifyRateLimit as default }
 }
 
