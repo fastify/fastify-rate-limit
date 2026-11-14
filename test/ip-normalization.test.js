@@ -28,7 +28,7 @@ function requestFrom (ip) {
 }
 
 test('normalizeIP canonicalizes IP address strings', (t) => {
-  t.plan(7)
+  t.plan(10)
 
   t.assert.deepStrictEqual(normalizeIP('127.0.0.1'), '127.0.0.1')
   t.assert.deepStrictEqual(normalizeIP('Example.COM'), 'example.com')
@@ -37,6 +37,24 @@ test('normalizeIP canonicalizes IP address strings', (t) => {
   t.assert.deepStrictEqual(normalizeIP('2001:0DB8:ABCD:0012:0000:0000:0000:0001'), '2001:db8:abcd:12::')
   t.assert.deepStrictEqual(normalizeIP('2001:db8:abcd:12::1', 48), '2001:db8:abcd::')
   t.assert.deepStrictEqual(normalizeIP('2001:db8:abcd:12::1', 128), '2001:db8:abcd:12::1')
+  t.assert.deepStrictEqual(normalizeIP(undefined), '')
+  t.assert.deepStrictEqual(normalizeIP(null), '')
+  t.assert.deepStrictEqual(normalizeIP(), '')
+})
+
+test('handles requests when req.ip is undefined', async (t) => {
+  t.plan(1)
+
+  const fastify = Fastify()
+  await fastify.register(rateLimit, { max: 10, timeWindow: 10000 })
+  fastify.addHook('onRequest', async (req) => {
+    Object.defineProperty(req, 'ip', { get: () => undefined })
+  })
+  fastify.get('/', async () => 'ok')
+  t.after(() => fastify.close())
+
+  const res = await fastify.inject({ method: 'GET', url: '/' })
+  t.assert.deepStrictEqual(res.statusCode, 200)
 })
 
 test('default keyGenerator masks trusted IPv6 clients to /64', async (t) => {

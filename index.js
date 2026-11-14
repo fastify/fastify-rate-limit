@@ -30,6 +30,10 @@ const draftSpecHeaders = {
 const defaultOnFn = () => {}
 
 function normalizeIP (ip, ipv6Subnet = defaultIPv6Subnet) {
+  if (typeof ip !== 'string') {
+    return ''
+  }
+
   if (!isIPv6(ip)) {
     return ip.toLowerCase()
   }
