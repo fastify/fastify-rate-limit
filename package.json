@@ -1,6 +1,6 @@
 {
   "name": "@fastify/rate-limit",
-  "version": "11.2.2",
+  "version": "11.3.0",
   "description": "A low overhead rate limiter for your routes",
   "main": "index.js",
   "type": "commonjs",
