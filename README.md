@@ -519,34 +519,44 @@ If `isAllowed` is `false` the object also contains these additional properties:
 - `isExceeded`: `true` if the limit was exceeded.
 - `isBanned`: `true` if the request was banned according to the `ban` option.
 
-The limiter function accepts an optional second argument `{ increment?: boolean }`. The `increment` flag defaults to `true`, so omitting the argument keeps the original behavior (the request is consumed). When `increment` is `false`, the current rate limit status is returned **without consuming a request**. This is useful when a limit should only be enforced on certain outcomes (e.g. failed login attempts) while still checking the status before processing.
+The limiter function accepts an optional second argument with two flags, `{ increment?: boolean, refund?: boolean }`.
+
+- `increment` defaults to `true`, so omitting the argument consumes a request (the original behavior).
+- `{ increment: false }` returns the current rate-limit status **without consuming a request** (a peek).
+- `{ refund: true }` gives back a slot that was previously consumed (the counterpart of `incr`), so a reservation can be returned when an operation succeeds.
+
+For a login limiter, prefer the **consume-then-refund** pattern. It reserves a slot atomically (one store operation) and gives it back only on success, so concurrent attempts cannot all slip through a peek:
 
 ```js
 const checkRateLimit = fastify.createRateLimit({ max: 5, timeWindow: '1 minute' });
 
 fastify.post('/login', async (request, reply) => {
-  // Peek at the current status without consuming a request
-  const status = await checkRateLimit(request, { increment: false });
-  if (status.isExceeded) {
+  // Reserve a slot atomically, then refund it if the login succeeds
+  const limit = await checkRateLimit(request);
+  if (limit.isExceeded) {
     return reply.code(429).send({ error: 'Too many attempts' });
   }
 
   const success = await tryLogin(request.body);
-  if (!success) {
-    // Only consume a request when the login fails
-    await checkRateLimit(request);
-    return reply.code(401).send({ error: 'Invalid credentials' });
+  if (success) {
+    // The login succeeded, so give the reserved slot back
+    await checkRateLimit(request, { refund: true });
+    return { ok: true };
   }
 
-  return { ok: true };
+  // The login failed: keep the reserved slot consumed
+  return reply.code(401).send({ error: 'Invalid credentials' });
 });
 ```
 
-A few things to keep in mind when using `{ increment: false }`:
+> **Warning:** the peek-then-consume flow (`{ increment: false }`) that earlier versions of this document recommended is **racy**. The peek and the later consume are two independent store operations, so under concurrency a burst of requests can all pass the peek before any slot is consumed. Prefer the consume-then-refund pattern above. If you must peek, note that `isExceeded` is reported as `current >= max`, because the request being gated has not yet been counted.
 
-- **It is a non-mutating snapshot.** A peek never increments the counter, resets the window, or advances the `ban`/`continueExceeding`/`exponentialBackoff` side effects that a real request triggers. The returned `isExceeded`/`isBanned` therefore reflect the *current* counters, but a peek will not, by itself, escalate a ban or extend a backoff window.
+A few things to keep in mind when using these flags:
+
+- **`{ increment: false }` is a non-mutating snapshot.** A peek never increments the counter, resets the window, or advances the `ban`/`continueExceeding`/`exponentialBackoff` side effects that a real request triggers. The returned `isExceeded`/`isBanned` therefore reflect the *current* counters, but a peek will not, by itself, escalate a ban or extend a backoff window.
+- **`{ refund: true }` never goes below zero.** A refund reduces the counter by one (floored at 0) and preserves the current window, and it only applies to an alive counter.
 - **`ttl` reflects the store's current window.** With the Redis store, `ttl` is the raw server `PTTL` (the same value `incr` reports), so it can exceed the configured `timeWindow` when `continueExceeding`/`exponentialBackoff` has extended it.
-- **Custom stores must implement `read`.** The flag relies on a non-mutating `read(ip, cb, timeWindow, max)` method, which mirrors the `incr` signature. The built-in local and Redis stores provide it; a custom store that does not will throw a clear error when called with `{ increment: false }`.
+- **Custom stores must implement `read` and `decr`.** `{ increment: false }` relies on a non-mutating `read(ip, cb, timeWindow, max)` method and `{ refund: true }` relies on a `decr(ip, cb, timeWindow, max)` method, both mirroring the `incr` signature. The built-in local and Redis stores provide them; a custom store that does not will throw a clear error when called with the corresponding flag.
 
 ### Examples of Custom Store
 

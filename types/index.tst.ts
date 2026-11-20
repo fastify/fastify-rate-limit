@@ -310,6 +310,7 @@ appWithImplicitHttp.route({
 
     // The limiter function accepts an optional second argument
     expect(checkRateLimit).type.toBeCallableWith(req, { increment: false })
+    expect(checkRateLimit).type.toBeCallableWith(req, { refund: true })
   }
 })
 

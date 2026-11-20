@@ -76,6 +76,40 @@ LocalStore.prototype.read = function (ip, cb, timeWindow, max) {
   cb(null, { current: current.current, ttl })
 }
 
+/**
+ * Refund a slot previously consumed by `incr`, i.e. decrement the counter for
+ * `ip` without going below zero.
+ *
+ * Same argument contract as `incr`/`read` (`ip, cb, timeWindow, max`). This is
+ * the counterpart of `incr` and is used to give back a reserved slot when the
+ * consume-then-refund login flow succeeds (`{ refund: true }`). The window is
+ * preserved: the entry keeps its current iteration start and ttl, only the
+ * count is reduced by one (floored at 0).
+ *
+ * @param {string} ip
+ * @param {(err: Error | null, res: { current: number, ttl: number }) => void} cb
+ * @param {number} timeWindow
+ * @param {number} [max]
+ */
+LocalStore.prototype.decr = function (ip, cb, timeWindow, max) {
+  const nowInMs = Date.now()
+  const current = this.lru.get(ip)
+
+  if (!current || current.iterationStartMs + timeWindow <= nowInMs) {
+    // Item doesn't exist or has expired: nothing to refund
+    cb(null, { current: 0, ttl: 0 })
+    return
+  }
+
+  if (current.current > 0) {
+    --current.current
+  }
+
+  const ttl = timeWindow - (nowInMs - current.iterationStartMs)
+  this.lru.set(ip, current)
+  cb(null, { current: current.current, ttl })
+}
+
 LocalStore.prototype.child = function (routeOptions) {
   return new LocalStore(routeOptions.continueExceeding, routeOptions.exponentialBackoff, routeOptions.cache)
 }

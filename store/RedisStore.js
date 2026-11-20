@@ -55,6 +55,37 @@ const luaRead = `
   return {tonumber(current), ttl}
 `
 
+const luaDecr = `
+  -- Key to operate on
+  local key = KEYS[1]
+  -- Time window for the TTL
+  local timeWindow = tonumber(ARGV[1])
+
+  local current = redis.call('GET', key)
+  if not current then
+    -- Key doesn't exist: nothing to refund
+    return {0, 0}
+  end
+
+  -- Preserve the remaining TTL (SET clears it, so capture it first)
+  local ttl = redis.call('PTTL', key)
+  current = tonumber(current)
+
+  if current > 0 then
+    current = current - 1
+    redis.call('SET', key, current)
+    if ttl < 0 then
+      -- No expiry on an alive counter: fall back to the full window
+      ttl = timeWindow
+    end
+    redis.call('PEXPIRE', key, ttl)
+  elseif ttl < 0 then
+    ttl = 0
+  end
+
+  return {current, ttl}
+`
+
 function RedisStore (continueExceeding, exponentialBackoff, redis, key = 'fastify-rate-limit-') {
   this.continueExceeding = continueExceeding
   this.exponentialBackoff = exponentialBackoff
@@ -72,6 +103,13 @@ function RedisStore (continueExceeding, exponentialBackoff, redis, key = 'fastif
     this.redis.defineCommand('rateLimitRead', {
       numberOfKeys: 1,
       lua: luaRead
+    })
+  }
+
+  if (!this.redis.rateLimitDecr) {
+    this.redis.defineCommand('rateLimitDecr', {
+      numberOfKeys: 1,
+      lua: luaDecr
     })
   }
 }
@@ -98,6 +136,26 @@ RedisStore.prototype.incr = function (ip, cb, timeWindow, max) {
  */
 RedisStore.prototype.read = function (ip, cb, timeWindow, max) {
   this.redis.rateLimitRead(this.key + ip, (err, result) => {
+    err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
+  })
+}
+
+/**
+ * Refund a slot previously consumed by `incr`, i.e. decrement the counter for
+ * `ip` without going below zero.
+ *
+ * Same argument contract as `incr`/`read` (`ip, cb, timeWindow, max`); the
+ * Redis implementation only needs the key, so `timeWindow`/`max` are ignored.
+ * The window is preserved: the counter keeps its remaining TTL, only the count
+ * is reduced by one (floored at 0).
+ *
+ * @param {string} ip
+ * @param {(err: Error | null, res: { current: number, ttl: number }) => void} cb
+ * @param {number} [timeWindow]
+ * @param {number} [max]
+ */
+RedisStore.prototype.decr = function (ip, cb, timeWindow, max) {
+  this.redis.rateLimitDecr(this.key + ip, timeWindow, (err, result) => {
     err ? cb(err, null) : cb(null, { current: result[0], ttl: result[1] })
   })
 }

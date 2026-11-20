@@ -472,6 +472,50 @@ describe('Global rate limit', () => {
     await redis.quit()
   })
 
+  test('With { refund: true } it gives back a previously consumed slot', async (t) => {
+    t.plan(6)
+    const fastify = Fastify()
+    const redis = await new Redis({ host: REDIS_HOST })
+    await redis.flushall()
+    await fastify.register(rateLimit, {
+      global: false,
+      max: 2,
+      timeWindow: 1000,
+      redis
+    })
+
+    const checkRateLimit = fastify.createRateLimit()
+
+    fastify.get('/consume', async (req) => checkRateLimit(req))
+    fastify.get('/refund', async (req) => checkRateLimit(req, { refund: true }))
+
+    let res
+
+    res = await fastify.inject('/consume')
+    t.assert.deepStrictEqual(res.json().remaining, 1)
+
+    res = await fastify.inject('/consume')
+    t.assert.deepStrictEqual(res.json().remaining, 0)
+
+    // Refund gives the slot back
+    res = await fastify.inject('/refund')
+    t.assert.deepStrictEqual(res.json().remaining, 1)
+
+    res = await fastify.inject('/refund')
+    t.assert.deepStrictEqual(res.json().remaining, 2)
+
+    // Refund never goes below zero
+    res = await fastify.inject('/refund')
+    t.assert.deepStrictEqual(res.json().remaining, 2)
+
+    // The refunded slot can be consumed again
+    res = await fastify.inject('/consume')
+    t.assert.deepStrictEqual(res.json().remaining, 1)
+
+    await redis.flushall()
+    await redis.quit()
+  })
+
   test('With { increment: false } it throws on redis error', async (t) => {
     t.plan(2)
     const fastify = Fastify()
@@ -490,6 +534,31 @@ describe('Global rate limit', () => {
     await redis.quit()
 
     const res = await fastify.inject('/peek')
+    t.assert.deepStrictEqual(res.statusCode, 500)
+    t.assert.deepStrictEqual(
+      res.body,
+      '{"statusCode":500,"error":"Internal Server Error","message":"Connection is closed."}'
+    )
+  })
+
+  test('With { refund: true } it throws on redis error', async (t) => {
+    t.plan(2)
+    const fastify = Fastify()
+    const redis = await new Redis({ host: REDIS_HOST })
+    await fastify.register(rateLimit, {
+      global: false,
+      max: 2,
+      timeWindow: 1000,
+      redis
+    })
+
+    const checkRateLimit = fastify.createRateLimit()
+    fastify.get('/refund', async (req) => checkRateLimit(req, { refund: true }))
+
+    await redis.flushall()
+    await redis.quit()
+
+    const res = await fastify.inject('/refund')
     t.assert.deepStrictEqual(res.statusCode, 500)
     t.assert.deepStrictEqual(
       res.body,

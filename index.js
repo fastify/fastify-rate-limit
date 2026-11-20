@@ -278,13 +278,19 @@ async function applyRateLimit (pluginComponent, params, req, callOptions) {
   let ttl = 0
   let ttlInSeconds = 0
 
-  const storeMethod = callOptions?.increment === false ? 'read' : 'incr'
+  let storeMethod = 'incr'
+  if (callOptions?.increment === false) storeMethod = 'read'
+  if (callOptions?.refund === true) storeMethod = 'decr'
 
   // `{ increment: false }` requires the store to implement a non-mutating
-  // `read` method. Custom stores may not, so fail fast with a clear message
-  // instead of a cryptic "store[storeMethod] is not a function" TypeError.
+  // `read` method, and `{ refund: true }` requires a `decr` method. Custom
+  // stores may not implement them, so fail fast with a clear message instead
+  // of a cryptic "store[storeMethod] is not a function" TypeError.
   if (storeMethod === 'read' && typeof store.read !== 'function') {
     throw new Error('The configured rate-limit store does not implement a `read` method, which is required to use `{ increment: false }`')
+  }
+  if (storeMethod === 'decr' && typeof store.decr !== 'function') {
+    throw new Error('The configured rate-limit store does not implement a `decr` method, which is required to use `{ refund: true }`')
   }
 
   try {
@@ -311,7 +317,10 @@ async function applyRateLimit (pluginComponent, params, req, callOptions) {
     remaining: Math.max(0, max - current),
     ttl,
     ttlInSeconds,
-    isExceeded: current > max,
+    // A peek (`read`) gates a request that has not been counted yet, so the
+    // limit is reached as soon as `current` equals `max`; a real request
+    // (`incr`) only crosses the limit once it has been counted.
+    isExceeded: storeMethod === 'read' ? current >= max : current > max,
     isBanned: params.ban !== -1 && current - max > params.ban
   }
 }
