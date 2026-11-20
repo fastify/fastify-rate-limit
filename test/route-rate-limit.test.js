@@ -1323,7 +1323,7 @@ test('per route rate limit', async (t) => {
   )
   t.assert.deepStrictEqual(
     resHead.headers['x-ratelimit-remaining'],
-    '9',
+    '8',
     'HEAD: x-ratelimit-remaining header (per route limit)'
   )
 })
