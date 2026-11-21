@@ -161,7 +161,16 @@ RedisStore.prototype.decr = function (ip, cb, timeWindow, max) {
 }
 
 RedisStore.prototype.child = function (routeOptions) {
-  return new RedisStore(routeOptions.continueExceeding, routeOptions.exponentialBackoff, this.redis, `${this.key}${routeOptions.routeInfo.method}${routeOptions.routeInfo.url}-`)
+  const namespace = routeOptions.groupId
+    ? routeOptions.groupId
+    : routeOptions.routeInfo.method + routeOptions.routeInfo.url
+
+  return new RedisStore(
+    routeOptions.continueExceeding,
+    routeOptions.exponentialBackoff,
+    this.redis,
+    `${this.key}${namespace}-`
+  )
 }
 
 module.exports = RedisStore
