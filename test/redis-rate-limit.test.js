@@ -69,7 +69,7 @@ describe('Global rate limit', () => {
     t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
     t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -129,7 +129,7 @@ describe('Global rate limit', () => {
     t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
     t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -153,7 +153,7 @@ describe('Global rate limit', () => {
     t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
     t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
 
     res = await fastify.inject('/')
@@ -187,7 +187,7 @@ describe('Global rate limit', () => {
     t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
     t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
 
     res = await fastify.inject('/')
@@ -227,7 +227,7 @@ describe('Global rate limit', () => {
     t.assert.deepStrictEqual(second.headers['x-ratelimit-remaining'], '0')
     t.assert.deepStrictEqual(second.headers['x-ratelimit-reset'], '5')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -290,7 +290,7 @@ describe('Global rate limit', () => {
     t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '0')
     t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '3')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -359,7 +359,7 @@ describe('Global rate limit', () => {
     t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
     t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -425,7 +425,7 @@ describe('Global rate limit', () => {
       JSON.parse(res.payload)
     )
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -433,7 +433,7 @@ describe('Global rate limit', () => {
     t.plan(5)
     const fastify = Fastify()
     const redis = await new Redis({ host: REDIS_HOST })
-    await redis.flushall()
+    await redis.flushdb()
     await fastify.register(rateLimit, {
       global: false,
       max: 2,
@@ -468,7 +468,7 @@ describe('Global rate limit', () => {
     res = await fastify.inject('/peek')
     t.assert.deepStrictEqual(res.json().remaining, 0)
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -530,7 +530,7 @@ describe('Global rate limit', () => {
     const checkRateLimit = fastify.createRateLimit()
     fastify.get('/peek', async (req) => checkRateLimit(req, { increment: false }))
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
 
     const res = await fastify.inject('/peek')
@@ -625,7 +625,7 @@ describe('Route rate limit', () => {
     t.assert.strictEqual(res.headers['x-ratelimit-remaining'], '1')
     t.assert.strictEqual(res.headers['x-ratelimit-reset'], '1')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -660,7 +660,7 @@ describe('Route rate limit', () => {
     t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
     t.assert.deepStrictEqual(res.headers['x-ratelimit-reset'], '1')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
 
     res = await fastify.inject('/')
@@ -701,7 +701,7 @@ describe('Route rate limit', () => {
     t.assert.deepStrictEqual(res.headers['x-ratelimit-limit'], '2')
     t.assert.deepStrictEqual(res.headers['x-ratelimit-remaining'], '1')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
 
     res = await fastify.inject('/')
@@ -754,7 +754,7 @@ describe('Route rate limit', () => {
     t.assert.deepStrictEqual(second.headers['x-ratelimit-remaining'], '0')
     t.assert.deepStrictEqual(second.headers['x-ratelimit-reset'], '5')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -810,7 +810,7 @@ describe('Route rate limit', () => {
     t.assert.deepStrictEqual(third.headers['x-ratelimit-remaining'], '0')
     t.assert.deepStrictEqual(third.headers['x-ratelimit-reset'], '3')
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 
@@ -884,7 +884,7 @@ describe('Route rate limit', () => {
       JSON.parse(res.payload)
     )
 
-    await redis.flushall()
+    await redis.flushdb()
     await redis.quit()
   })
 })

@@ -165,3 +165,5 @@ RedisStore.prototype.child = function (routeOptions) {
 }
 
 module.exports = RedisStore
+module.exports.lua = lua
+module.exports.luaRead = luaRead
